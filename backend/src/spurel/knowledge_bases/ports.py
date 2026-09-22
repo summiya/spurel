@@ -17,6 +17,11 @@ class KnowledgeBaseRepository(Protocol):
         """Persist a knowledge base."""
         ...
 
-    async def list(self) -> Sequence[KnowledgeBase]:
-        """Return knowledge bases in deterministic creation order."""
+    async def list(
+        self,
+        *,
+        limit: int,
+        offset: int,
+    ) -> Sequence[KnowledgeBase]:
+        """Return a bounded page in deterministic creation order."""
         ...
