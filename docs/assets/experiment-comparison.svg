@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="820" viewBox="0 0 1440 820" role="img" aria-label="Kyvlo RAG experiment comparison concept UI">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#22d3ee"/><stop offset=".5" stop-color="#8b5cf6"/><stop offset="1" stop-color="#f472b6"/></linearGradient>
+  </defs>
+  <rect width="1440" height="820" rx="28" fill="#0a0f1d"/>
+  <rect x="25" y="25" width="1390" height="770" rx="22" fill="#0f172a" stroke="#28344a"/>
+  <rect x="25" y="25" width="1390" height="5" fill="url(#g)"/>
+  <text x="70" y="88" font-family="Inter,Arial" font-size="28" font-weight="800" fill="#f8fafc">Experiment comparison</text>
+  <text x="70" y="119" font-family="Inter,Arial" font-size="15" fill="#64748b">Compare retrieval strategies against the same evaluation set.</text>
+  <rect x="1180" y="56" width="180" height="36" rx="18" fill="#24133f" stroke="#8b5cf6"/>
+  <text x="1270" y="79" text-anchor="middle" font-family="Inter,Arial" font-weight="700" font-size="12" fill="#c4b5fd">CONCEPT UI</text>
+
+  <rect x="70" y="160" width="610" height="190" rx="18" fill="#101d31" stroke="#155e75"/>
+  <rect x="760" y="160" width="610" height="190" rx="18" fill="#17152c" stroke="#6d28d9"/>
+  <text x="100" y="205" font-family="Inter,Arial" font-size="13" fill="#67e8f9">EXPERIMENT A</text>
+  <text x="100" y="238" font-family="Inter,Arial" font-size="22" font-weight="800" fill="#e2e8f0">Hybrid / 500-token chunks</text>
+  <text x="100" y="280" font-family="Inter,Arial" font-size="14" fill="#94a3b8">Vector + BM25 · RRF · Cross Encoder · top_k 10</text>
+  <rect x="100" y="307" width="104" height="28" rx="14" fill="#083344"/><text x="152" y="326" text-anchor="middle" font-family="Inter,Arial" font-size="12" font-weight="700" fill="#67e8f9">candidate</text>
+
+  <text x="790" y="205" font-family="Inter,Arial" font-size="13" fill="#c4b5fd">EXPERIMENT B</text>
+  <text x="790" y="238" font-family="Inter,Arial" font-size="22" font-weight="800" fill="#e2e8f0">Vector / 1,000-token chunks</text>
+  <text x="790" y="280" font-family="Inter,Arial" font-size="14" fill="#94a3b8">Cosine similarity · no reranker · top_k 10</text>
+  <rect x="790" y="307" width="104" height="28" rx="14" fill="#2e1065"/><text x="842" y="326" text-anchor="middle" font-family="Inter,Arial" font-size="12" font-weight="700" fill="#c4b5fd">baseline</text>
+
+  <rect x="70" y="385" width="1300" height="330" rx="18" fill="#0c1526" stroke="#28344a"/>
+  <text x="100" y="427" font-family="Inter,Arial" font-size="17" font-weight="700" fill="#f8fafc">Evaluation results</text>
+
+  <g font-family="Inter,Arial">
+    <text x="120" y="485" font-size="13" fill="#64748b">METRIC</text>
+    <text x="750" y="485" text-anchor="middle" font-size="13" fill="#67e8f9">A</text>
+    <text x="1110" y="485" text-anchor="middle" font-size="13" fill="#c4b5fd">B</text>
+    <line x1="100" y1="502" x2="1340" y2="502" stroke="#263248"/>
+
+    <text x="120" y="542" font-size="15" fill="#cbd5e1">Recall@5</text>
+    <text x="750" y="542" text-anchor="middle" font-size="17" font-weight="800" fill="#67e8f9">0.88</text>
+    <text x="1110" y="542" text-anchor="middle" font-size="17" fill="#c4b5fd">0.79</text>
+
+    <text x="120" y="590" font-size="15" fill="#cbd5e1">MRR</text>
+    <text x="750" y="590" text-anchor="middle" font-size="17" font-weight="800" fill="#67e8f9">0.81</text>
+    <text x="1110" y="590" text-anchor="middle" font-size="17" fill="#c4b5fd">0.70</text>
+
+    <text x="120" y="638" font-size="15" fill="#cbd5e1">Context precision</text>
+    <text x="750" y="638" text-anchor="middle" font-size="17" font-weight="800" fill="#67e8f9">0.84</text>
+    <text x="1110" y="638" text-anchor="middle" font-size="17" fill="#c4b5fd">0.72</text>
+
+    <text x="120" y="686" font-size="15" fill="#cbd5e1">Median retrieval latency</text>
+    <text x="750" y="686" text-anchor="middle" font-size="17" fill="#67e8f9">180 ms</text>
+    <text x="1110" y="686" text-anchor="middle" font-size="17" font-weight="800" fill="#c4b5fd">145 ms</text>
+  </g>
+
+  <text x="720" y="765" text-anchor="middle" font-family="Inter,Arial" font-size="13" fill="#475569">Example data for visual design only · real metrics will come from your evaluation runs.</text>
+</svg>
