@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./docs/assets/kyvlo-hero.svg" alt="Kyvlo — open-source RAG observability, debugging and evaluation" width="100%" />
+  <img src="./docs/assets/spurel-hero.svg" alt="Spurel — open-source RAG observability, debugging and evaluation" width="100%" />
 </p>
 
 <p align="center">
@@ -14,7 +14,7 @@
 </p>
 
 <p align="center">
-  <a href="#-why-kyvlo">Why Kyvlo</a> ·
+  <a href="#-why-spurel">Why Spurel</a> ·
   <a href="#-planned-features">Features</a> ·
   <a href="#-concept-ui">Concept UI</a> ·
   <a href="#-architecture">Architecture</a> ·
@@ -23,12 +23,12 @@
 </p>
 
 > [!IMPORTANT]
-> **Kyvlo is currently in early-stage design / pre-alpha.**  
+> **Spurel is currently in early-stage design / pre-alpha.**  
 > The screenshots below are product concept mockups, not screenshots of a finished implementation. The repository is being built in public.
 
-## ✨ What is Kyvlo?
+## ✨ What is Spurel?
 
-**Kyvlo** is an open-source RAG engineering workbench for developers who want to understand **why** a retrieval pipeline succeeds or fails.
+**Spurel** is an open-source RAG engineering workbench for developers who want to understand **why** a retrieval pipeline succeeds or fails.
 
 Most RAG demos stop here:
 
@@ -36,7 +36,7 @@ Most RAG demos stop here:
 Question → Retrieve chunks → LLM → Answer
 ```
 
-Kyvlo focuses on everything that happens in the middle:
+Spurel focuses on everything that happens in the middle:
 
 ```text
 What was retrieved?
@@ -50,9 +50,9 @@ What changed between experiment A and B?
 
 > **Make RAG retrieval visible, measurable, reproducible, and easier to improve.**
 
-## 🎯 Why Kyvlo?
+## 🎯 Why Spurel?
 
-| Problem | What Kyvlo helps you inspect |
+| Problem | What Spurel helps you inspect |
 |---|---|
 | 🧩 Bad chunking | Boundaries, token counts, overlap, lost context |
 | 🔎 Weak retrieval | Retrieved candidates, similarity scores, missed evidence |
@@ -122,14 +122,14 @@ top_k = 10                        top_k = 10
 
 **LLMs:** `OpenAI` · `Anthropic` · `Gemini` · `Ollama` · `OpenRouter`
 
-Kyvlo starts with **PostgreSQL + pgvector** for vector storage.
+Spurel starts with **PostgreSQL + pgvector** for vector storage.
 
 ## 🖥️ Concept UI
 
 ### Retrieval Playground
 
 <p align="center">
-  <img src="./docs/assets/retrieval-playground.svg" alt="Kyvlo retrieval playground concept" width="100%" />
+  <img src="./docs/assets/retrieval-playground.svg" alt="Spurel retrieval playground concept" width="100%" />
 </p>
 
 Inspect why chunks were retrieved, how they scored, what reranking changed, and what evidence reached generation.
@@ -137,7 +137,7 @@ Inspect why chunks were retrieved, how they scored, what reranking changed, and 
 ### Experiment Comparison
 
 <p align="center">
-  <img src="./docs/assets/experiment-comparison.svg" alt="Kyvlo experiment comparison concept" width="100%" />
+  <img src="./docs/assets/experiment-comparison.svg" alt="Spurel experiment comparison concept" width="100%" />
 </p>
 
 > Mockup values are illustrative only. Real experiment metrics will come from evaluation runs.
@@ -145,7 +145,7 @@ Inspect why chunks were retrieved, how they scored, what reranking changed, and 
 ## 🏗️ Architecture
 
 <p align="center">
-  <img src="./docs/assets/rag-pipeline.svg" alt="Kyvlo RAG pipeline" width="100%" />
+  <img src="./docs/assets/rag-pipeline.svg" alt="Spurel RAG pipeline" width="100%" />
 </p>
 
 ```text
@@ -265,20 +265,20 @@ Workspace
 - [ ] Exportable experiment results
 - [ ] Public extension documentation
 
-## 🧭 What Kyvlo is not
+## 🧭 What Spurel is not
 
-Kyvlo is intentionally **not**:
+Spurel is intentionally **not**:
 - a general-purpose AI agent platform
 - an MCP client
 - a workflow automation engine
 - a generic ChatGPT clone
 - another basic “chat with your PDF” demo
 
-Kyvlo is about **retrieval engineering**.
+Spurel is about **retrieval engineering**.
 
 ## 🤝 Contributing
 
-Kyvlo is being built in public. Contributions will be welcome as the foundation lands.
+Spurel is being built in public. Contributions will be welcome as the foundation lands.
 
 Good contribution areas:
 - chunking strategies
@@ -303,7 +303,7 @@ Before a large change, please open an issue describing the proposal so the desig
 7. **Open by design** — useful primitives should be reusable outside the UI.
 
 <p align="center">
-  <strong>Kyvlo</strong><br/>
+  <strong>Spurel</strong><br/>
   <sub>See what your RAG pipeline is really doing.</sub>
 </p>
 
