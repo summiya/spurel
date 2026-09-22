@@ -18,6 +18,11 @@ class KnowledgeBaseService:
         await self._repository.add(knowledge_base)
         return knowledge_base
 
-    async def list(self) -> Sequence[KnowledgeBase]:
-        """List persisted knowledge bases."""
-        return await self._repository.list()
+    async def list(
+        self,
+        *,
+        limit: int,
+        offset: int,
+    ) -> Sequence[KnowledgeBase]:
+        """List a bounded page of persisted knowledge bases."""
+        return await self._repository.list(limit=limit, offset=offset)
