@@ -28,11 +28,21 @@ class SqlAlchemyKnowledgeBaseRepository:
                 "failed to persist knowledge base"
             ) from exc
 
-    async def list(self) -> Sequence[KnowledgeBase]:
-        """Return all knowledge bases in deterministic creation order."""
-        statement = select(KnowledgeBaseRecord).order_by(
-            KnowledgeBaseRecord.created_at.asc(),
-            KnowledgeBaseRecord.id.asc(),
+    async def list(
+        self,
+        *,
+        limit: int,
+        offset: int,
+    ) -> Sequence[KnowledgeBase]:
+        """Return a bounded page in deterministic creation order."""
+        statement = (
+            select(KnowledgeBaseRecord)
+            .order_by(
+                KnowledgeBaseRecord.created_at.asc(),
+                KnowledgeBaseRecord.id.asc(),
+            )
+            .limit(limit)
+            .offset(offset)
         )
 
         try:

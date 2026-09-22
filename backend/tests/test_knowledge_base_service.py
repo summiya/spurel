@@ -12,8 +12,8 @@ class FakeKnowledgeBaseRepository:
     async def add(self, knowledge_base: KnowledgeBase) -> None:
         self.items.append(knowledge_base)
 
-    async def list(self) -> Sequence[KnowledgeBase]:
-        return tuple(self.items)
+    async def list(self, *, limit: int, offset: int) -> Sequence[KnowledgeBase]:
+        return tuple(self.items[offset : offset + limit])
 
 
 def test_create_knowledge_base_through_service() -> None:
@@ -33,6 +33,6 @@ def test_list_knowledge_bases_through_service() -> None:
     repository.items.extend([first, second])
     service = KnowledgeBaseService(repository)
 
-    result = asyncio.run(service.list())
+    result = asyncio.run(service.list(limit=1, offset=1))
 
-    assert tuple(result) == (first, second)
+    assert tuple(result) == (second,)
