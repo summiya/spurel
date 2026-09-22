@@ -12,6 +12,7 @@ from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from spurel.db import Base
+from spurel.knowledge_bases import persistence as knowledge_base_persistence
 
 config = context.config
 
@@ -22,7 +23,8 @@ database_url = os.getenv("DATABASE_URL")
 if database_url:
     config.set_main_option("sqlalchemy.url", database_url)
 
-target_metadata = Base.metadata
+target_metadata = knowledge_base_persistence.KnowledgeBaseRecord.metadata
+assert target_metadata is Base.metadata
 
 
 def run_migrations_offline() -> None:
