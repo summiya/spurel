@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="380" viewBox="0 0 1400 380" role="img" aria-label="Kyvlo RAG pipeline architecture">
+  <defs><linearGradient id="bg2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0f172a"/><stop offset="1" stop-color="#111827"/></linearGradient></defs>
+  <rect width="1400" height="380" rx="24" fill="url(#bg2)"/>
+  <text x="700" y="54" text-anchor="middle" font-family="Inter,Arial" font-size="22" font-weight="800" fill="#f8fafc">From document to evidence-backed answer</text>
+  <g font-family="Inter,Arial" text-anchor="middle">
+    <g transform="translate(55 125)"><rect width="180" height="100" rx="16" fill="#102434" stroke="#22d3ee"/><text x="90" y="42" font-size="15" font-weight="700" fill="#67e8f9">INGEST</text><text x="90" y="69" font-size="13" fill="#94a3b8">PDF · MD · DOCX · HTML</text></g>
+    <g transform="translate(275 125)"><rect width="180" height="100" rx="16" fill="#17213d" stroke="#6366f1"/><text x="90" y="42" font-size="15" font-weight="700" fill="#a5b4fc">CHUNK</text><text x="90" y="69" font-size="13" fill="#94a3b8">fixed · semantic · aware</text></g>
+    <g transform="translate(495 125)"><rect width="180" height="100" rx="16" fill="#231b41" stroke="#8b5cf6"/><text x="90" y="42" font-size="15" font-weight="700" fill="#c4b5fd">EMBED</text><text x="90" y="69" font-size="13" fill="#94a3b8">provider-independent</text></g>
+    <g transform="translate(715 125)"><rect width="180" height="100" rx="16" fill="#341734" stroke="#d946ef"/><text x="90" y="42" font-size="15" font-weight="700" fill="#f0abfc">RETRIEVE</text><text x="90" y="69" font-size="13" fill="#94a3b8">vector · BM25 · hybrid</text></g>
+    <g transform="translate(935 125)"><rect width="180" height="100" rx="16" fill="#3a142c" stroke="#ec4899"/><text x="90" y="42" font-size="15" font-weight="700" fill="#f9a8d4">RERANK</text><text x="90" y="69" font-size="13" fill="#94a3b8">score · inspect · debug</text></g>
+    <g transform="translate(1155 125)"><rect width="180" height="100" rx="16" fill="#342214" stroke="#f59e0b"/><text x="90" y="42" font-size="15" font-weight="700" fill="#fcd34d">EVALUATE</text><text x="90" y="69" font-size="13" fill="#94a3b8">recall · MRR · precision</text></g>
+  </g>
+  <g stroke="#64748b" stroke-width="3" fill="none">
+    <path d="M235 175h40"/><path d="M455 175h40"/><path d="M675 175h40"/><path d="M895 175h40"/><path d="M1115 175h40"/>
+  </g>
+  <g fill="#64748b"><path d="M268 169l10 6-10 6z"/><path d="M488 169l10 6-10 6z"/><path d="M708 169l10 6-10 6z"/><path d="M928 169l10 6-10 6z"/><path d="M1148 169l10 6-10 6z"/></g>
+  <text x="700" y="304" text-anchor="middle" font-family="Inter,Arial" font-size="15" fill="#94a3b8">Kyvlo makes every retrieval decision visible, measurable, and reproducible.</text>
+</svg>
