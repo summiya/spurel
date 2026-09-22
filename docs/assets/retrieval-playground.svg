@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="860" viewBox="0 0 1440 860" role="img" aria-label="Kyvlo retrieval debugger concept UI">
+  <defs>
+    <linearGradient id="top" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#22d3ee"/><stop offset=".55" stop-color="#8b5cf6"/><stop offset="1" stop-color="#ec4899"/>
+    </linearGradient>
+  </defs>
+  <rect width="1440" height="860" rx="28" fill="#0a0f1d"/>
+  <rect x="20" y="20" width="1400" height="820" rx="22" fill="#0f172a" stroke="#263248"/>
+  <rect x="20" y="20" width="1400" height="5" rx="2" fill="url(#top)"/>
+
+  <rect x="20" y="25" width="230" height="815" fill="#0b1220"/>
+  <text x="52" y="78" font-family="Inter,Arial" font-weight="800" font-size="28" fill="#f8fafc">KYVLO</text>
+  <text x="52" y="112" font-family="Inter,Arial" font-size="13" fill="#64748b">RAG OBSERVABILITY</text>
+  <g font-family="Inter,Arial" font-size="16">
+    <rect x="36" y="146" width="198" height="46" rx="10" fill="#18233a"/>
+    <text x="58" y="175" fill="#67e8f9">⌁  Playground</text>
+    <text x="58" y="229" fill="#94a3b8">▣  Knowledge bases</text>
+    <text x="58" y="275" fill="#94a3b8">◫  Documents</text>
+    <text x="58" y="321" fill="#94a3b8">◇  Experiments</text>
+    <text x="58" y="367" fill="#94a3b8">◉  Evaluations</text>
+  </g>
+  <rect x="45" y="735" width="170" height="62" rx="12" fill="#111c30" stroke="#273449"/>
+  <text x="62" y="760" font-family="Inter,Arial" font-size="12" fill="#64748b">ACTIVE KB</text>
+  <text x="62" y="783" font-family="Inter,Arial" font-weight="700" font-size="15" fill="#cbd5e1">Engineering Docs</text>
+
+  <text x="290" y="72" font-family="Inter,Arial" font-weight="700" font-size="26" fill="#f8fafc">Retrieval Playground</text>
+  <rect x="1185" y="46" width="190" height="36" rx="18" fill="#24133f" stroke="#8b5cf6"/>
+  <text x="1280" y="69" text-anchor="middle" font-family="Inter,Arial" font-weight="700" font-size="12" fill="#c4b5fd">CONCEPT UI</text>
+
+  <rect x="290" y="108" width="1090" height="128" rx="16" fill="#111c30" stroke="#25324a"/>
+  <text x="314" y="137" font-family="Inter,Arial" font-size="13" fill="#64748b">QUERY</text>
+  <text x="314" y="177" font-family="Inter,Arial" font-size="22" fill="#e2e8f0">How does refresh-token rotation work?</text>
+  <rect x="1200" y="174" width="150" height="42" rx="10" fill="#7c3aed"/>
+  <text x="1275" y="201" text-anchor="middle" font-family="Inter,Arial" font-weight="700" font-size="15" fill="#fff">Run retrieval →</text>
+
+  <rect x="290" y="258" width="330" height="548" rx="16" fill="#111c30" stroke="#25324a"/>
+  <text x="314" y="292" font-family="Inter,Arial" font-weight="700" font-size="17" fill="#f8fafc">Configuration</text>
+  <text x="314" y="332" font-family="Inter,Arial" font-size="12" fill="#64748b">RETRIEVAL MODE</text>
+  <rect x="314" y="346" width="282" height="42" rx="9" fill="#0b1324" stroke="#34445f"/>
+  <text x="330" y="372" font-family="Inter,Arial" font-size="14" fill="#cbd5e1">Hybrid · Vector + BM25</text>
+  <text x="314" y="424" font-family="Inter,Arial" font-size="12" fill="#64748b">VECTOR WEIGHT</text>
+  <rect x="314" y="446" width="282" height="7" rx="4" fill="#243047"/>
+  <rect x="314" y="446" width="184" height="7" rx="4" fill="#22d3ee"/>
+  <circle cx="498" cy="449" r="8" fill="#67e8f9"/>
+  <text x="566" y="428" font-family="Inter,Arial" font-size="13" fill="#67e8f9">0.65</text>
+  <text x="314" y="492" font-family="Inter,Arial" font-size="12" fill="#64748b">TOP K</text>
+  <rect x="314" y="508" width="130" height="40" rx="8" fill="#0b1324" stroke="#34445f"/>
+  <text x="332" y="533" font-family="Inter,Arial" font-size="14" fill="#cbd5e1">10</text>
+  <text x="314" y="587" font-family="Inter,Arial" font-size="12" fill="#64748b">RERANKER</text>
+  <rect x="314" y="601" width="282" height="45" rx="9" fill="#0b1324" stroke="#34445f"/>
+  <text x="330" y="629" font-family="Inter,Arial" font-size="14" fill="#cbd5e1">Cross Encoder</text>
+  <circle cx="566" cy="623" r="12" fill="#22c55e"/>
+  <circle cx="570" cy="623" r="6" fill="#fff"/>
+  <text x="314" y="690" font-family="Inter,Arial" font-size="12" fill="#64748b">METADATA FILTER</text>
+  <rect x="314" y="707" width="282" height="44" rx="9" fill="#0b1324" stroke="#34445f"/>
+  <text x="330" y="734" font-family="ui-monospace,monospace" font-size="13" fill="#a5b4fc">project = "nexus"</text>
+
+  <rect x="640" y="258" width="740" height="548" rx="16" fill="#111c30" stroke="#25324a"/>
+  <text x="664" y="292" font-family="Inter,Arial" font-weight="700" font-size="17" fill="#f8fafc">Retrieved chunks</text>
+  <text x="1318" y="292" text-anchor="end" font-family="Inter,Arial" font-size="13" fill="#64748b">10 candidates · 5 reranked</text>
+
+  <g font-family="Inter,Arial">
+    <rect x="664" y="316" width="692" height="120" rx="12" fill="#0b1627" stroke="#1d9ab0"/>
+    <rect x="678" y="331" width="42" height="24" rx="12" fill="#083344"/><text x="699" y="348" text-anchor="middle" font-size="12" font-weight="700" fill="#67e8f9">#1</text>
+    <text x="735" y="350" font-weight="700" font-size="15" fill="#e2e8f0">authentication.md · Refresh Tokens</text>
+    <text x="1328" y="350" text-anchor="end" font-size="14" font-weight="700" fill="#67e8f9">0.94</text>
+    <text x="678" y="383" font-size="14" fill="#94a3b8">Refresh tokens are single-use. On successful rotation, the previous token is revoked...</text>
+    <text x="678" y="414" font-size="12" fill="#64748b">vector 0.87  ·  BM25 8.4  ·  reranker 0.94</text>
+
+    <rect x="664" y="450" width="692" height="120" rx="12" fill="#0d1528" stroke="#6d4db5"/>
+    <rect x="678" y="465" width="42" height="24" rx="12" fill="#2e1065"/><text x="699" y="482" text-anchor="middle" font-size="12" font-weight="700" fill="#c4b5fd">#2</text>
+    <text x="735" y="484" font-weight="700" font-size="15" fill="#e2e8f0">security.md · Session Security</text>
+    <text x="1328" y="484" text-anchor="end" font-size="14" font-weight="700" fill="#c4b5fd">0.89</text>
+    <text x="678" y="517" font-size="14" fill="#94a3b8">A rotated token must never be accepted twice and all session events are audited...</text>
+    <text x="678" y="548" font-size="12" fill="#64748b">vector 0.81  ·  BM25 7.9  ·  reranker 0.89</text>
+
+    <rect x="664" y="584" width="692" height="120" rx="12" fill="#0d1528" stroke="#6b294f"/>
+    <rect x="678" y="599" width="42" height="24" rx="12" fill="#500724"/><text x="699" y="616" text-anchor="middle" font-size="12" font-weight="700" fill="#f9a8d4">#3</text>
+    <text x="735" y="618" font-weight="700" font-size="15" fill="#e2e8f0">api-sdk.md · POST /auth/refresh</text>
+    <text x="1328" y="618" text-anchor="end" font-size="14" font-weight="700" fill="#f9a8d4">0.83</text>
+    <text x="678" y="651" font-size="14" fill="#94a3b8">The refresh endpoint returns a new access token and replacement refresh token...</text>
+    <text x="678" y="682" font-size="12" fill="#64748b">vector 0.76  ·  BM25 6.2  ·  reranker 0.83</text>
+  </g>
+  <text x="1010" y="765" text-anchor="middle" font-family="Inter,Arial" font-size="13" fill="#475569">Inspect why every chunk was retrieved — not just what the model answered.</text>
+</svg>
