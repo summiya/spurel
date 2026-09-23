@@ -5,6 +5,15 @@ from spurel.retrieval.domain import (
     VectorRetrievalMatch,
     VectorRetrievalQueryError,
 )
+from spurel.retrieval.hybrid import (
+    DEFAULT_HYBRID_CANDIDATE_LIMIT,
+    DEFAULT_RRF_K,
+    MAX_HYBRID_RETRIEVAL_RESULTS,
+    HybridRetrievalMatch,
+    HybridRetrievalQueryError,
+    HybridRetrievalResultError,
+    HybridRetrievalService,
+)
 from spurel.retrieval.keyword_domain import (
     MAX_KEYWORD_RETRIEVAL_RESULTS,
     KeywordRetrievalMatch,
@@ -25,6 +34,13 @@ from spurel.retrieval.service import (
 )
 
 __all__ = [
+    "DEFAULT_HYBRID_CANDIDATE_LIMIT",
+    "DEFAULT_RRF_K",
+    "MAX_HYBRID_RETRIEVAL_RESULTS",
+    "HybridRetrievalMatch",
+    "HybridRetrievalQueryError",
+    "HybridRetrievalResultError",
+    "HybridRetrievalService",
     "MAX_KEYWORD_RETRIEVAL_RESULTS",
     "KeywordRetrievalMatch",
     "KeywordRetrievalQueryError",
