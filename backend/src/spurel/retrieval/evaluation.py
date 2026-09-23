@@ -34,7 +34,7 @@ class RetrievalEvaluation:
     retrieved_count_at_k: int
     judged_retrieved_at_k: int
     relevant_retrieved_at_k: int
-    judgment_coverage_at_k: float
+    judgment_coverage_at_k: float | None
     precision_at_k: float
     recall_at_k: float
     reciprocal_rank_at_k: float
@@ -120,7 +120,7 @@ def evaluate_trace(
         judged_retrieved_at_k=judged_retrieved,
         relevant_retrieved_at_k=relevant_retrieved,
         judgment_coverage_at_k=(
-            judged_retrieved / retrieved_count if retrieved_count else 1.0
+            judged_retrieved / retrieved_count if retrieved_count else None
         ),
         precision_at_k=relevant_retrieved / cutoff,
         recall_at_k=relevant_retrieved / relevant_count,
