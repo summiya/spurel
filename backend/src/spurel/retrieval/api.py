@@ -32,6 +32,7 @@ from spurel.retrieval.schemas import (
 )
 from spurel.retrieval.service import VectorRetrievalProviderContractError
 from spurel.retrieval.trace_ports import RetrievalTracePersistenceError
+from spurel.retrieval.tracing import RetrievalTraceValidationError
 from spurel.retrieval.traced import (
     TracedHybridRetrievalService,
     TracedKeywordRetrievalService,
@@ -82,6 +83,7 @@ async def vector_retrieval(
         VectorRetrievalProviderContractError,
         VectorRetrievalRepositoryError,
         RetrievalTracePersistenceError,
+        RetrievalTraceValidationError,
     ) as exc:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -130,6 +132,7 @@ async def keyword_retrieval(
     except (
         KeywordRetrievalRepositoryError,
         RetrievalTracePersistenceError,
+        RetrievalTraceValidationError,
     ) as exc:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -184,6 +187,7 @@ async def hybrid_retrieval(
         KeywordRetrievalRepositoryError,
         HybridRetrievalResultError,
         RetrievalTracePersistenceError,
+        RetrievalTraceValidationError,
     ) as exc:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
