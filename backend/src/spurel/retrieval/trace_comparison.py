@@ -5,11 +5,19 @@ from dataclasses import dataclass
 from uuid import UUID
 
 from spurel.retrieval.trace_service import RetrievalTraceService
-from spurel.retrieval.tracing import RetrievalTrace, RetrievalTraceResult
+from spurel.retrieval.tracing import (
+    RetrievalTrace,
+    RetrievalTraceMode,
+    RetrievalTraceResult,
+)
 
 
-class RetrievalTraceComparisonError(ValueError):
+class RetrievalTraceComparisonQueryError(ValueError):
     """Raised when a trace comparison request is invalid."""
+
+
+class RetrievalTraceComparisonIntegrityError(RuntimeError):
+    """Raised when historical trace snapshots conflict."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -17,7 +25,7 @@ class RetrievalTraceComparisonSide:
     """Configuration summary for one side of a trace comparison."""
 
     trace_id: UUID
-    mode: str
+    mode: RetrievalTraceMode
     query: str
     top_k: int
     candidate_k: int | None
@@ -81,7 +89,7 @@ class RetrievalTraceComparisonService:
     ) -> RetrievalTraceComparison:
         """Load two traces and describe ranking/result differences."""
         if first_trace_id == second_trace_id:
-            raise RetrievalTraceComparisonError(
+            raise RetrievalTraceComparisonQueryError(
                 "comparison requires two distinct trace IDs"
             )
 
@@ -166,7 +174,7 @@ def _compare_result(
             or first_result.start_offset != second_result.start_offset
             or first_result.end_offset != second_result.end_offset
         ):
-            raise RetrievalTraceComparisonError(
+            raise RetrievalTraceComparisonIntegrityError(
                 "trace snapshots disagree about metadata for the same chunk"
             )
 
@@ -212,7 +220,7 @@ def _compare_result(
 def _side(trace: RetrievalTrace) -> RetrievalTraceComparisonSide:
     return RetrievalTraceComparisonSide(
         trace_id=trace.id,
-        mode=trace.mode.value,
+        mode=trace.mode,
         query=trace.query,
         top_k=trace.top_k,
         candidate_k=trace.candidate_k,
