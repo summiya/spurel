@@ -73,9 +73,12 @@ def upgrade() -> None:
             (
                 mode IN ('vector', 'hybrid')
                 AND embedding_provider IS NOT NULL
+                AND char_length(embedding_provider) > 0
                 AND embedding_model IS NOT NULL
+                AND char_length(embedding_model) > 0
                 AND embedding_dimensions IS NOT NULL
                 AND embedding_dimensions > 0
+                AND embedding_dimensions <= 16384
             )
             OR
             (
