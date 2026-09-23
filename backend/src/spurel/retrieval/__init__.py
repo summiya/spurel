@@ -28,6 +28,14 @@ from spurel.retrieval.ports import (
     VectorRetrievalRepository,
     VectorRetrievalRepositoryError,
 )
+from spurel.retrieval.trace_comparison import (
+    RetrievalTraceComparison,
+    RetrievalTraceComparisonIntegrityError,
+    RetrievalTraceComparisonQueryError,
+    RetrievalTraceComparisonResult,
+    RetrievalTraceComparisonService,
+    RetrievalTraceComparisonSide,
+)
 from spurel.retrieval.trace_ports import (
     RetrievalTracePersistenceError,
     RetrievalTraceRepository,
@@ -57,6 +65,12 @@ from spurel.retrieval.service import (
 )
 
 __all__ = [
+    "RetrievalTraceComparison",
+    "RetrievalTraceComparisonIntegrityError",
+    "RetrievalTraceComparisonQueryError",
+    "RetrievalTraceComparisonResult",
+    "RetrievalTraceComparisonService",
+    "RetrievalTraceComparisonSide",
     "MAX_RETRIEVAL_TRACE_PAGE_SIZE",
     "RetrievalTraceNotFoundError",
     "RetrievalTraceQueryError",
