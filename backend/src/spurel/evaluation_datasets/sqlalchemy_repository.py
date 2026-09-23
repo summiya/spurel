@@ -20,7 +20,10 @@ from spurel.evaluation_datasets.persistence import (
     case_from_records,
     case_summary_from_row,
 )
-from spurel.evaluation_datasets.ports import EvaluationDatasetPersistenceError
+from spurel.evaluation_datasets.ports import (
+    EvaluationDatasetLoadLimitError,
+    EvaluationDatasetPersistenceError,
+)
 
 
 class SqlAlchemyEvaluationDatasetRepository:
@@ -200,6 +203,104 @@ class SqlAlchemyEvaluationDatasetRepository:
                 relevant_judgment_count=int(relevant),
             )
             for record, count, relevant in rows
+        )
+
+    async def load_cases_for_evaluation(
+        self,
+        *,
+        knowledge_base_id: UUID,
+        dataset_id: UUID,
+        max_cases: int,
+        max_total_judgments: int,
+    ) -> Sequence[EvaluationCase] | None:
+        """Load a bounded complete dataset without N+1 judgment queries."""
+        dataset_statement = select(EvaluationDatasetRecord.id).where(
+            EvaluationDatasetRecord.id == dataset_id,
+            EvaluationDatasetRecord.knowledge_base_id == knowledge_base_id,
+        )
+        case_count_statement = select(func.count(EvaluationCaseRecord.id)).where(
+            EvaluationCaseRecord.dataset_id == dataset_id
+        )
+        judgment_count_statement = (
+            select(func.count(EvaluationJudgmentRecord.id))
+            .join(
+                EvaluationCaseRecord,
+                EvaluationCaseRecord.id == EvaluationJudgmentRecord.case_id,
+            )
+            .where(EvaluationCaseRecord.dataset_id == dataset_id)
+        )
+        case_statement = (
+            select(EvaluationCaseRecord)
+            .where(EvaluationCaseRecord.dataset_id == dataset_id)
+            .order_by(
+                EvaluationCaseRecord.created_at.asc(),
+                EvaluationCaseRecord.id.asc(),
+            )
+        )
+        judgment_statement = (
+            select(EvaluationJudgmentRecord)
+            .join(
+                EvaluationCaseRecord,
+                EvaluationCaseRecord.id == EvaluationJudgmentRecord.case_id,
+            )
+            .where(EvaluationCaseRecord.dataset_id == dataset_id)
+            .order_by(
+                EvaluationJudgmentRecord.case_id.asc(),
+                EvaluationJudgmentRecord.chunk_id.asc(),
+            )
+        )
+
+        try:
+            async with self._session_factory() as session:
+                exists = (
+                    await session.execute(dataset_statement)
+                ).scalar_one_or_none()
+                if exists is None:
+                    return None
+
+                case_count = int(
+                    (await session.execute(case_count_statement)).scalar_one()
+                )
+                if case_count > max_cases:
+                    raise EvaluationDatasetLoadLimitError(
+                        "evaluation dataset exceeds synchronous case limit"
+                    )
+
+                judgment_count = int(
+                    (
+                        await session.execute(judgment_count_statement)
+                    ).scalar_one()
+                )
+                if judgment_count > max_total_judgments:
+                    raise EvaluationDatasetLoadLimitError(
+                        "evaluation dataset exceeds synchronous judgment limit"
+                    )
+
+                case_records = (
+                    await session.execute(case_statement)
+                ).scalars().all()
+                judgment_records = (
+                    await session.execute(judgment_statement)
+                ).scalars().all()
+        except EvaluationDatasetLoadLimitError:
+            raise
+        except SQLAlchemyError as exc:
+            raise EvaluationDatasetPersistenceError(
+                "failed to load evaluation dataset"
+            ) from exc
+
+        judgments_by_case: dict[UUID, list[EvaluationJudgmentRecord]] = {
+            record.id: [] for record in case_records
+        }
+        for judgment_record in judgment_records:
+            judgments_by_case[judgment_record.case_id].append(judgment_record)
+
+        return tuple(
+            case_from_records(
+                case_record=record,
+                judgment_records=judgments_by_case[record.id],
+            )
+            for record in case_records
         )
 
     async def get_case(
