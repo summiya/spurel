@@ -3,10 +3,11 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from spurel.embeddings.domain import EmbeddingError
 from spurel.retrieval.dependencies import (
+    get_retrieval_trace_service,
     get_traced_hybrid_retrieval_service,
     get_traced_keyword_retrieval_service,
     get_traced_vector_retrieval_service,
@@ -26,12 +27,20 @@ from spurel.retrieval.schemas import (
     KeywordRetrievalMatchResponse,
     KeywordRetrievalRequest,
     KeywordRetrievalResponse,
+    RetrievalTraceDetailResponse,
+    RetrievalTraceListResponse,
+    RetrievalTraceResultResponse,
+    RetrievalTraceSummaryResponse,
     VectorRetrievalMatchResponse,
     VectorRetrievalRequest,
     VectorRetrievalResponse,
 )
 from spurel.retrieval.service import VectorRetrievalProviderContractError
 from spurel.retrieval.trace_ports import RetrievalTracePersistenceError
+from spurel.retrieval.trace_service import (
+    RetrievalTraceNotFoundError,
+    RetrievalTraceService,
+)
 from spurel.retrieval.traced import (
     TracedHybridRetrievalService,
     TracedKeywordRetrievalService,
@@ -43,6 +52,11 @@ router = APIRouter(
     prefix="/knowledge-bases/{knowledge_base_id}/retrieval",
     tags=["retrieval"],
 )
+
+RetrievalTraceServiceDependency = Annotated[
+    RetrievalTraceService,
+    Depends(get_retrieval_trace_service),
+]
 
 HybridRetrievalServiceDependency = Annotated[
     TracedHybridRetrievalService,
@@ -217,5 +231,107 @@ async def hybrid_retrieval(
                 keyword_score=match.keyword_score,
             )
             for rank, match in enumerate(execution.matches, start=1)
+        ],
+    )
+
+
+@router.get("/traces", response_model=RetrievalTraceListResponse)
+async def list_retrieval_traces(
+    knowledge_base_id: UUID,
+    service: RetrievalTraceServiceDependency,
+    limit: Annotated[int, Query(ge=1, le=100)] = 50,
+    offset: Annotated[int, Query(ge=0)] = 0,
+) -> RetrievalTraceListResponse:
+    """Return a bounded newest-first retrieval trace history page."""
+    try:
+        traces = await service.list_by_knowledge_base(
+            knowledge_base_id=knowledge_base_id,
+            limit=limit,
+            offset=offset,
+        )
+    except RetrievalTracePersistenceError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="retrieval trace history temporarily unavailable",
+        ) from exc
+
+    return RetrievalTraceListResponse(
+        items=[
+            RetrievalTraceSummaryResponse(
+                id=trace.id,
+                mode=trace.mode,
+                query=trace.query,
+                top_k=trace.top_k,
+                candidate_k=trace.candidate_k,
+                rrf_k=trace.rrf_k,
+                duration_ms=trace.duration_ms,
+                embedding_provider=trace.embedding_provider,
+                embedding_model=trace.embedding_model,
+                embedding_dimensions=trace.embedding_dimensions,
+                result_count=trace.result_count,
+                created_at=trace.created_at,
+            )
+            for trace in traces
+        ],
+        limit=limit,
+        offset=offset,
+    )
+
+
+@router.get(
+    "/traces/{trace_id}",
+    response_model=RetrievalTraceDetailResponse,
+)
+async def get_retrieval_trace(
+    knowledge_base_id: UUID,
+    trace_id: UUID,
+    service: RetrievalTraceServiceDependency,
+) -> RetrievalTraceDetailResponse:
+    """Return one scoped retrieval trace with its ranked result snapshot."""
+    try:
+        trace = await service.get_by_id(
+            knowledge_base_id=knowledge_base_id,
+            trace_id=trace_id,
+        )
+    except RetrievalTraceNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="retrieval trace was not found",
+        ) from exc
+    except RetrievalTracePersistenceError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="retrieval trace history temporarily unavailable",
+        ) from exc
+
+    return RetrievalTraceDetailResponse(
+        id=trace.id,
+        knowledge_base_id=trace.knowledge_base_id,
+        mode=trace.mode,
+        query=trace.query,
+        top_k=trace.top_k,
+        candidate_k=trace.candidate_k,
+        rrf_k=trace.rrf_k,
+        duration_ms=trace.duration_ms,
+        embedding_provider=trace.embedding_provider,
+        embedding_model=trace.embedding_model,
+        embedding_dimensions=trace.embedding_dimensions,
+        created_at=trace.created_at,
+        results=[
+            RetrievalTraceResultResponse(
+                rank=result.rank,
+                chunk_id=result.chunk_id,
+                document_id=result.document_id,
+                chunk_index=result.chunk_index,
+                text=result.text,
+                start_offset=result.start_offset,
+                end_offset=result.end_offset,
+                cosine_similarity=result.cosine_similarity,
+                keyword_score=result.keyword_score,
+                rrf_score=result.rrf_score,
+                vector_rank=result.vector_rank,
+                keyword_rank=result.keyword_rank,
+            )
+            for result in trace.results
         ],
     )
