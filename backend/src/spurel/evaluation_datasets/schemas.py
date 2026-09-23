@@ -118,8 +118,9 @@ class HybridDatasetEvaluationRequest(BaseModel):
 
 
 class DatasetEvaluationCaseResponse(BaseModel):
-    """Per-query metrics within one dataset evaluation run."""
+    """Per-query metrics within one persisted dataset evaluation run."""
 
+    position: int = Field(ge=1, le=100)
     case_id: UUID
     query: str
     duration_ms: float = Field(ge=0)
@@ -136,8 +137,10 @@ class DatasetEvaluationCaseResponse(BaseModel):
 
 
 class DatasetEvaluationResponse(BaseModel):
-    """Aggregate metrics for one synchronous dataset evaluation run."""
+    """Persisted aggregate metrics for one synchronous dataset evaluation run."""
 
+    run_id: UUID
+    knowledge_base_id: UUID
     dataset_id: UUID
     mode: DatasetEvaluationMode
     top_k: int
@@ -155,4 +158,37 @@ class DatasetEvaluationResponse(BaseModel):
     mean_recall_at_k: float = Field(ge=0, le=1)
     mrr_at_k: float = Field(ge=0, le=1)
     mean_ndcg_at_k: float = Field(ge=0, le=1)
+    created_at: datetime
     cases: list[DatasetEvaluationCaseResponse]
+
+
+class EvaluationRunSummaryResponse(BaseModel):
+    """Lightweight historical benchmark run summary."""
+
+    run_id: UUID
+    dataset_id: UUID
+    mode: DatasetEvaluationMode
+    top_k: int
+    candidate_k: int | None
+    rrf_k: int | None
+    embedding_provider: str | None
+    embedding_model: str | None
+    embedding_dimensions: int | None
+    case_count: int = Field(ge=1, le=100)
+    total_duration_ms: float = Field(ge=0)
+    mean_duration_ms: float = Field(ge=0)
+    judgment_coverage_case_count: int = Field(ge=0, le=100)
+    mean_judgment_coverage_at_k: float | None = Field(default=None, ge=0, le=1)
+    mean_precision_at_k: float = Field(ge=0, le=1)
+    mean_recall_at_k: float = Field(ge=0, le=1)
+    mrr_at_k: float = Field(ge=0, le=1)
+    mean_ndcg_at_k: float = Field(ge=0, le=1)
+    created_at: datetime
+
+
+class EvaluationRunListResponse(BaseModel):
+    """Bounded newest-first benchmark run history page."""
+
+    items: list[EvaluationRunSummaryResponse]
+    limit: int
+    offset: int
