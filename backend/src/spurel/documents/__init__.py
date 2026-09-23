@@ -45,6 +45,7 @@ from spurel.documents.parsing import (
     UnsupportedParserMediaTypeError,
 )
 from spurel.documents.ports import DocumentPersistenceError, DocumentRepository
+from spurel.documents.processing import DocumentProcessingResult, DocumentProcessingService
 from spurel.documents.service import DocumentService
 from spurel.documents.storage import DocumentBlobStorage, DocumentStorageError
 from spurel.documents.upload_service import (
@@ -88,6 +89,8 @@ __all__ = [
     "DocumentPdfEncryptedError",
     "DocumentPdfPageLimitError",
     "DocumentPersistenceError",
+    "DocumentProcessingResult",
+    "DocumentProcessingService",
     "DocumentRepository",
     "DocumentService",
     "DocumentSizeError",
