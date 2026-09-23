@@ -1,6 +1,7 @@
 """HTTP schemas for documents."""
 
 from datetime import datetime
+from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -52,3 +53,16 @@ class ChunkInspectionListResponse(BaseModel):
     items: list[ChunkInspectionResponse]
     limit: int
     offset: int
+
+
+class DocumentProcessingResponse(BaseModel):
+    """Public summary of complete document processing."""
+
+    status: Literal["processed"] = "processed"
+    document_id: UUID
+    knowledge_base_id: UUID
+    chunk_count: int
+    embedded_chunk_count: int
+    embedding_provider: str
+    embedding_model: str
+    embedding_dimensions: int

@@ -12,6 +12,8 @@ from spurel.documents.chunk_inspector import (
     ChunkInspectionPersistenceError,
     ChunkInspectorService,
 )
+from spurel.documents.chunk_ports import DocumentChunkPersistenceError
+from spurel.documents.chunking import DocumentChunkingError
 from spurel.documents.dependencies import (
     get_chunk_inspector_service,
     get_document_service,
@@ -23,11 +25,21 @@ from spurel.documents.domain import (
     DocumentSizeError,
     UnsupportedDocumentMediaTypeError,
 )
+from spurel.documents.ingestion_service import (
+    DocumentIngestionError,
+    DocumentNotFoundError,
+)
+from spurel.documents.parsing import DocumentParseError
 from spurel.documents.ports import DocumentPersistenceError
+from spurel.documents.processing import DocumentProcessingService
+from spurel.documents.processing_dependencies import (
+    get_document_processing_service,
+)
 from spurel.documents.schemas import (
     ChunkInspectionListResponse,
     ChunkInspectionResponse,
     DocumentListResponse,
+    DocumentProcessingResponse,
     DocumentResponse,
     DocumentUploadResponse,
 )
@@ -37,6 +49,9 @@ from spurel.documents.upload_service import (
     DocumentUploadService,
     DocumentUploadSizeMismatchError,
 )
+from spurel.embeddings.domain import EmbeddingError
+from spurel.embeddings.pipeline import DocumentEmbeddingPipelineError
+from spurel.embeddings.ports import ChunkEmbeddingPersistenceError
 
 router = APIRouter(
     prefix="/knowledge-bases/{knowledge_base_id}/documents",
@@ -53,6 +68,11 @@ DocumentServiceDependency = Annotated[
 ChunkInspectorServiceDependency = Annotated[
     ChunkInspectorService,
     Depends(get_chunk_inspector_service),
+]
+
+DocumentProcessingServiceDependency = Annotated[
+    DocumentProcessingService,
+    Depends(get_document_processing_service),
 ]
 
 DocumentUploadServiceDependency = Annotated[
@@ -222,4 +242,53 @@ async def inspect_document_chunks(
         ],
         limit=limit,
         offset=offset,
+    )
+
+
+@router.post(
+    "/{document_id}/process",
+    response_model=DocumentProcessingResponse,
+)
+async def process_document(
+    knowledge_base_id: UUID,
+    document_id: UUID,
+    service: DocumentProcessingServiceDependency,
+) -> DocumentProcessingResponse:
+    """Parse, chunk, embed, and index one persisted document."""
+    try:
+        result = await service.process(
+            knowledge_base_id=knowledge_base_id,
+            document_id=document_id,
+        )
+    except DocumentNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="document was not found",
+        ) from exc
+    except (DocumentParseError, DocumentChunkingError) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="document cannot be processed",
+        ) from exc
+    except (
+        DocumentIngestionError,
+        DocumentPersistenceError,
+        DocumentChunkPersistenceError,
+        ChunkEmbeddingPersistenceError,
+        EmbeddingError,
+        DocumentEmbeddingPipelineError,
+    ) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="document processing service temporarily unavailable",
+        ) from exc
+
+    return DocumentProcessingResponse(
+        document_id=result.document_id,
+        knowledge_base_id=result.knowledge_base_id,
+        chunk_count=result.chunk_count,
+        embedded_chunk_count=result.embedded_chunk_count,
+        embedding_provider=result.embedding_provider,
+        embedding_model=result.embedding_model,
+        embedding_dimensions=result.embedding_dimensions,
     )
