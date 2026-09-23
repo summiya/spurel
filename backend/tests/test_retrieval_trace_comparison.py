@@ -216,7 +216,7 @@ def test_comparison_allows_different_queries_and_marks_them() -> None:
     assert comparison.same_query is False
     assert comparison.overlap_count == 0
     assert comparison.union_count == 0
-    assert comparison.overlap_ratio == 1.0
+    assert comparison.overlap_ratio is None
 
 
 def test_comparison_rejects_same_trace_id() -> None:
