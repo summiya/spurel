@@ -1,8 +1,8 @@
 """Deterministic evaluation metrics for historical retrieval traces."""
 
 from dataclasses import dataclass
-from typing import Protocol
 from math import log2
+from typing import Protocol
 from uuid import UUID
 
 from spurel.retrieval.tracing import RetrievalTrace
