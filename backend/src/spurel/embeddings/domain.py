@@ -43,7 +43,7 @@ class EmbeddingVector:
         expected_dimensions: int,
     ) -> "EmbeddingVector":
         """Validate and freeze one provider vector."""
-        _validate_dimensions(expected_dimensions)
+        validate_embedding_dimensions(expected_dimensions)
 
         if len(values) != expected_dimensions:
             raise EmbeddingDimensionError(
@@ -80,7 +80,7 @@ class EmbeddingBatch:
         dimensions: int,
     ) -> "EmbeddingBatch":
         """Validate provider output cardinality and vector dimensions."""
-        _validate_dimensions(dimensions)
+        validate_embedding_dimensions(dimensions)
 
         if input_count < 1 or input_count > MAX_EMBEDDING_BATCH_SIZE:
             raise EmbeddingBatchSizeError(
@@ -145,7 +145,7 @@ def validate_embedding_inputs(texts: Sequence[str]) -> tuple[str, ...]:
     return tuple(normalized)
 
 
-def _validate_dimensions(dimensions: int) -> None:
+def validate_embedding_dimensions(dimensions: int) -> None:
     if isinstance(dimensions, bool) or not isinstance(dimensions, int):
         raise EmbeddingDimensionError("embedding dimensions must be an integer")
 
