@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from spurel.api.health import router as health_router
 from spurel.documents.api import router as document_router
 from spurel.knowledge_bases.api import router as knowledge_base_router
+from spurel.retrieval.api import router as retrieval_router
 
 
 def create_app() -> FastAPI:
@@ -16,6 +17,7 @@ def create_app() -> FastAPI:
     application.include_router(health_router)
     application.include_router(document_router)
     application.include_router(knowledge_base_router)
+    application.include_router(retrieval_router)
     return application
 
 
