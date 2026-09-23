@@ -26,6 +26,34 @@
 > **Spurel is currently in early-stage design / pre-alpha.**  
 > The screenshots below are product concept mockups, not screenshots of a finished implementation. The repository is being built in public.
 
+## ⚙️ Local environment
+
+Copy the committed example file and add your own local secrets:
+
+```bash
+cp .env.example .env
+```
+
+Spurel currently reads configuration from the process environment, so for local shell development load the file before starting the backend:
+
+```bash
+set -a
+source .env
+set +a
+```
+
+The example includes the configuration currently used by Spurel:
+
+- `DATABASE_URL`
+- `SPUREL_LOCAL_STORAGE_ROOT`
+- `OPENAI_API_KEY`
+- `SPUREL_EMBEDDING_MODEL`
+- `SPUREL_EMBEDDING_DIMENSIONS`
+
+> [!WARNING]
+> Never commit your real `.env` file or API keys. Only `.env.example` belongs in Git.
+
+
 ## ✨ What is Spurel?
 
 **Spurel** is an open-source RAG engineering workbench for developers who want to understand **why** a retrieval pipeline succeeds or fails.

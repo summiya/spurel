@@ -1,1 +1,10 @@
+# Local runtime data
 **/.spurel/
+
+# Environment files and secrets
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
