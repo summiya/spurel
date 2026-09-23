@@ -85,6 +85,7 @@ def _result(
         case_count=1,
         total_duration_ms=4.0,
         mean_duration_ms=4.0,
+        judgment_coverage_case_count=1,
         mean_judgment_coverage_at_k=0.3,
         mean_precision_at_k=0.2,
         mean_recall_at_k=1.0,
@@ -134,6 +135,7 @@ def test_keyword_dataset_evaluation_returns_aggregate_and_case_metrics() -> None
     assert body["dataset_id"] == str(dataset_id)
     assert body["mode"] == "keyword"
     assert body["mrr_at_k"] == 0.5
+    assert body["judgment_coverage_case_count"] == 1
     assert body["mean_precision_at_k"] == 0.2
     assert body["mean_recall_at_k"] == 1.0
     assert body["cases"][0]["reciprocal_rank_at_k"] == 0.5
