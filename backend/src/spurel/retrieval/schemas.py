@@ -235,7 +235,7 @@ class RetrievalTraceComparisonResponse(BaseModel):
     same_query: bool
     overlap_count: int = Field(ge=0, le=100)
     union_count: int = Field(ge=0, le=200)
-    overlap_ratio: float = Field(ge=0, le=1)
+    overlap_ratio: float | None = Field(default=None, ge=0, le=1)
     first_only_count: int = Field(ge=0, le=100)
     second_only_count: int = Field(ge=0, le=100)
     duration_delta_ms: float
