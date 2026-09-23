@@ -4,6 +4,7 @@ from collections.abc import Sequence
 from typing import Protocol
 from uuid import UUID
 
+from spurel.documents.chunk_models import StoredDocumentChunk
 from spurel.documents.chunking import DocumentChunk
 
 
@@ -31,4 +32,18 @@ class DocumentChunkRepository(Protocol):
         offset: int,
     ) -> Sequence[DocumentChunk]:
         """Return a bounded page ordered by chunk index."""
+        ...
+
+
+class StoredDocumentChunkReader(Protocol):
+    """Read persisted chunks with stable database identities."""
+
+    async def list_stored_by_document(
+        self,
+        *,
+        document_id: UUID,
+        limit: int,
+        offset: int,
+    ) -> Sequence[StoredDocumentChunk]:
+        """Return a bounded persisted chunk page ordered by chunk index."""
         ...

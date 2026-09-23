@@ -8,6 +8,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from spurel.documents.chunk_persistence import DocumentChunkRecord
+from spurel.documents.chunk_models import StoredDocumentChunk
 from spurel.documents.chunk_ports import DocumentChunkPersistenceError
 from spurel.documents.chunking import DocumentChunk
 
@@ -46,6 +47,40 @@ class SqlAlchemyDocumentChunkRepository:
             raise DocumentChunkPersistenceError(
                 "failed to replace document chunks"
             ) from exc
+
+    async def list_stored_by_document(
+        self,
+        *,
+        document_id: UUID,
+        limit: int,
+        offset: int,
+    ) -> Sequence[StoredDocumentChunk]:
+        """Return persisted chunks with stable UUIDs in ordinal order."""
+        statement = (
+            select(DocumentChunkRecord)
+            .where(DocumentChunkRecord.document_id == document_id)
+            .order_by(DocumentChunkRecord.chunk_index.asc())
+            .limit(limit)
+            .offset(offset)
+        )
+
+        try:
+            async with self._session_factory() as session:
+                result = await session.scalars(statement)
+                records = result.all()
+        except SQLAlchemyError as exc:
+            raise DocumentChunkPersistenceError(
+                "failed to list stored document chunks"
+            ) from exc
+
+        return tuple(
+            StoredDocumentChunk(
+                id=record.id,
+                document_id=record.document_id,
+                chunk=record.to_domain(),
+            )
+            for record in records
+        )
 
     async def list_by_document(
         self,
