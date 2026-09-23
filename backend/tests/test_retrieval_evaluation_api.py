@@ -5,6 +5,7 @@ from fastapi.testclient import TestClient
 from spurel.main import create_app
 from spurel.retrieval.dependencies import get_retrieval_evaluation_service
 from spurel.retrieval.evaluation import (
+    RelevanceJudgment,
     RetrievalEvaluation,
     RetrievalEvaluationQueryError,
 )
@@ -24,7 +25,7 @@ class FakeRetrievalEvaluationService:
         knowledge_base_id: UUID,
         trace_id: UUID,
         cutoff: int,
-        judgments,
+        judgments: tuple[RelevanceJudgment, ...],
     ) -> RetrievalEvaluation:
         self.last_call = {
             "knowledge_base_id": knowledge_base_id,
