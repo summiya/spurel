@@ -1,15 +1,22 @@
-"""Dependency wiring for document upload endpoints."""
+"""Dependency wiring for document endpoints."""
 
 import os
 from pathlib import Path
 
 from spurel.db import async_session_factory
+from spurel.documents.service import DocumentService
 from spurel.documents.sqlalchemy_repository import SqlAlchemyDocumentRepository
 from spurel.documents.upload_service import DocumentUploadService
 from spurel.infrastructure.storage import LocalDocumentBlobStorage
 
 LOCAL_STORAGE_ROOT_ENV = "SPUREL_LOCAL_STORAGE_ROOT"
 DEFAULT_LOCAL_STORAGE_ROOT = ".spurel/storage"
+
+
+def get_document_service() -> DocumentService:
+    """Build the document metadata application service."""
+    repository = SqlAlchemyDocumentRepository(async_session_factory)
+    return DocumentService(repository)
 
 
 def get_document_upload_service() -> DocumentUploadService:

@@ -6,9 +6,9 @@ from collections.abc import AsyncIterator
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 
-from spurel.documents.dependencies import get_document_upload_service
+from spurel.documents.dependencies import get_document_service, get_document_upload_service
 from spurel.documents.domain import (
     MAX_DOCUMENT_SIZE_BYTES,
     DocumentFilenameError,
@@ -16,7 +16,12 @@ from spurel.documents.domain import (
     UnsupportedDocumentMediaTypeError,
 )
 from spurel.documents.ports import DocumentPersistenceError
-from spurel.documents.schemas import DocumentUploadResponse
+from spurel.documents.schemas import (
+    DocumentListResponse,
+    DocumentResponse,
+    DocumentUploadResponse,
+)
+from spurel.documents.service import DocumentService
 from spurel.documents.upload_service import (
     DocumentUploadError,
     DocumentUploadService,
@@ -30,10 +35,26 @@ router = APIRouter(
 
 _UPLOAD_CHUNK_SIZE_BYTES = 1024 * 1024
 
+DocumentServiceDependency = Annotated[
+    DocumentService,
+    Depends(get_document_service),
+]
+
 DocumentUploadServiceDependency = Annotated[
     DocumentUploadService,
     Depends(get_document_upload_service),
 ]
+
+
+def _to_document_response(document) -> DocumentResponse:
+    return DocumentResponse(
+        id=document.id,
+        knowledge_base_id=document.knowledge_base_id,
+        filename=document.filename,
+        media_type=document.media_type,
+        size_bytes=document.size_bytes,
+        created_at=document.created_at,
+    )
 
 
 async def _upload_chunks(upload: UploadFile) -> AsyncIterator[bytes]:
@@ -115,4 +136,31 @@ async def upload_document(
         size_bytes=document.size_bytes,
         created_at=document.created_at,
         sha256=result.sha256,
+    )
+
+
+@router.get("", response_model=DocumentListResponse)
+async def list_documents(
+    knowledge_base_id: UUID,
+    service: DocumentServiceDependency,
+    limit: Annotated[int, Query(ge=1, le=100)] = 50,
+    offset: Annotated[int, Query(ge=0)] = 0,
+) -> DocumentListResponse:
+    """List a bounded page of documents for one knowledge base."""
+    try:
+        documents = await service.list_by_knowledge_base(
+            knowledge_base_id=knowledge_base_id,
+            limit=limit,
+            offset=offset,
+        )
+    except DocumentPersistenceError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="document service temporarily unavailable",
+        ) from exc
+
+    return DocumentListResponse(
+        items=[_to_document_response(document) for document in documents],
+        limit=limit,
+        offset=offset,
     )
