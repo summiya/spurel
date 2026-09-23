@@ -5,6 +5,15 @@ from spurel.retrieval.domain import (
     VectorRetrievalMatch,
     VectorRetrievalQueryError,
 )
+from spurel.retrieval.evaluation import (
+    MAX_EVALUATION_JUDGMENTS,
+    MAX_RELEVANCE_GRADE,
+    RelevanceJudgment,
+    RetrievalEvaluation,
+    RetrievalEvaluationQueryError,
+    RetrievalEvaluationService,
+    evaluate_trace,
+)
 from spurel.retrieval.hybrid import (
     DEFAULT_HYBRID_CANDIDATE_LIMIT,
     DEFAULT_RRF_K,
@@ -65,6 +74,13 @@ from spurel.retrieval.service import (
 )
 
 __all__ = [
+    "MAX_EVALUATION_JUDGMENTS",
+    "MAX_RELEVANCE_GRADE",
+    "RelevanceJudgment",
+    "RetrievalEvaluation",
+    "RetrievalEvaluationQueryError",
+    "RetrievalEvaluationService",
+    "evaluate_trace",
     "RetrievalTraceComparison",
     "RetrievalTraceComparisonIntegrityError",
     "RetrievalTraceComparisonQueryError",
