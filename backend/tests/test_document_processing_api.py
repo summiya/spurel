@@ -3,6 +3,7 @@ from uuid import UUID, uuid4
 from fastapi.testclient import TestClient
 
 from spurel.documents.ingestion_service import DocumentNotFoundError
+from spurel.documents.parsing import DocumentTextContentError
 from spurel.documents.processing import DocumentProcessingResult
 from spurel.documents.processing_dependencies import (
     get_document_processing_service,
@@ -99,3 +100,17 @@ def test_process_document_hides_provider_failures() -> None:
         "detail": "document processing service temporarily unavailable"
     }
     assert "secret provider detail" not in response.text
+
+
+def test_process_document_returns_unprocessable_for_invalid_content() -> None:
+    service = FakeDocumentProcessingService()
+    service.error = DocumentTextContentError("raw parser detail")
+    client = _client(service)
+
+    response = client.post(
+        f"/knowledge-bases/{uuid4()}/documents/{uuid4()}/process"
+    )
+
+    assert response.status_code == 422
+    assert response.json() == {"detail": "document cannot be processed"}
+    assert "raw parser detail" not in response.text
