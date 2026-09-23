@@ -125,7 +125,7 @@ def test_dataset_execution_computes_per_case_and_aggregate_metrics() -> None:
         }
     )
     service = DatasetEvaluationExecutionService(
-        repository=repository,  # type: ignore[arg-type]
+        repository=repository,
         retriever=KeywordDatasetRetriever(keyword),
         mode=DatasetEvaluationMode.KEYWORD,
     )
@@ -161,7 +161,7 @@ def test_dataset_execution_computes_per_case_and_aggregate_metrics() -> None:
 
 def test_dataset_execution_returns_not_found_for_unscoped_dataset() -> None:
     service = DatasetEvaluationExecutionService(
-        repository=FakeDatasetRepository(None),  # type: ignore[arg-type]
+        repository=FakeDatasetRepository(None),
         retriever=KeywordDatasetRetriever(FakeKeywordRetriever({})),
         mode=DatasetEvaluationMode.KEYWORD,
     )
@@ -178,7 +178,7 @@ def test_dataset_execution_returns_not_found_for_unscoped_dataset() -> None:
 
 def test_dataset_execution_rejects_empty_dataset() -> None:
     service = DatasetEvaluationExecutionService(
-        repository=FakeDatasetRepository(()),  # type: ignore[arg-type]
+        repository=FakeDatasetRepository(()),
         retriever=KeywordDatasetRetriever(FakeKeywordRetriever({})),
         mode=DatasetEvaluationMode.KEYWORD,
     )
@@ -197,7 +197,7 @@ def test_dataset_execution_translates_repository_load_limit() -> None:
     repository = FakeDatasetRepository(())
     repository.fail_limit = True
     service = DatasetEvaluationExecutionService(
-        repository=repository,  # type: ignore[arg-type]
+        repository=repository,
         retriever=KeywordDatasetRetriever(FakeKeywordRetriever({})),
         mode=DatasetEvaluationMode.KEYWORD,
     )
@@ -214,7 +214,7 @@ def test_dataset_execution_translates_repository_load_limit() -> None:
 
 def test_keyword_dataset_execution_rejects_hybrid_configuration() -> None:
     service = DatasetEvaluationExecutionService(
-        repository=FakeDatasetRepository(()),  # type: ignore[arg-type]
+        repository=FakeDatasetRepository(()),
         retriever=KeywordDatasetRetriever(FakeKeywordRetriever({})),
         mode=DatasetEvaluationMode.KEYWORD,
     )
@@ -233,7 +233,7 @@ def test_keyword_dataset_execution_rejects_hybrid_configuration() -> None:
 
 def test_vector_mode_requires_complete_embedding_configuration() -> None:
     service = DatasetEvaluationExecutionService(
-        repository=FakeDatasetRepository(()),  # type: ignore[arg-type]
+        repository=FakeDatasetRepository(()),
         retriever=KeywordDatasetRetriever(FakeKeywordRetriever({})),
         mode=DatasetEvaluationMode.VECTOR,
     )
