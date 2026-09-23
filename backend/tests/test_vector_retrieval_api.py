@@ -3,12 +3,11 @@ from uuid import UUID, uuid4
 
 from fastapi.testclient import TestClient
 
+from spurel.main import create_app
 from spurel.retrieval.dependencies import get_traced_vector_retrieval_service
 from spurel.retrieval.domain import VectorRetrievalMatch
 from spurel.retrieval.ports import VectorRetrievalRepositoryError
 from spurel.retrieval.traced import TracedRetrievalResult
-from spurel.main import create_app
-
 
 class FakeVectorRetrievalService:
     def __init__(self) -> None:
