@@ -1,5 +1,6 @@
 """Application orchestration from persisted chunks to stored embeddings."""
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from uuid import UUID
 
@@ -9,6 +10,7 @@ from spurel.embeddings.chunk import ChunkEmbedding
 from spurel.embeddings.domain import (
     MAX_EMBEDDING_BATCH_SIZE,
     EmbeddingProvider,
+    EmbeddingVector,
 )
 from spurel.embeddings.service import ChunkEmbeddingService
 
@@ -41,7 +43,7 @@ class DocumentEmbeddingPipelineResult:
 
 
 class DocumentEmbeddingPipeline:
-    """Page persisted chunks through an embedding provider and pgvector service."""
+    """Page persisted chunks through an embedding provider and persistence service."""
 
     def __init__(
         self,
@@ -92,7 +94,10 @@ class DocumentEmbeddingPipeline:
             batch = await self._provider.embed(
                 [stored.chunk.text for stored in chunks]
             )
-            self._validate_provider_contract(batch_model=batch.model, batch_dimensions=batch.dimensions)
+            self._validate_provider_contract(
+                batch_model=batch.model,
+                batch_dimensions=batch.dimensions,
+            )
 
             embeddings = _build_chunk_embeddings(
                 chunks=chunks,
@@ -136,10 +141,10 @@ class DocumentEmbeddingPipeline:
 
 def _build_chunk_embeddings(
     *,
-    chunks: tuple[StoredDocumentChunk, ...] | list[StoredDocumentChunk],
+    chunks: Sequence[StoredDocumentChunk],
     provider: str,
     model: str,
-    vectors,
+    vectors: Sequence[EmbeddingVector],
 ) -> tuple[ChunkEmbedding, ...]:
     return tuple(
         ChunkEmbedding.create(
