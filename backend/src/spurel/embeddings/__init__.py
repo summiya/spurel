@@ -1,6 +1,14 @@
 """Embedding application abstractions."""
 
 from spurel.embeddings.chunk import ChunkEmbedding, ChunkEmbeddingMetadataError
+from spurel.embeddings.ports import (
+    ChunkEmbeddingPersistenceError,
+    ChunkEmbeddingRepository,
+)
+from spurel.embeddings.service import (
+    ChunkEmbeddingBatchError,
+    ChunkEmbeddingService,
+)
 from spurel.embeddings.domain import (
     MAX_EMBEDDING_BATCH_SIZE,
     EmbeddingBatch,
@@ -16,6 +24,10 @@ from spurel.embeddings.domain import (
 )
 
 __all__ = [
+    "ChunkEmbeddingBatchError",
+    "ChunkEmbeddingPersistenceError",
+    "ChunkEmbeddingRepository",
+    "ChunkEmbeddingService",
     "ChunkEmbedding",
     "ChunkEmbeddingMetadataError",
     "MAX_EMBEDDING_BATCH_SIZE",
