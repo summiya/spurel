@@ -10,6 +10,8 @@ from spurel.embeddings.domain import (
     EmbeddingProviderError,
     EmbeddingResultError,
     EmbeddingVector,
+    validate_embedding_dimensions,
+    validate_embedding_inputs,
 )
 
 __all__ = [
@@ -22,4 +24,6 @@ __all__ = [
     "EmbeddingProviderError",
     "EmbeddingResultError",
     "EmbeddingVector",
+    "validate_embedding_dimensions",
+    "validate_embedding_inputs",
 ]
