@@ -15,6 +15,7 @@ from spurel.db import Base
 from spurel.documents import chunk_persistence, persistence as document_persistence
 from spurel.embeddings import persistence as embedding_persistence
 from spurel.knowledge_bases import persistence as knowledge_base_persistence
+from spurel.retrieval import trace_persistence
 
 config = context.config
 
@@ -29,6 +30,8 @@ _ = document_persistence.DocumentRecord
 _ = embedding_persistence.ChunkEmbeddingRecord
 _ = chunk_persistence.DocumentChunkRecord
 _ = knowledge_base_persistence.KnowledgeBaseRecord
+_ = trace_persistence.RetrievalTraceRecord
+_ = trace_persistence.RetrievalTraceResultRecord
 
 target_metadata = Base.metadata
 
