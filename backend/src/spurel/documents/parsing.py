@@ -19,7 +19,19 @@ class DocumentTextEncodingError(DocumentParseError):
 
 
 class DocumentTextContentError(DocumentParseError):
-    """Raised when text content is empty or contains unsafe control bytes."""
+    """Raised when parsed text is empty or contains unsafe control characters."""
+
+
+class DocumentPdfEncryptedError(DocumentParseError):
+    """Raised when an encrypted PDF cannot be processed safely."""
+
+
+class DocumentPdfPageLimitError(DocumentParseError):
+    """Raised when a PDF exceeds the configured page limit."""
+
+
+class DocumentExtractedTextLimitError(DocumentParseError):
+    """Raised when extracted text exceeds the configured safety limit."""
 
 
 @dataclass(frozen=True, slots=True)
