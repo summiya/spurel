@@ -9,6 +9,7 @@ from spurel.evaluation_datasets.domain import (
     MAX_EVALUATION_DATASET_NAME_LENGTH,
     MAX_EVALUATION_QUERY_LENGTH,
 )
+from spurel.evaluation_datasets.execution import DatasetEvaluationMode
 from spurel.retrieval.evaluation import (
     MAX_EVALUATION_JUDGMENTS,
     MAX_RELEVANCE_GRADE,
@@ -138,7 +139,7 @@ class DatasetEvaluationResponse(BaseModel):
     """Aggregate metrics for one synchronous dataset evaluation run."""
 
     dataset_id: UUID
-    mode: str
+    mode: DatasetEvaluationMode
     top_k: int
     candidate_k: int | None
     rrf_k: int | None
