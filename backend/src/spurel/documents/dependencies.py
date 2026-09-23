@@ -4,7 +4,11 @@ import os
 from pathlib import Path
 
 from spurel.db import async_session_factory
+from spurel.documents.chunk_inspector import ChunkInspectorService
 from spurel.documents.service import DocumentService
+from spurel.documents.sqlalchemy_chunk_inspector_repository import (
+    SqlAlchemyChunkInspectorRepository,
+)
 from spurel.documents.sqlalchemy_repository import SqlAlchemyDocumentRepository
 from spurel.documents.upload_service import DocumentUploadService
 from spurel.infrastructure.storage import LocalDocumentBlobStorage
@@ -17,6 +21,12 @@ def get_document_service() -> DocumentService:
     """Build the document metadata application service."""
     repository = SqlAlchemyDocumentRepository(async_session_factory)
     return DocumentService(repository)
+
+
+def get_chunk_inspector_service() -> ChunkInspectorService:
+    """Build the persisted chunk inspection service."""
+    repository = SqlAlchemyChunkInspectorRepository(async_session_factory)
+    return ChunkInspectorService(repository)
 
 
 def get_document_upload_service() -> DocumentUploadService:

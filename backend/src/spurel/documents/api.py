@@ -8,7 +8,15 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 
-from spurel.documents.dependencies import get_document_service, get_document_upload_service
+from spurel.documents.chunk_inspector import (
+    ChunkInspectionPersistenceError,
+    ChunkInspectorService,
+)
+from spurel.documents.dependencies import (
+    get_chunk_inspector_service,
+    get_document_service,
+    get_document_upload_service,
+)
 from spurel.documents.domain import (
     MAX_DOCUMENT_SIZE_BYTES,
     DocumentFilenameError,
@@ -17,6 +25,8 @@ from spurel.documents.domain import (
 )
 from spurel.documents.ports import DocumentPersistenceError
 from spurel.documents.schemas import (
+    ChunkInspectionListResponse,
+    ChunkInspectionResponse,
     DocumentListResponse,
     DocumentResponse,
     DocumentUploadResponse,
@@ -38,6 +48,11 @@ _UPLOAD_CHUNK_SIZE_BYTES = 1024 * 1024
 DocumentServiceDependency = Annotated[
     DocumentService,
     Depends(get_document_service),
+]
+
+ChunkInspectorServiceDependency = Annotated[
+    ChunkInspectorService,
+    Depends(get_chunk_inspector_service),
 ]
 
 DocumentUploadServiceDependency = Annotated[
@@ -161,6 +176,50 @@ async def list_documents(
 
     return DocumentListResponse(
         items=[_to_document_response(document) for document in documents],
+        limit=limit,
+        offset=offset,
+    )
+
+
+@router.get(
+    "/{document_id}/chunks",
+    response_model=ChunkInspectionListResponse,
+)
+async def inspect_document_chunks(
+    knowledge_base_id: UUID,
+    document_id: UUID,
+    service: ChunkInspectorServiceDependency,
+    limit: Annotated[int, Query(ge=1, le=100)] = 50,
+    offset: Annotated[int, Query(ge=0)] = 0,
+) -> ChunkInspectionListResponse:
+    """Inspect a bounded page of persisted chunks for one scoped document."""
+    try:
+        chunks = await service.list_by_document(
+            knowledge_base_id=knowledge_base_id,
+            document_id=document_id,
+            limit=limit,
+            offset=offset,
+        )
+    except ChunkInspectionPersistenceError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="chunk inspector temporarily unavailable",
+        ) from exc
+
+    return ChunkInspectionListResponse(
+        items=[
+            ChunkInspectionResponse(
+                id=item.id,
+                document_id=item.document_id,
+                index=item.index,
+                text=item.text,
+                start_offset=item.start_offset,
+                end_offset=item.end_offset,
+                has_embeddings=item.has_embeddings,
+                embedding_count=item.embedding_count,
+            )
+            for item in chunks
+        ],
         limit=limit,
         offset=offset,
     )

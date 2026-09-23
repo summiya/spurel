@@ -31,3 +31,24 @@ class DocumentUploadResponse(DocumentResponse):
     """Public response for a successful document upload."""
 
     sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+
+
+class ChunkInspectionResponse(BaseModel):
+    """Public persisted chunk inspection data."""
+
+    id: UUID
+    document_id: UUID
+    index: int
+    text: str
+    start_offset: int
+    end_offset: int
+    has_embeddings: bool
+    embedding_count: int
+
+
+class ChunkInspectionListResponse(BaseModel):
+    """Bounded page for the Chunk Inspector."""
+
+    items: list[ChunkInspectionResponse]
+    limit: int
+    offset: int
