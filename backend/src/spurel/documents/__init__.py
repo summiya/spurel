@@ -1,5 +1,14 @@
 """Document domain."""
 
+from spurel.documents.chunking import (
+    MAX_CHUNKS_PER_DOCUMENT,
+    MAX_CHUNK_SIZE_CHARACTERS,
+    DocumentChunk,
+    DocumentChunker,
+    DocumentChunkingConfigError,
+    DocumentChunkingError,
+    DocumentChunkLimitError,
+)
 from spurel.documents.domain import (
     MAX_DOCUMENT_SIZE_BYTES,
     Document,
@@ -31,9 +40,16 @@ from spurel.documents.upload_service import (
 )
 
 __all__ = [
+    "MAX_CHUNKS_PER_DOCUMENT",
+    "MAX_CHUNK_SIZE_CHARACTERS",
     "MAX_DOCUMENT_SIZE_BYTES",
     "Document",
     "DocumentBlobStorage",
+    "DocumentChunk",
+    "DocumentChunker",
+    "DocumentChunkingConfigError",
+    "DocumentChunkingError",
+    "DocumentChunkLimitError",
     "DocumentFilenameError",
     "DocumentMediaType",
     "DocumentExtractedTextLimitError",
