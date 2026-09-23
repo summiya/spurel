@@ -23,6 +23,7 @@ from spurel.retrieval.sqlalchemy_repository import (
 from spurel.retrieval.sqlalchemy_trace_repository import (
     SqlAlchemyRetrievalTraceRepository,
 )
+from spurel.retrieval.trace_comparison import RetrievalTraceComparisonService
 from spurel.retrieval.trace_service import RetrievalTraceService
 from spurel.retrieval.traced import (
     TracedHybridRetrievalService,
@@ -197,3 +198,8 @@ async def get_traced_hybrid_retrieval_service() -> AsyncIterator[
         )
     finally:
         await client.close()
+
+
+def get_retrieval_trace_comparison_service() -> RetrievalTraceComparisonService:
+    """Build side-by-side retrieval trace comparison."""
+    return RetrievalTraceComparisonService(get_retrieval_trace_service())
