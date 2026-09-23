@@ -7,10 +7,7 @@ import pytest
 from spurel.documents.chunk_models import StoredDocumentChunk
 from spurel.documents.chunking import DocumentChunk
 from spurel.embeddings.chunk import ChunkEmbedding
-from spurel.embeddings.domain import (
-    EmbeddingBatch,
-    EmbeddingVector,
-)
+from spurel.embeddings.domain import EmbeddingBatch
 from spurel.embeddings.pipeline import (
     DocumentEmbeddingNoChunksError,
     DocumentEmbeddingPipeline,
