@@ -1,6 +1,14 @@
 """Embedding application abstractions."""
 
 from spurel.embeddings.chunk import ChunkEmbedding, ChunkEmbeddingMetadataError
+from spurel.embeddings.pipeline import (
+    DocumentEmbeddingNoChunksError,
+    DocumentEmbeddingPipeline,
+    DocumentEmbeddingPipelineConfigError,
+    DocumentEmbeddingPipelineError,
+    DocumentEmbeddingPipelineResult,
+    DocumentEmbeddingProviderContractError,
+)
 from spurel.embeddings.ports import (
     ChunkEmbeddingPersistenceError,
     ChunkEmbeddingRepository,
@@ -24,6 +32,12 @@ from spurel.embeddings.domain import (
 )
 
 __all__ = [
+    "DocumentEmbeddingNoChunksError",
+    "DocumentEmbeddingPipeline",
+    "DocumentEmbeddingPipelineConfigError",
+    "DocumentEmbeddingPipelineError",
+    "DocumentEmbeddingPipelineResult",
+    "DocumentEmbeddingProviderContractError",
     "ChunkEmbeddingBatchError",
     "ChunkEmbeddingPersistenceError",
     "ChunkEmbeddingRepository",
