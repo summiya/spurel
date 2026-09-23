@@ -12,6 +12,8 @@ from spurel.retrieval.evaluation import (
     RetrievalEvaluation,
     RetrievalEvaluationQueryError,
     RetrievalEvaluationService,
+    RetrievalMetricValues,
+    calculate_retrieval_metrics,
     evaluate_trace,
 )
 from spurel.retrieval.hybrid import (
@@ -80,6 +82,8 @@ __all__ = [
     "RetrievalEvaluation",
     "RetrievalEvaluationQueryError",
     "RetrievalEvaluationService",
+    "RetrievalMetricValues",
+    "calculate_retrieval_metrics",
     "evaluate_trace",
     "RetrievalTraceComparison",
     "RetrievalTraceComparisonIntegrityError",
