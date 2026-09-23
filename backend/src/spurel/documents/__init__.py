@@ -8,6 +8,14 @@ from spurel.documents.domain import (
     DocumentSizeError,
     UnsupportedDocumentMediaTypeError,
 )
+from spurel.documents.parsing import (
+    DocumentParseError,
+    DocumentParser,
+    DocumentTextContentError,
+    DocumentTextEncodingError,
+    ParsedDocument,
+    UnsupportedParserMediaTypeError,
+)
 from spurel.documents.ports import DocumentPersistenceError, DocumentRepository
 from spurel.documents.service import DocumentService
 from spurel.documents.storage import DocumentBlobStorage, DocumentStorageError
@@ -25,15 +33,21 @@ __all__ = [
     "DocumentBlobStorage",
     "DocumentFilenameError",
     "DocumentMediaType",
+    "DocumentParseError",
+    "DocumentParser",
     "DocumentPersistenceError",
     "DocumentRepository",
     "DocumentService",
     "DocumentSizeError",
     "DocumentStorageError",
+    "DocumentTextContentError",
+    "DocumentTextEncodingError",
     "DocumentUploadCleanupError",
     "DocumentUploadError",
     "DocumentUploadResult",
     "DocumentUploadService",
     "DocumentUploadSizeMismatchError",
+    "ParsedDocument",
     "UnsupportedDocumentMediaTypeError",
+    "UnsupportedParserMediaTypeError",
 ]
