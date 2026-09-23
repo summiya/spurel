@@ -5,7 +5,6 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from spurel.embeddings.config import EmbeddingConfigurationError
 from spurel.embeddings.domain import EmbeddingError
 from spurel.retrieval.dependencies import get_vector_retrieval_service
 from spurel.retrieval.domain import VectorRetrievalQueryError
@@ -50,7 +49,6 @@ async def vector_retrieval(
             detail="retrieval request is invalid",
         ) from exc
     except (
-        EmbeddingConfigurationError,
         EmbeddingError,
         VectorRetrievalProviderContractError,
         VectorRetrievalRepositoryError,
