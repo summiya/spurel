@@ -107,6 +107,18 @@ class SqlAlchemyEvaluationRunRepository:
                 "failed to load evaluation run"
             ) from exc
 
+        if len(case_records) != record.case_count:
+            raise EvaluationRunPersistenceError(
+                "evaluation run case snapshot is incomplete"
+            )
+
+        expected_positions = list(range(1, record.case_count + 1))
+        actual_positions = [case_record.position for case_record in case_records]
+        if actual_positions != expected_positions:
+            raise EvaluationRunPersistenceError(
+                "evaluation run case snapshot order is invalid"
+            )
+
         return record.to_domain(
             cases=tuple(
                 case_record.to_domain(cutoff=record.top_k)
