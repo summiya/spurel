@@ -186,6 +186,35 @@ class EvaluationRunRecord(Base):
             created_at=run.created_at,
         )
 
+    def to_domain(
+        self,
+        *,
+        cases: tuple[EvaluationRunCase, ...],
+    ) -> EvaluationRun:
+        return EvaluationRun(
+            id=self.id,
+            knowledge_base_id=self.knowledge_base_id,
+            dataset_id=self.dataset_id,
+            mode=DatasetEvaluationMode(self.mode),
+            top_k=self.top_k,
+            candidate_k=self.candidate_k,
+            rrf_k=self.rrf_k,
+            embedding_provider=self.embedding_provider,
+            embedding_model=self.embedding_model,
+            embedding_dimensions=self.embedding_dimensions,
+            case_count=self.case_count,
+            total_duration_ms=self.total_duration_ms,
+            mean_duration_ms=self.mean_duration_ms,
+            judgment_coverage_case_count=self.judgment_coverage_case_count,
+            mean_judgment_coverage_at_k=self.mean_judgment_coverage_at_k,
+            mean_precision_at_k=self.mean_precision_at_k,
+            mean_recall_at_k=self.mean_recall_at_k,
+            mrr_at_k=self.mrr_at_k,
+            mean_ndcg_at_k=self.mean_ndcg_at_k,
+            cases=cases,
+            created_at=self.created_at,
+        )
+
     def to_summary(self) -> EvaluationRunSummary:
         return EvaluationRunSummary(
             id=self.id,
@@ -324,14 +353,14 @@ class EvaluationRunCaseRecord(Base):
             ndcg_at_k=metrics.ndcg_at_k,
         )
 
-    def to_domain(self) -> EvaluationRunCase:
+    def to_domain(self, *, cutoff: int) -> EvaluationRunCase:
         return EvaluationRunCase(
             position=self.position,
             case_id=self.case_id,
             query=self.query,
             duration_ms=self.duration_ms,
             metrics=RetrievalMetricValues(
-                cutoff=0,
+                cutoff=cutoff,
                 judged_count=self.judged_count,
                 relevant_count=self.relevant_count,
                 retrieved_count_at_k=self.retrieved_count_at_k,
