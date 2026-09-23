@@ -240,3 +240,37 @@ class RetrievalTraceComparisonResponse(BaseModel):
     second_only_count: int = Field(ge=0, le=100)
     duration_delta_ms: float
     results: list[RetrievalTraceComparisonResultResponse]
+
+
+class RelevanceJudgmentRequest(BaseModel):
+    """Explicit graded relevance judgment for one historical chunk."""
+
+    chunk_id: UUID
+    relevance: int = Field(ge=0, le=3)
+
+
+class RetrievalEvaluationRequest(BaseModel):
+    """Request payload for deterministic trace evaluation."""
+
+    cutoff: int = Field(ge=1, le=100)
+    judgments: list[RelevanceJudgmentRequest] = Field(
+        min_length=1,
+        max_length=10_000,
+    )
+
+
+class RetrievalEvaluationResponse(BaseModel):
+    """Deterministic retrieval metrics for one historical trace."""
+
+    trace_id: UUID
+    cutoff: int
+    judged_count: int
+    relevant_count: int
+    retrieved_count_at_k: int
+    judged_retrieved_at_k: int
+    relevant_retrieved_at_k: int
+    judgment_coverage_at_k: float = Field(ge=0, le=1)
+    precision_at_k: float = Field(ge=0, le=1)
+    recall_at_k: float = Field(ge=0, le=1)
+    reciprocal_rank_at_k: float = Field(ge=0, le=1)
+    ndcg_at_k: float = Field(ge=0, le=1)
