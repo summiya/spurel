@@ -31,7 +31,7 @@ class VectorRetrievalResponse(BaseModel):
 
     mode: Literal["vector"] = "vector"
     trace_id: UUID
-    duration_ms: float
+    duration_ms: float = Field(ge=0)
     query: str
     top_k: int
     matches: list[VectorRetrievalMatchResponse]
@@ -62,7 +62,7 @@ class KeywordRetrievalResponse(BaseModel):
 
     mode: Literal["keyword"] = "keyword"
     trace_id: UUID
-    duration_ms: float
+    duration_ms: float = Field(ge=0)
     query: str
     top_k: int
     matches: list[KeywordRetrievalMatchResponse]
@@ -106,7 +106,7 @@ class HybridRetrievalResponse(BaseModel):
 
     mode: Literal["hybrid"] = "hybrid"
     trace_id: UUID
-    duration_ms: float
+    duration_ms: float = Field(ge=0)
     query: str
     top_k: int
     candidate_k: int
