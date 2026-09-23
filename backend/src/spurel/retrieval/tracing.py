@@ -86,11 +86,76 @@ class RetrievalTrace:
                 "trace results exceed configured top_k"
             )
 
+        seen_chunk_ids: set[UUID] = set()
         for expected_rank, result in enumerate(results, start=1):
             if result.rank != expected_rank:
                 raise RetrievalTraceValidationError(
                     "trace result ranks must be contiguous and start at one"
                 )
+            if result.chunk_id in seen_chunk_ids:
+                raise RetrievalTraceValidationError(
+                    "trace results cannot contain duplicate chunks"
+                )
+            seen_chunk_ids.add(result.chunk_id)
+
+            if result.chunk_index < 0:
+                raise RetrievalTraceValidationError(
+                    "trace result chunk index is invalid"
+                )
+            if result.start_offset < 0 or result.end_offset <= result.start_offset:
+                raise RetrievalTraceValidationError(
+                    "trace result source offsets are invalid"
+                )
+            if not result.text:
+                raise RetrievalTraceValidationError(
+                    "trace result text must not be empty"
+                )
+
+            if mode is RetrievalTraceMode.VECTOR:
+                if result.cosine_similarity is None:
+                    raise RetrievalTraceValidationError(
+                        "vector trace results require cosine similarity"
+                    )
+                if any(
+                    value is not None
+                    for value in (
+                        result.keyword_score,
+                        result.rrf_score,
+                        result.vector_rank,
+                        result.keyword_rank,
+                    )
+                ):
+                    raise RetrievalTraceValidationError(
+                        "vector trace results contain incompatible scores"
+                    )
+
+            if mode is RetrievalTraceMode.KEYWORD:
+                if result.keyword_score is None:
+                    raise RetrievalTraceValidationError(
+                        "keyword trace results require keyword score"
+                    )
+                if any(
+                    value is not None
+                    for value in (
+                        result.cosine_similarity,
+                        result.rrf_score,
+                        result.vector_rank,
+                        result.keyword_rank,
+                    )
+                ):
+                    raise RetrievalTraceValidationError(
+                        "keyword trace results contain incompatible scores"
+                    )
+
+            if mode is RetrievalTraceMode.HYBRID:
+                if result.rrf_score is None:
+                    raise RetrievalTraceValidationError(
+                        "hybrid trace results require RRF score"
+                    )
+                if result.vector_rank is None and result.keyword_rank is None:
+                    raise RetrievalTraceValidationError(
+                        "hybrid trace results require at least one source rank"
+                    )
 
         if mode is RetrievalTraceMode.HYBRID:
             if candidate_k is None or rrf_k is None:
