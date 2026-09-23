@@ -9,8 +9,11 @@ from spurel.documents.domain import (
     UnsupportedDocumentMediaTypeError,
 )
 from spurel.documents.parsing import (
+    DocumentExtractedTextLimitError,
     DocumentParseError,
     DocumentParser,
+    DocumentPdfEncryptedError,
+    DocumentPdfPageLimitError,
     DocumentTextContentError,
     DocumentTextEncodingError,
     ParsedDocument,
@@ -33,8 +36,11 @@ __all__ = [
     "DocumentBlobStorage",
     "DocumentFilenameError",
     "DocumentMediaType",
+    "DocumentExtractedTextLimitError",
     "DocumentParseError",
     "DocumentParser",
+    "DocumentPdfEncryptedError",
+    "DocumentPdfPageLimitError",
     "DocumentPersistenceError",
     "DocumentRepository",
     "DocumentService",
