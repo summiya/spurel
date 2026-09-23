@@ -130,7 +130,6 @@ class DatasetEvaluationResult:
     mean_judgment_coverage_at_k: float | None
     mean_precision_at_k: float
     mean_recall_at_k: float
-    mean_reciprocal_rank_at_k: float
     mrr_at_k: float
     mean_ndcg_at_k: float
     cases: tuple[DatasetEvaluationCaseResult, ...]
@@ -441,7 +440,6 @@ def _aggregate(
             case.metrics.recall_at_k for case in cases
         )
         / case_count,
-        mean_reciprocal_rank_at_k=mean_rr,
         mrr_at_k=mean_rr,
         mean_ndcg_at_k=sum(
             case.metrics.ndcg_at_k for case in cases
