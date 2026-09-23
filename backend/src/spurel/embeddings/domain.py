@@ -113,6 +113,11 @@ class EmbeddingProvider(Protocol):
     """Provider contract for batched text embeddings."""
 
     @property
+    def provider(self) -> str:
+        """Return the stable embedding provider identifier."""
+        ...
+
+    @property
     def model(self) -> str:
         """Return the stable provider model identifier."""
         ...
