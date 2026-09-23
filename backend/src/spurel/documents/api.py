@@ -31,9 +31,7 @@ from spurel.documents.ingestion_service import (
 )
 from spurel.documents.parsing import DocumentParseError
 from spurel.documents.ports import DocumentPersistenceError
-from spurel.documents.processing import (
-    DocumentProcessingService,
-)
+from spurel.documents.processing import DocumentProcessingService
 from spurel.documents.processing_dependencies import (
     get_document_processing_service,
 )
@@ -46,14 +44,14 @@ from spurel.documents.schemas import (
     DocumentUploadResponse,
 )
 from spurel.documents.service import DocumentService
-from spurel.embeddings.domain import EmbeddingError
-from spurel.embeddings.pipeline import DocumentEmbeddingPipelineError
-from spurel.embeddings.ports import ChunkEmbeddingPersistenceError
 from spurel.documents.upload_service import (
     DocumentUploadError,
     DocumentUploadService,
     DocumentUploadSizeMismatchError,
 )
+from spurel.embeddings.domain import EmbeddingError
+from spurel.embeddings.pipeline import DocumentEmbeddingPipelineError
+from spurel.embeddings.ports import ChunkEmbeddingPersistenceError
 
 router = APIRouter(
     prefix="/knowledge-bases/{knowledge_base_id}/documents",
