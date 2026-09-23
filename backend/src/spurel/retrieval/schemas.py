@@ -6,6 +6,10 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field, model_validator
 
+from spurel.retrieval.evaluation import (
+    MAX_EVALUATION_JUDGMENTS,
+    MAX_RELEVANCE_GRADE,
+)
 from spurel.retrieval.tracing import RetrievalTraceMode
 
 
@@ -246,7 +250,7 @@ class RelevanceJudgmentRequest(BaseModel):
     """Explicit graded relevance judgment for one historical chunk."""
 
     chunk_id: UUID
-    relevance: int = Field(ge=0, le=3)
+    relevance: int = Field(ge=0, le=MAX_RELEVANCE_GRADE)
 
 
 class RetrievalEvaluationRequest(BaseModel):
@@ -255,7 +259,7 @@ class RetrievalEvaluationRequest(BaseModel):
     cutoff: int = Field(ge=1, le=100)
     judgments: list[RelevanceJudgmentRequest] = Field(
         min_length=1,
-        max_length=10_000,
+        max_length=MAX_EVALUATION_JUDGMENTS,
     )
 
 
