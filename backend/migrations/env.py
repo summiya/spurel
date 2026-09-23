@@ -12,7 +12,7 @@ from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from spurel.db import Base
-from spurel.documents import persistence as document_persistence
+from spurel.documents import chunk_persistence, persistence as document_persistence
 from spurel.knowledge_bases import persistence as knowledge_base_persistence
 
 config = context.config
@@ -25,6 +25,7 @@ if database_url:
     config.set_main_option("sqlalchemy.url", database_url)
 
 _ = document_persistence.DocumentRecord
+_ = chunk_persistence.DocumentChunkRecord
 _ = knowledge_base_persistence.KnowledgeBaseRecord
 
 target_metadata = Base.metadata
