@@ -3,7 +3,14 @@
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from enum import StrEnum
+from math import isfinite
 from uuid import UUID, uuid4
+
+from spurel.embeddings.chunk import (
+    MAX_EMBEDDING_MODEL_LENGTH,
+    MAX_EMBEDDING_PROVIDER_LENGTH,
+)
+from spurel.embeddings.domain import MAX_EMBEDDING_DIMENSIONS
 
 
 class RetrievalTraceMode(StrEnum):
@@ -78,7 +85,7 @@ class RetrievalTrace:
         if isinstance(top_k, bool) or top_k < 1 or top_k > 100:
             raise RetrievalTraceValidationError("trace top_k is invalid")
 
-        if duration_ms < 0:
+        if not isfinite(float(duration_ms)) or duration_ms < 0:
             raise RetrievalTraceValidationError("trace duration is invalid")
 
         if len(results) > top_k:
@@ -147,6 +154,16 @@ class RetrievalTrace:
                         "keyword trace results contain incompatible scores"
                     )
 
+            for score in (
+                result.cosine_similarity,
+                result.keyword_score,
+                result.rrf_score,
+            ):
+                if score is not None and not isfinite(score):
+                    raise RetrievalTraceValidationError(
+                        "trace result scores must be finite"
+                    )
+
             if mode is RetrievalTraceMode.HYBRID:
                 if result.rrf_score is None:
                     raise RetrievalTraceValidationError(
@@ -155,6 +172,25 @@ class RetrievalTrace:
                 if result.vector_rank is None and result.keyword_rank is None:
                     raise RetrievalTraceValidationError(
                         "hybrid trace results require at least one source rank"
+                    )
+                if result.vector_rank is not None:
+                    if result.vector_rank < 1 or result.cosine_similarity is None:
+                        raise RetrievalTraceValidationError(
+                            "hybrid vector rank requires a vector score"
+                        )
+                elif result.cosine_similarity is not None:
+                    raise RetrievalTraceValidationError(
+                        "hybrid vector score requires a vector rank"
+                    )
+
+                if result.keyword_rank is not None:
+                    if result.keyword_rank < 1 or result.keyword_score is None:
+                        raise RetrievalTraceValidationError(
+                            "hybrid keyword rank requires a keyword score"
+                        )
+                elif result.keyword_score is not None:
+                    raise RetrievalTraceValidationError(
+                        "hybrid keyword score requires a keyword rank"
                     )
 
         if mode is RetrievalTraceMode.HYBRID:
@@ -195,6 +231,35 @@ class RetrievalTrace:
             raise RetrievalTraceValidationError(
                 "embedding space metadata must be complete"
             )
+
+        if complete_embedding_space:
+            assert embedding_provider is not None
+            assert embedding_model is not None
+            assert embedding_dimensions is not None
+
+            if (
+                not embedding_provider.strip()
+                or len(embedding_provider.strip()) > MAX_EMBEDDING_PROVIDER_LENGTH
+            ):
+                raise RetrievalTraceValidationError(
+                    "trace embedding provider is invalid"
+                )
+            if (
+                not embedding_model.strip()
+                or len(embedding_model.strip()) > MAX_EMBEDDING_MODEL_LENGTH
+            ):
+                raise RetrievalTraceValidationError(
+                    "trace embedding model is invalid"
+                )
+            if (
+                isinstance(embedding_dimensions, bool)
+                or not isinstance(embedding_dimensions, int)
+                or embedding_dimensions < 1
+                or embedding_dimensions > MAX_EMBEDDING_DIMENSIONS
+            ):
+                raise RetrievalTraceValidationError(
+                    "trace embedding dimensions are invalid"
+                )
 
         if mode in {RetrievalTraceMode.VECTOR, RetrievalTraceMode.HYBRID}:
             if not complete_embedding_space:
