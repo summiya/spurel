@@ -1,4 +1,4 @@
-"""Dependency wiring for vector retrieval."""
+"""Dependency wiring for Retrieval Playground services."""
 
 from collections.abc import AsyncIterator
 
