@@ -51,6 +51,18 @@ class LocalDocumentBlobStorage:
             await self._remove_if_exists(temporary)
             raise
 
+    async def get(self, *, object_key: str) -> bytes:
+        """Load one object from local storage."""
+        destination = self._resolve_object_key(object_key)
+
+        try:
+            async with aiofiles.open(destination, "rb") as handle:
+                return await handle.read()
+        except FileNotFoundError as exc:
+            raise DocumentStorageError("local blob not found") from exc
+        except OSError as exc:
+            raise DocumentStorageError("local blob read failed") from exc
+
     async def delete(self, *, object_key: str) -> None:
         """Delete an object if present."""
         destination = self._resolve_object_key(object_key)

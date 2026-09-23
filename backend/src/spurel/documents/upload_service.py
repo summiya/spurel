@@ -9,7 +9,11 @@ from uuid import UUID
 
 from spurel.documents.domain import MAX_DOCUMENT_SIZE_BYTES, Document
 from spurel.documents.ports import DocumentPersistenceError, DocumentRepository
-from spurel.documents.storage import DocumentBlobStorage, DocumentStorageError
+from spurel.documents.storage import (
+    DocumentBlobStorage,
+    DocumentStorageError,
+    document_object_key,
+)
 
 
 class DocumentUploadError(RuntimeError):
@@ -61,7 +65,7 @@ class DocumentUploadService:
             media_type=media_type,
             size_bytes=declared_size_bytes,
         )
-        object_key = _object_key_for(document)
+        object_key = document_object_key(document)
 
         digest = hashlib.sha256()
         actual_size_bytes = 0
@@ -119,10 +123,3 @@ class DocumentUploadService:
                 "failed to clean up document content after upload failure"
             ) from exc
 
-
-def _object_key_for(document: Document) -> str:
-    """Build an opaque server-controlled storage key without using filenames."""
-    return (
-        f"knowledge-bases/{document.knowledge_base_id}/"
-        f"documents/{document.id}"
-    )
