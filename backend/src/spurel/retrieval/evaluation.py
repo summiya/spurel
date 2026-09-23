@@ -1,10 +1,10 @@
 """Deterministic evaluation metrics for historical retrieval traces."""
 
 from dataclasses import dataclass
+from typing import Protocol
 from math import log2
 from uuid import UUID
 
-from spurel.retrieval.trace_service import RetrievalTraceService
 from spurel.retrieval.tracing import RetrievalTrace
 
 MAX_RELEVANCE_GRADE = 3
@@ -13,6 +13,19 @@ MAX_EVALUATION_JUDGMENTS = 10_000
 
 class RetrievalEvaluationQueryError(ValueError):
     """Raised when retrieval evaluation input is invalid."""
+
+
+class RetrievalTraceReader(Protocol):
+    """Scoped historical trace capability required by evaluation."""
+
+    async def get_by_id(
+        self,
+        *,
+        knowledge_base_id: UUID,
+        trace_id: UUID,
+    ) -> RetrievalTrace:
+        """Return one knowledge-base-scoped historical trace."""
+        ...
 
 
 @dataclass(frozen=True, slots=True)
@@ -44,7 +57,7 @@ class RetrievalEvaluation:
 class RetrievalEvaluationService:
     """Evaluate a historical retrieval trace against explicit judgments."""
 
-    def __init__(self, trace_service: RetrievalTraceService) -> None:
+    def __init__(self, trace_service: RetrievalTraceReader) -> None:
         self._trace_service = trace_service
 
     async def evaluate(
