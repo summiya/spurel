@@ -32,12 +32,12 @@ from spurel.retrieval.schemas import (
 )
 from spurel.retrieval.service import VectorRetrievalProviderContractError
 from spurel.retrieval.trace_ports import RetrievalTracePersistenceError
-from spurel.retrieval.tracing import RetrievalTraceValidationError
 from spurel.retrieval.traced import (
     TracedHybridRetrievalService,
     TracedKeywordRetrievalService,
     TracedVectorRetrievalService,
 )
+from spurel.retrieval.tracing import RetrievalTraceValidationError
 
 router = APIRouter(
     prefix="/knowledge-bases/{knowledge_base_id}/retrieval",
