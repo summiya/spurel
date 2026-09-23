@@ -28,12 +28,30 @@ from spurel.retrieval.ports import (
     VectorRetrievalRepository,
     VectorRetrievalRepositoryError,
 )
+from spurel.retrieval.trace_ports import (
+    RetrievalTracePersistenceError,
+    RetrievalTraceRepository,
+)
+from spurel.retrieval.trace_service import RetrievalTraceService
+from spurel.retrieval.tracing import (
+    RetrievalTrace,
+    RetrievalTraceMode,
+    RetrievalTraceResult,
+    RetrievalTraceValidationError,
+)
 from spurel.retrieval.service import (
     VectorRetrievalProviderContractError,
     VectorRetrievalService,
 )
 
 __all__ = [
+    "RetrievalTrace",
+    "RetrievalTraceMode",
+    "RetrievalTracePersistenceError",
+    "RetrievalTraceRepository",
+    "RetrievalTraceResult",
+    "RetrievalTraceService",
+    "RetrievalTraceValidationError",
     "DEFAULT_HYBRID_CANDIDATE_LIMIT",
     "DEFAULT_RRF_K",
     "MAX_HYBRID_RETRIEVAL_RESULTS",
