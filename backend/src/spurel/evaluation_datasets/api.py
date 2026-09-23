@@ -41,6 +41,7 @@ from spurel.evaluation_datasets.service import (
     EvaluationDatasetService,
 )
 from spurel.embeddings.domain import EmbeddingError
+from spurel.retrieval.domain import VectorRetrievalQueryError
 from spurel.retrieval.evaluation import (
     RelevanceJudgment,
     RetrievalEvaluationQueryError,
@@ -49,7 +50,6 @@ from spurel.retrieval.hybrid import (
     HybridRetrievalQueryError,
     HybridRetrievalResultError,
 )
-from spurel.retrieval.domain import VectorRetrievalQueryError
 from spurel.retrieval.keyword_domain import KeywordRetrievalQueryError
 from spurel.retrieval.keyword_ports import KeywordRetrievalRepositoryError
 from spurel.retrieval.ports import VectorRetrievalRepositoryError
@@ -440,6 +440,7 @@ def _dataset_evaluation_response(
         case_count=result.case_count,
         total_duration_ms=result.total_duration_ms,
         mean_duration_ms=result.mean_duration_ms,
+        judgment_coverage_case_count=result.judgment_coverage_case_count,
         mean_judgment_coverage_at_k=result.mean_judgment_coverage_at_k,
         mean_precision_at_k=result.mean_precision_at_k,
         mean_recall_at_k=result.mean_recall_at_k,
