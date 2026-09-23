@@ -379,12 +379,28 @@ def _validate_configuration(
         embedding_model,
         embedding_dimensions,
     )
-    has_complete_embedding_space = all(value is not None for value in embedding_values)
+    has_complete_embedding_space = all(
+        value is not None for value in embedding_values
+    )
 
     if mode in {DatasetEvaluationMode.VECTOR, DatasetEvaluationMode.HYBRID}:
         if not has_complete_embedding_space:
             raise DatasetEvaluationQueryError(
                 "vector-based dataset evaluation requires embedding configuration"
+            )
+
+        assert embedding_provider is not None
+        assert embedding_model is not None
+        assert embedding_dimensions is not None
+        if (
+            not embedding_provider.strip()
+            or not embedding_model.strip()
+            or isinstance(embedding_dimensions, bool)
+            or not isinstance(embedding_dimensions, int)
+            or embedding_dimensions < 1
+        ):
+            raise DatasetEvaluationQueryError(
+                "dataset evaluation embedding configuration is invalid"
             )
     elif any(value is not None for value in embedding_values):
         raise DatasetEvaluationQueryError(
