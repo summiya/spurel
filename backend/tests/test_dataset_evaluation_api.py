@@ -221,7 +221,9 @@ def test_dataset_evaluation_hides_synchronous_size_limit_details() -> None:
     )
 
     assert response.status_code == 422
-    assert response.json() == {"detail": "dataset evaluation request is invalid"}
+    assert response.json() == {
+        "detail": "dataset exceeds synchronous evaluation limits"
+    }
     assert "50,001 labels found" not in response.text
 
 
