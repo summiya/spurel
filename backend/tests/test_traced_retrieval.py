@@ -85,7 +85,7 @@ def test_traced_vector_search_persists_exact_ranked_snapshot() -> None:
     )
     repository = FakeTraceRepository()
     service = TracedVectorRetrievalService(
-        retriever=FakeVectorRetriever((match,)),  # type: ignore[arg-type]
+        retriever=FakeVectorRetriever((match,)),
         trace_service=RetrievalTraceService(repository),
         embedding_provider="openai",
         embedding_model="text-embedding-example",
@@ -131,7 +131,7 @@ def test_traced_keyword_search_persists_keyword_score() -> None:
     )
     repository = FakeTraceRepository()
     service = TracedKeywordRetrievalService(
-        retriever=FakeKeywordRetriever((match,)),  # type: ignore[arg-type]
+        retriever=FakeKeywordRetriever((match,)),
         trace_service=RetrievalTraceService(repository),
     )
 
@@ -166,7 +166,7 @@ def test_traced_hybrid_search_persists_fusion_configuration_and_source_ranks() -
     )
     repository = FakeTraceRepository()
     service = TracedHybridRetrievalService(
-        retriever=FakeHybridRetriever((match,)),  # type: ignore[arg-type]
+        retriever=FakeHybridRetriever((match,)),
         trace_service=RetrievalTraceService(repository),
         embedding_provider="openai",
         embedding_model="text-embedding-example",
@@ -206,7 +206,7 @@ def test_trace_persistence_failure_prevents_successful_traced_result() -> None:
     repository = FakeTraceRepository()
     repository.fail = True
     service = TracedVectorRetrievalService(
-        retriever=FakeVectorRetriever((match,)),  # type: ignore[arg-type]
+        retriever=FakeVectorRetriever((match,)),
         trace_service=RetrievalTraceService(repository),
         embedding_provider="openai",
         embedding_model="model",
