@@ -175,3 +175,68 @@ class RetrievalTraceDetailResponse(BaseModel):
     embedding_dimensions: int | None
     created_at: datetime
     results: list[RetrievalTraceResultResponse]
+
+
+class RetrievalTraceComparisonRequest(BaseModel):
+    """Request payload for comparing two historical retrieval runs."""
+
+    first_trace_id: UUID
+    second_trace_id: UUID
+
+    @model_validator(mode="after")
+    def validate_distinct_traces(self) -> "RetrievalTraceComparisonRequest":
+        """Require two distinct historical runs."""
+        if self.first_trace_id == self.second_trace_id:
+            raise ValueError("trace comparison requires two distinct trace IDs")
+        return self
+
+
+class RetrievalTraceComparisonSideResponse(BaseModel):
+    """Configuration summary for one comparison side."""
+
+    trace_id: UUID
+    mode: RetrievalTraceMode
+    query: str
+    top_k: int
+    candidate_k: int | None
+    rrf_k: int | None
+    duration_ms: float = Field(ge=0)
+    embedding_provider: str | None
+    embedding_model: str | None
+    embedding_dimensions: int | None
+    result_count: int = Field(ge=0, le=100)
+
+
+class RetrievalTraceComparisonResultResponse(BaseModel):
+    """One historical chunk aligned across two trace rankings."""
+
+    chunk_id: UUID
+    document_id: UUID
+    chunk_index: int
+    text: str
+    start_offset: int
+    end_offset: int
+    first_rank: int | None
+    second_rank: int | None
+    rank_delta: int | None
+    first_cosine_similarity: float | None
+    second_cosine_similarity: float | None
+    first_keyword_score: float | None
+    second_keyword_score: float | None
+    first_rrf_score: float | None
+    second_rrf_score: float | None
+
+
+class RetrievalTraceComparisonResponse(BaseModel):
+    """Descriptive side-by-side comparison of two retrieval traces."""
+
+    first: RetrievalTraceComparisonSideResponse
+    second: RetrievalTraceComparisonSideResponse
+    same_query: bool
+    overlap_count: int = Field(ge=0, le=100)
+    union_count: int = Field(ge=0, le=200)
+    overlap_ratio: float = Field(ge=0, le=1)
+    first_only_count: int = Field(ge=0, le=100)
+    second_only_count: int = Field(ge=0, le=100)
+    duration_delta_ms: float
+    results: list[RetrievalTraceComparisonResultResponse]
