@@ -31,13 +31,12 @@ class SqlAlchemyChunkInspectorRepository:
         offset: int,
     ) -> Sequence[ChunkInspectionItem]:
         """Return a bounded scoped chunk page with embedding counts."""
-        embedding_counts = (
-            select(
-                ChunkEmbeddingRecord.chunk_id.label("chunk_id"),
-                func.count(ChunkEmbeddingRecord.id).label("embedding_count"),
-            )
-            .group_by(ChunkEmbeddingRecord.chunk_id)
-            .subquery()
+        embedding_count = (
+            select(func.count(ChunkEmbeddingRecord.id))
+            .where(ChunkEmbeddingRecord.chunk_id == DocumentChunkRecord.id)
+            .correlate(DocumentChunkRecord)
+            .scalar_subquery()
+            .label("embedding_count")
         )
 
         statement = (
@@ -48,17 +47,11 @@ class SqlAlchemyChunkInspectorRepository:
                 DocumentChunkRecord.text,
                 DocumentChunkRecord.start_offset,
                 DocumentChunkRecord.end_offset,
-                func.coalesce(embedding_counts.c.embedding_count, 0).label(
-                    "embedding_count"
-                ),
+                embedding_count,
             )
             .join(
                 DocumentRecord,
                 DocumentRecord.id == DocumentChunkRecord.document_id,
-            )
-            .outerjoin(
-                embedding_counts,
-                embedding_counts.c.chunk_id == DocumentChunkRecord.id,
             )
             .where(
                 DocumentRecord.knowledge_base_id == knowledge_base_id,
