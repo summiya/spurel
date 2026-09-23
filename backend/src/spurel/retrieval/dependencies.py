@@ -1,4 +1,4 @@
-"""Dependency wiring for vector retrieval."""
+"""Dependency wiring for Retrieval Playground services."""
 
 from collections.abc import AsyncIterator
 
@@ -11,10 +11,20 @@ from spurel.embeddings.config import (
     OpenAIEmbeddingConfig,
 )
 from spurel.infrastructure.embeddings import OpenAIEmbeddingProvider
+from spurel.retrieval.keyword_service import KeywordRetrievalService
 from spurel.retrieval.service import VectorRetrievalService
+from spurel.retrieval.sqlalchemy_keyword_repository import (
+    SqlAlchemyKeywordRetrievalRepository,
+)
 from spurel.retrieval.sqlalchemy_repository import (
     SqlAlchemyVectorRetrievalRepository,
 )
+
+
+def get_keyword_retrieval_service() -> KeywordRetrievalService:
+    """Build the PostgreSQL keyword retrieval service."""
+    repository = SqlAlchemyKeywordRetrievalRepository(async_session_factory)
+    return KeywordRetrievalService(repository)
 
 
 async def get_vector_retrieval_service() -> AsyncIterator[VectorRetrievalService]:
