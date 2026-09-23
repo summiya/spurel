@@ -67,7 +67,7 @@ class RetrievalTraceComparison:
     same_query: bool
     overlap_count: int
     union_count: int
-    overlap_ratio: float
+    overlap_ratio: float | None
     first_only_count: int
     second_only_count: int
     duration_delta_ms: float
@@ -150,7 +150,7 @@ def _compare_traces(
         same_query=first.query == second.query,
         overlap_count=overlap_count,
         union_count=union_count,
-        overlap_ratio=(overlap_count / union_count) if union_count else 1.0,
+        overlap_ratio=(overlap_count / union_count) if union_count else None,
         first_only_count=len(first_ids - second_ids),
         second_only_count=len(second_ids - first_ids),
         duration_delta_ms=second.duration_ms - first.duration_ms,
