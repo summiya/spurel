@@ -3,7 +3,7 @@
 import os
 from dataclasses import dataclass
 
-from spurel.embeddings.domain import validate_embedding_dimensions
+from spurel.embeddings.domain import EmbeddingDimensionError, validate_embedding_dimensions
 
 
 class EmbeddingConfigurationError(RuntimeError):
@@ -44,7 +44,7 @@ class OpenAIEmbeddingConfig:
 
         try:
             validate_embedding_dimensions(dimensions)
-        except ValueError as exc:
+        except EmbeddingDimensionError as exc:
             raise EmbeddingConfigurationError(
                 "embedding dimensions are invalid"
             ) from exc
