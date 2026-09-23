@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from spurel.embeddings.domain import EmbeddingError
 from spurel.retrieval.dependencies import (
+    get_retrieval_evaluation_service,
     get_retrieval_trace_comparison_service,
     get_retrieval_trace_service,
     get_traced_hybrid_retrieval_service,
@@ -14,6 +15,11 @@ from spurel.retrieval.dependencies import (
     get_traced_vector_retrieval_service,
 )
 from spurel.retrieval.domain import VectorRetrievalQueryError
+from spurel.retrieval.evaluation import (
+    RelevanceJudgment,
+    RetrievalEvaluationQueryError,
+    RetrievalEvaluationService,
+)
 from spurel.retrieval.hybrid import (
     HybridRetrievalQueryError,
     HybridRetrievalResultError,
@@ -28,6 +34,9 @@ from spurel.retrieval.schemas import (
     KeywordRetrievalMatchResponse,
     KeywordRetrievalRequest,
     KeywordRetrievalResponse,
+    RelevanceJudgmentRequest,
+    RetrievalEvaluationRequest,
+    RetrievalEvaluationResponse,
     RetrievalTraceComparisonRequest,
     RetrievalTraceComparisonResponse,
     RetrievalTraceComparisonResultResponse,
@@ -62,6 +71,11 @@ router = APIRouter(
     prefix="/knowledge-bases/{knowledge_base_id}/retrieval",
     tags=["retrieval"],
 )
+
+RetrievalEvaluationServiceDependency = Annotated[
+    RetrievalEvaluationService,
+    Depends(get_retrieval_evaluation_service),
+]
 
 RetrievalTraceComparisonServiceDependency = Annotated[
     RetrievalTraceComparisonService,
@@ -441,4 +455,60 @@ async def compare_retrieval_traces(
             )
             for result in comparison.results
         ],
+    )
+
+
+@router.post(
+    "/traces/{trace_id}/evaluation",
+    response_model=RetrievalEvaluationResponse,
+)
+async def evaluate_retrieval_trace(
+    knowledge_base_id: UUID,
+    trace_id: UUID,
+    payload: RetrievalEvaluationRequest,
+    service: RetrievalEvaluationServiceDependency,
+) -> RetrievalEvaluationResponse:
+    """Evaluate one scoped historical retrieval trace against explicit judgments."""
+    try:
+        evaluation = await service.evaluate(
+            knowledge_base_id=knowledge_base_id,
+            trace_id=trace_id,
+            cutoff=payload.cutoff,
+            judgments=tuple(
+                RelevanceJudgment(
+                    chunk_id=judgment.chunk_id,
+                    relevance=judgment.relevance,
+                )
+                for judgment in payload.judgments
+            ),
+        )
+    except RetrievalEvaluationQueryError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="retrieval evaluation request is invalid",
+        ) from exc
+    except RetrievalTraceNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="retrieval trace was not found",
+        ) from exc
+    except RetrievalTracePersistenceError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="retrieval evaluation temporarily unavailable",
+        ) from exc
+
+    return RetrievalEvaluationResponse(
+        trace_id=evaluation.trace_id,
+        cutoff=evaluation.cutoff,
+        judged_count=evaluation.judged_count,
+        relevant_count=evaluation.relevant_count,
+        retrieved_count_at_k=evaluation.retrieved_count_at_k,
+        judged_retrieved_at_k=evaluation.judged_retrieved_at_k,
+        relevant_retrieved_at_k=evaluation.relevant_retrieved_at_k,
+        judgment_coverage_at_k=evaluation.judgment_coverage_at_k,
+        precision_at_k=evaluation.precision_at_k,
+        recall_at_k=evaluation.recall_at_k,
+        reciprocal_rank_at_k=evaluation.reciprocal_rank_at_k,
+        ndcg_at_k=evaluation.ndcg_at_k,
     )
