@@ -11,6 +11,7 @@ from spurel.embeddings.config import (
     OpenAIEmbeddingConfig,
 )
 from spurel.infrastructure.embeddings import OpenAIEmbeddingProvider
+from spurel.retrieval.evaluation import RetrievalEvaluationService
 from spurel.retrieval.hybrid import HybridRetrievalService
 from spurel.retrieval.keyword_service import KeywordRetrievalService
 from spurel.retrieval.service import VectorRetrievalService
@@ -203,3 +204,8 @@ async def get_traced_hybrid_retrieval_service() -> AsyncIterator[
 def get_retrieval_trace_comparison_service() -> RetrievalTraceComparisonService:
     """Build side-by-side retrieval trace comparison."""
     return RetrievalTraceComparisonService(get_retrieval_trace_service())
+
+
+def get_retrieval_evaluation_service() -> RetrievalEvaluationService:
+    """Build deterministic retrieval evaluation."""
+    return RetrievalEvaluationService(get_retrieval_trace_service())
