@@ -1,5 +1,13 @@
 """Document domain."""
 
+from spurel.documents.chunk_inspector import (
+    MAX_CHUNK_INSPECTOR_PAGE_SIZE,
+    ChunkInspectionItem,
+    ChunkInspectionPersistenceError,
+    ChunkInspectionQueryError,
+    ChunkInspectorRepository,
+    ChunkInspectorService,
+)
 from spurel.documents.chunk_models import StoredDocumentChunk
 from spurel.documents.chunk_pipeline import DocumentChunkPipeline, DocumentChunkPipelineResult
 from spurel.documents.chunk_ports import (
@@ -48,6 +56,12 @@ from spurel.documents.upload_service import (
 )
 
 __all__ = [
+    "MAX_CHUNK_INSPECTOR_PAGE_SIZE",
+    "ChunkInspectionItem",
+    "ChunkInspectionPersistenceError",
+    "ChunkInspectionQueryError",
+    "ChunkInspectorRepository",
+    "ChunkInspectorService",
     "MAX_CHUNKS_PER_DOCUMENT",
     "MAX_CHUNK_SIZE_CHARACTERS",
     "MAX_DOCUMENT_SIZE_BYTES",
