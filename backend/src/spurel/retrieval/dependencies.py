@@ -14,6 +14,12 @@ from spurel.infrastructure.embeddings import OpenAIEmbeddingProvider
 from spurel.retrieval.hybrid import HybridRetrievalService
 from spurel.retrieval.keyword_service import KeywordRetrievalService
 from spurel.retrieval.service import VectorRetrievalService
+from spurel.retrieval.sqlalchemy_keyword_repository import (
+    SqlAlchemyKeywordRetrievalRepository,
+)
+from spurel.retrieval.sqlalchemy_repository import (
+    SqlAlchemyVectorRetrievalRepository,
+)
 from spurel.retrieval.sqlalchemy_trace_repository import (
     SqlAlchemyRetrievalTraceRepository,
 )
@@ -22,12 +28,6 @@ from spurel.retrieval.traced import (
     TracedHybridRetrievalService,
     TracedKeywordRetrievalService,
     TracedVectorRetrievalService,
-)
-from spurel.retrieval.sqlalchemy_keyword_repository import (
-    SqlAlchemyKeywordRetrievalRepository,
-)
-from spurel.retrieval.sqlalchemy_repository import (
-    SqlAlchemyVectorRetrievalRepository,
 )
 
 
@@ -116,9 +116,8 @@ def get_traced_keyword_retrieval_service() -> TracedKeywordRetrievalService:
     )
 
 
-async def get_traced_vector_retrieval_service() -> (
-    AsyncIterator[TracedVectorRetrievalService]
-):
+async def get_traced_vector_retrieval_service(
+) -> AsyncIterator[TracedVectorRetrievalService]:
     """Build vector retrieval with mandatory durable tracing."""
     try:
         config = OpenAIEmbeddingConfig.from_env()
@@ -154,9 +153,8 @@ async def get_traced_vector_retrieval_service() -> (
         await client.close()
 
 
-async def get_traced_hybrid_retrieval_service() -> (
-    AsyncIterator[TracedHybridRetrievalService]
-):
+async def get_traced_hybrid_retrieval_service(
+) -> AsyncIterator[TracedHybridRetrievalService]:
     """Build hybrid retrieval with mandatory durable tracing."""
     try:
         config = OpenAIEmbeddingConfig.from_env()
