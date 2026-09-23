@@ -49,6 +49,8 @@ from spurel.retrieval.hybrid import (
     HybridRetrievalQueryError,
     HybridRetrievalResultError,
 )
+from spurel.retrieval.domain import VectorRetrievalQueryError
+from spurel.retrieval.keyword_domain import KeywordRetrievalQueryError
 from spurel.retrieval.keyword_ports import KeywordRetrievalRepositoryError
 from spurel.retrieval.ports import VectorRetrievalRepositoryError
 from spurel.retrieval.service import VectorRetrievalProviderContractError
@@ -320,6 +322,7 @@ async def evaluate_dataset_vector(
         EvaluationDatasetPersistenceError,
         EmbeddingError,
         VectorRetrievalProviderContractError,
+        VectorRetrievalQueryError,
         VectorRetrievalRepositoryError,
         RetrievalEvaluationQueryError,
     ) as exc:
@@ -360,6 +363,7 @@ async def evaluate_dataset_keyword(
         ) from exc
     except (
         EvaluationDatasetPersistenceError,
+        KeywordRetrievalQueryError,
         KeywordRetrievalRepositoryError,
         RetrievalEvaluationQueryError,
     ) as exc:
@@ -393,7 +397,6 @@ async def evaluate_dataset_hybrid(
     except (
         DatasetEvaluationQueryError,
         DatasetEvaluationLimitError,
-        HybridRetrievalQueryError,
     ) as exc:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -410,6 +413,7 @@ async def evaluate_dataset_hybrid(
         VectorRetrievalProviderContractError,
         VectorRetrievalRepositoryError,
         KeywordRetrievalRepositoryError,
+        HybridRetrievalQueryError,
         HybridRetrievalResultError,
         RetrievalEvaluationQueryError,
     ) as exc:
@@ -426,7 +430,7 @@ def _dataset_evaluation_response(
 ) -> DatasetEvaluationResponse:
     return DatasetEvaluationResponse(
         dataset_id=result.dataset_id,
-        mode=result.mode.value,
+        mode=result.mode,
         top_k=result.top_k,
         candidate_k=result.candidate_k,
         rrf_k=result.rrf_k,
