@@ -44,6 +44,25 @@ class RetrievalTraceResult:
 
 
 @dataclass(frozen=True, slots=True)
+class RetrievalTraceSummary:
+    """Lightweight retrieval trace metadata for history views."""
+
+    id: UUID
+    knowledge_base_id: UUID
+    mode: RetrievalTraceMode
+    query: str
+    top_k: int
+    candidate_k: int | None
+    rrf_k: int | None
+    duration_ms: float
+    embedding_provider: str | None
+    embedding_model: str | None
+    embedding_dimensions: int | None
+    result_count: int
+    created_at: datetime
+
+
+@dataclass(frozen=True, slots=True)
 class RetrievalTrace:
     """One completed retrieval run and its reproducible configuration."""
 

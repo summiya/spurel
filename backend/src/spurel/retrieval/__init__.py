@@ -32,7 +32,12 @@ from spurel.retrieval.trace_ports import (
     RetrievalTracePersistenceError,
     RetrievalTraceRepository,
 )
-from spurel.retrieval.trace_service import RetrievalTraceService
+from spurel.retrieval.trace_service import (
+    MAX_RETRIEVAL_TRACE_PAGE_SIZE,
+    RetrievalTraceNotFoundError,
+    RetrievalTraceQueryError,
+    RetrievalTraceService,
+)
 from spurel.retrieval.traced import (
     TracedHybridRetrievalService,
     TracedKeywordRetrievalService,
@@ -43,6 +48,7 @@ from spurel.retrieval.tracing import (
     RetrievalTrace,
     RetrievalTraceMode,
     RetrievalTraceResult,
+    RetrievalTraceSummary,
     RetrievalTraceValidationError,
 )
 from spurel.retrieval.service import (
@@ -51,6 +57,10 @@ from spurel.retrieval.service import (
 )
 
 __all__ = [
+    "MAX_RETRIEVAL_TRACE_PAGE_SIZE",
+    "RetrievalTraceNotFoundError",
+    "RetrievalTraceQueryError",
+    "RetrievalTraceSummary",
     "TracedHybridRetrievalService",
     "TracedKeywordRetrievalService",
     "TracedRetrievalResult",
