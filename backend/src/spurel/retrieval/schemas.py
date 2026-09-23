@@ -269,7 +269,7 @@ class RetrievalEvaluationResponse(BaseModel):
     retrieved_count_at_k: int
     judged_retrieved_at_k: int
     relevant_retrieved_at_k: int
-    judgment_coverage_at_k: float = Field(ge=0, le=1)
+    judgment_coverage_at_k: float | None = Field(default=None, ge=0, le=1)
     precision_at_k: float = Field(ge=0, le=1)
     recall_at_k: float = Field(ge=0, le=1)
     reciprocal_rank_at_k: float = Field(ge=0, le=1)
