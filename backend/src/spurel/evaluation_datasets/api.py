@@ -22,6 +22,13 @@ from spurel.evaluation_datasets.execution import (
     DatasetEvaluationQueryError,
 )
 from spurel.evaluation_datasets.ports import EvaluationDatasetPersistenceError
+from spurel.evaluation_datasets.run_domain import EvaluationRun, EvaluationRunSummary
+from spurel.evaluation_datasets.run_ports import EvaluationRunPersistenceError
+from spurel.evaluation_datasets.run_service import (
+    EvaluationRunNotFoundError,
+    EvaluationRunService,
+    PersistedDatasetEvaluationService,
+)
 from spurel.evaluation_datasets.schemas import (
     CreateEvaluationCaseRequest,
     CreateEvaluationDatasetRequest,
@@ -37,13 +44,6 @@ from spurel.evaluation_datasets.schemas import (
     EvaluationRunListResponse,
     EvaluationRunSummaryResponse,
     HybridDatasetEvaluationRequest,
-)
-from spurel.evaluation_datasets.run_domain import EvaluationRun, EvaluationRunSummary
-from spurel.evaluation_datasets.run_ports import EvaluationRunPersistenceError
-from spurel.evaluation_datasets.run_service import (
-    EvaluationRunNotFoundError,
-    EvaluationRunService,
-    PersistedDatasetEvaluationService,
 )
 from spurel.evaluation_datasets.service import (
     EvaluationDatasetNotFoundError,
