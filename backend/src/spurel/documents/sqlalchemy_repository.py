@@ -27,6 +27,26 @@ class SqlAlchemyDocumentRepository:
         except SQLAlchemyError as exc:
             raise DocumentPersistenceError("failed to persist document") from exc
 
+    async def get_by_id(
+        self,
+        *,
+        knowledge_base_id: UUID,
+        document_id: UUID,
+    ) -> Document | None:
+        """Return one document scoped to its knowledge base."""
+        statement = select(DocumentRecord).where(
+            DocumentRecord.id == document_id,
+            DocumentRecord.knowledge_base_id == knowledge_base_id,
+        )
+
+        try:
+            async with self._session_factory() as session:
+                record = await session.scalar(statement)
+        except SQLAlchemyError as exc:
+            raise DocumentPersistenceError("failed to load document") from exc
+
+        return record.to_domain() if record is not None else None
+
     async def list_by_knowledge_base(
         self,
         *,
