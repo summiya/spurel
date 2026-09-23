@@ -3,14 +3,12 @@
 from collections.abc import Sequence
 from dataclasses import dataclass
 from time import perf_counter
-from typing import Generic, TypeVar
+from typing import Generic, Protocol, TypeVar
 from uuid import UUID
 
 from spurel.retrieval.domain import VectorRetrievalMatch
-from spurel.retrieval.hybrid import HybridRetrievalMatch, HybridRetrievalService
+from spurel.retrieval.hybrid import HybridRetrievalMatch
 from spurel.retrieval.keyword_domain import KeywordRetrievalMatch
-from spurel.retrieval.keyword_service import KeywordRetrievalService
-from spurel.retrieval.service import VectorRetrievalService
 from spurel.retrieval.trace_service import RetrievalTraceService
 from spurel.retrieval.tracing import (
     RetrievalTrace,
@@ -19,6 +17,50 @@ from spurel.retrieval.tracing import (
 )
 
 T = TypeVar("T")
+
+
+class VectorRetrievalRunner(Protocol):
+    """Vector retrieval capability consumed by the tracing decorator."""
+
+    async def search(
+        self,
+        *,
+        knowledge_base_id: UUID,
+        query: str,
+        limit: int,
+    ) -> Sequence[VectorRetrievalMatch]:
+        """Return ranked vector matches."""
+        ...
+
+
+class KeywordRetrievalRunner(Protocol):
+    """Keyword retrieval capability consumed by the tracing decorator."""
+
+    async def search(
+        self,
+        *,
+        knowledge_base_id: UUID,
+        query: str,
+        limit: int,
+    ) -> Sequence[KeywordRetrievalMatch]:
+        """Return ranked keyword matches."""
+        ...
+
+
+class HybridRetrievalRunner(Protocol):
+    """Hybrid retrieval capability consumed by the tracing decorator."""
+
+    async def search(
+        self,
+        *,
+        knowledge_base_id: UUID,
+        query: str,
+        limit: int,
+        candidate_limit: int,
+        rrf_k: int,
+    ) -> Sequence[HybridRetrievalMatch]:
+        """Return ranked hybrid matches."""
+        ...
 
 
 @dataclass(frozen=True, slots=True)
@@ -36,7 +78,7 @@ class TracedVectorRetrievalService:
     def __init__(
         self,
         *,
-        retriever: VectorRetrievalService,
+        retriever: VectorRetrievalRunner,
         trace_service: RetrievalTraceService,
         embedding_provider: str,
         embedding_model: str,
@@ -92,7 +134,7 @@ class TracedKeywordRetrievalService:
     def __init__(
         self,
         *,
-        retriever: KeywordRetrievalService,
+        retriever: KeywordRetrievalRunner,
         trace_service: RetrievalTraceService,
     ) -> None:
         self._retriever = retriever
@@ -139,7 +181,7 @@ class TracedHybridRetrievalService:
     def __init__(
         self,
         *,
-        retriever: HybridRetrievalService,
+        retriever: HybridRetrievalRunner,
         trace_service: RetrievalTraceService,
         embedding_provider: str,
         embedding_model: str,
