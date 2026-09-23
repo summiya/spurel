@@ -3,17 +3,19 @@ from uuid import UUID, uuid4
 
 from fastapi.testclient import TestClient
 
-from spurel.retrieval.dependencies import get_vector_retrieval_service
+from spurel.main import create_app
+from spurel.retrieval.dependencies import get_traced_vector_retrieval_service
 from spurel.retrieval.domain import VectorRetrievalMatch
 from spurel.retrieval.ports import VectorRetrievalRepositoryError
-from spurel.main import create_app
-
+from spurel.retrieval.traced import TracedRetrievalResult
 
 class FakeVectorRetrievalService:
     def __init__(self) -> None:
         self.results: Sequence[VectorRetrievalMatch] = ()
         self.fail = False
         self.last_call: dict[str, object] | None = None
+        self.trace_id = uuid4()
+        self.duration_ms = 12.5
 
     async def search(
         self,
@@ -21,7 +23,7 @@ class FakeVectorRetrievalService:
         knowledge_base_id: UUID,
         query: str,
         limit: int,
-    ) -> Sequence[VectorRetrievalMatch]:
+    ) -> TracedRetrievalResult[VectorRetrievalMatch]:
         self.last_call = {
             "knowledge_base_id": knowledge_base_id,
             "query": query,
@@ -31,12 +33,16 @@ class FakeVectorRetrievalService:
             raise VectorRetrievalRepositoryError(
                 "database/provider secret details"
             )
-        return self.results
+        return TracedRetrievalResult(
+            trace_id=self.trace_id,
+            duration_ms=self.duration_ms,
+            matches=tuple(self.results),
+        )
 
 
 def _client(service: FakeVectorRetrievalService) -> TestClient:
     application = create_app()
-    application.dependency_overrides[get_vector_retrieval_service] = lambda: service
+    application.dependency_overrides[get_traced_vector_retrieval_service] = lambda: service
     return TestClient(application)
 
 
@@ -75,6 +81,8 @@ def test_vector_retrieval_returns_ranked_public_matches() -> None:
     assert body["mode"] == "vector"
     assert body["query"] == "architecture"
     assert body["top_k"] == 5
+    assert body["trace_id"] == str(service.trace_id)
+    assert body["duration_ms"] == 12.5
     assert [match["rank"] for match in body["matches"]] == [1, 2]
     assert [match["cosine_similarity"] for match in body["matches"]] == [
         0.94,

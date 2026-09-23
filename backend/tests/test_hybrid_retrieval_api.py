@@ -4,8 +4,9 @@ from uuid import UUID, uuid4
 from fastapi.testclient import TestClient
 
 from spurel.main import create_app
-from spurel.retrieval.dependencies import get_hybrid_retrieval_service
+from spurel.retrieval.dependencies import get_traced_hybrid_retrieval_service
 from spurel.retrieval.hybrid import HybridRetrievalMatch, HybridRetrievalResultError
+from spurel.retrieval.traced import TracedRetrievalResult
 
 
 class FakeHybridRetrievalService:
@@ -13,6 +14,8 @@ class FakeHybridRetrievalService:
         self.results: Sequence[HybridRetrievalMatch] = ()
         self.error: Exception | None = None
         self.last_call: dict[str, object] | None = None
+        self.trace_id = uuid4()
+        self.duration_ms = 16.75
 
     async def search(
         self,
@@ -22,7 +25,7 @@ class FakeHybridRetrievalService:
         limit: int,
         candidate_limit: int,
         rrf_k: int,
-    ) -> Sequence[HybridRetrievalMatch]:
+    ) -> TracedRetrievalResult[HybridRetrievalMatch]:
         self.last_call = {
             "knowledge_base_id": knowledge_base_id,
             "query": query,
@@ -32,12 +35,16 @@ class FakeHybridRetrievalService:
         }
         if self.error is not None:
             raise self.error
-        return self.results
+        return TracedRetrievalResult(
+            trace_id=self.trace_id,
+            duration_ms=self.duration_ms,
+            matches=tuple(self.results),
+        )
 
 
 def _client(service: FakeHybridRetrievalService) -> TestClient:
     application = create_app()
-    application.dependency_overrides[get_hybrid_retrieval_service] = lambda: service
+    application.dependency_overrides[get_traced_hybrid_retrieval_service] = lambda: service
     return TestClient(application)
 
 
@@ -78,6 +85,8 @@ def test_hybrid_retrieval_returns_fused_debug_metadata() -> None:
     assert body["top_k"] == 10
     assert body["candidate_k"] == 50
     assert body["rrf_k"] == 60
+    assert body["trace_id"] == str(service.trace_id)
+    assert body["duration_ms"] == 16.75
     assert body["matches"][0]["rank"] == 1
     assert body["matches"][0]["vector_rank"] == 1
     assert body["matches"][0]["keyword_rank"] == 2

@@ -33,6 +33,12 @@ from spurel.retrieval.trace_ports import (
     RetrievalTraceRepository,
 )
 from spurel.retrieval.trace_service import RetrievalTraceService
+from spurel.retrieval.traced import (
+    TracedHybridRetrievalService,
+    TracedKeywordRetrievalService,
+    TracedRetrievalResult,
+    TracedVectorRetrievalService,
+)
 from spurel.retrieval.tracing import (
     RetrievalTrace,
     RetrievalTraceMode,
@@ -45,6 +51,10 @@ from spurel.retrieval.service import (
 )
 
 __all__ = [
+    "TracedHybridRetrievalService",
+    "TracedKeywordRetrievalService",
+    "TracedRetrievalResult",
+    "TracedVectorRetrievalService",
     "RetrievalTrace",
     "RetrievalTraceMode",
     "RetrievalTracePersistenceError",

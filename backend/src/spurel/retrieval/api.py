@@ -7,19 +7,17 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from spurel.embeddings.domain import EmbeddingError
 from spurel.retrieval.dependencies import (
-    get_hybrid_retrieval_service,
-    get_keyword_retrieval_service,
-    get_vector_retrieval_service,
+    get_traced_hybrid_retrieval_service,
+    get_traced_keyword_retrieval_service,
+    get_traced_vector_retrieval_service,
 )
 from spurel.retrieval.domain import VectorRetrievalQueryError
 from spurel.retrieval.hybrid import (
     HybridRetrievalQueryError,
     HybridRetrievalResultError,
-    HybridRetrievalService,
 )
 from spurel.retrieval.keyword_domain import KeywordRetrievalQueryError
 from spurel.retrieval.keyword_ports import KeywordRetrievalRepositoryError
-from spurel.retrieval.keyword_service import KeywordRetrievalService
 from spurel.retrieval.ports import VectorRetrievalRepositoryError
 from spurel.retrieval.schemas import (
     HybridRetrievalMatchResponse,
@@ -32,10 +30,14 @@ from spurel.retrieval.schemas import (
     VectorRetrievalRequest,
     VectorRetrievalResponse,
 )
-from spurel.retrieval.service import (
-    VectorRetrievalProviderContractError,
-    VectorRetrievalService,
+from spurel.retrieval.service import VectorRetrievalProviderContractError
+from spurel.retrieval.trace_ports import RetrievalTracePersistenceError
+from spurel.retrieval.traced import (
+    TracedHybridRetrievalService,
+    TracedKeywordRetrievalService,
+    TracedVectorRetrievalService,
 )
+from spurel.retrieval.tracing import RetrievalTraceValidationError
 
 router = APIRouter(
     prefix="/knowledge-bases/{knowledge_base_id}/retrieval",
@@ -43,18 +45,18 @@ router = APIRouter(
 )
 
 HybridRetrievalServiceDependency = Annotated[
-    HybridRetrievalService,
-    Depends(get_hybrid_retrieval_service),
+    TracedHybridRetrievalService,
+    Depends(get_traced_hybrid_retrieval_service),
 ]
 
 KeywordRetrievalServiceDependency = Annotated[
-    KeywordRetrievalService,
-    Depends(get_keyword_retrieval_service),
+    TracedKeywordRetrievalService,
+    Depends(get_traced_keyword_retrieval_service),
 ]
 
 VectorRetrievalServiceDependency = Annotated[
-    VectorRetrievalService,
-    Depends(get_vector_retrieval_service),
+    TracedVectorRetrievalService,
+    Depends(get_traced_vector_retrieval_service),
 ]
 
 
@@ -66,7 +68,7 @@ async def vector_retrieval(
 ) -> VectorRetrievalResponse:
     """Run exact vector retrieval for the Retrieval Playground."""
     try:
-        matches = await service.search(
+        execution = await service.search(
             knowledge_base_id=knowledge_base_id,
             query=payload.query,
             limit=payload.top_k,
@@ -80,6 +82,8 @@ async def vector_retrieval(
         EmbeddingError,
         VectorRetrievalProviderContractError,
         VectorRetrievalRepositoryError,
+        RetrievalTracePersistenceError,
+        RetrievalTraceValidationError,
     ) as exc:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -87,6 +91,8 @@ async def vector_retrieval(
         ) from exc
 
     return VectorRetrievalResponse(
+        trace_id=execution.trace_id,
+        duration_ms=execution.duration_ms,
         query=payload.query.strip(),
         top_k=payload.top_k,
         matches=[
@@ -100,7 +106,7 @@ async def vector_retrieval(
                 end_offset=match.end_offset,
                 cosine_similarity=match.cosine_similarity,
             )
-            for rank, match in enumerate(matches, start=1)
+            for rank, match in enumerate(execution.matches, start=1)
         ],
     )
 
@@ -113,7 +119,7 @@ async def keyword_retrieval(
 ) -> KeywordRetrievalResponse:
     """Run PostgreSQL full-text keyword retrieval."""
     try:
-        matches = await service.search(
+        execution = await service.search(
             knowledge_base_id=knowledge_base_id,
             query=payload.query,
             limit=payload.top_k,
@@ -123,13 +129,19 @@ async def keyword_retrieval(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="retrieval request is invalid",
         ) from exc
-    except KeywordRetrievalRepositoryError as exc:
+    except (
+        KeywordRetrievalRepositoryError,
+        RetrievalTracePersistenceError,
+        RetrievalTraceValidationError,
+    ) as exc:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="retrieval service temporarily unavailable",
         ) from exc
 
     return KeywordRetrievalResponse(
+        trace_id=execution.trace_id,
+        duration_ms=execution.duration_ms,
         query=payload.query.strip(),
         top_k=payload.top_k,
         matches=[
@@ -143,7 +155,7 @@ async def keyword_retrieval(
                 end_offset=match.end_offset,
                 keyword_score=match.keyword_score,
             )
-            for rank, match in enumerate(matches, start=1)
+            for rank, match in enumerate(execution.matches, start=1)
         ],
     )
 
@@ -156,7 +168,7 @@ async def hybrid_retrieval(
 ) -> HybridRetrievalResponse:
     """Run vector + keyword retrieval fused with reciprocal rank fusion."""
     try:
-        matches = await service.search(
+        execution = await service.search(
             knowledge_base_id=knowledge_base_id,
             query=payload.query,
             limit=payload.top_k,
@@ -174,6 +186,8 @@ async def hybrid_retrieval(
         VectorRetrievalRepositoryError,
         KeywordRetrievalRepositoryError,
         HybridRetrievalResultError,
+        RetrievalTracePersistenceError,
+        RetrievalTraceValidationError,
     ) as exc:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -181,6 +195,8 @@ async def hybrid_retrieval(
         ) from exc
 
     return HybridRetrievalResponse(
+        trace_id=execution.trace_id,
+        duration_ms=execution.duration_ms,
         query=payload.query.strip(),
         top_k=payload.top_k,
         candidate_k=payload.candidate_k,
@@ -200,6 +216,6 @@ async def hybrid_retrieval(
                 cosine_similarity=match.cosine_similarity,
                 keyword_score=match.keyword_score,
             )
-            for rank, match in enumerate(matches, start=1)
+            for rank, match in enumerate(execution.matches, start=1)
         ],
     )
