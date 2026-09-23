@@ -89,8 +89,8 @@ class SqlAlchemyRetrievalTraceRepository:
             ) from exc
 
         return tuple(
-            _to_summary(record=row.RetrievalTraceRecord, result_count=row.result_count)
-            for row in rows
+            _to_summary(record=record, result_count=result_count)
+            for record, result_count in rows
         )
 
     async def get_by_id(
