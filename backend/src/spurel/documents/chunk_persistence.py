@@ -61,7 +61,7 @@ class DocumentChunkRecord(Base):
     )
     chunk_index: Mapped[int] = mapped_column(Integer, nullable=False)
     text: Mapped[str] = mapped_column(Text, nullable=False)
-    search_vector: Mapped[object] = mapped_column(
+    search_vector: Mapped[str] = mapped_column(
         TSVECTOR,
         Computed(
             "to_tsvector('english'::regconfig, text)",
