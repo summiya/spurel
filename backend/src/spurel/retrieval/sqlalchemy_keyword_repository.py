@@ -3,7 +3,7 @@
 from collections.abc import Callable, Sequence
 from uuid import UUID
 
-from sqlalchemy import func, select
+from sqlalchemy import func, literal_column, select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -27,7 +27,10 @@ class SqlAlchemyKeywordRetrievalRepository:
         limit: int,
     ) -> Sequence[KeywordRetrievalMatch]:
         """Return cover-density ranked lexical chunk matches."""
-        ts_query = func.websearch_to_tsquery("english", query)
+        ts_query = func.websearch_to_tsquery(
+            literal_column("'english'::regconfig"),
+            query,
+        )
         keyword_score = func.ts_rank_cd(
             DocumentChunkRecord.search_vector,
             ts_query,
