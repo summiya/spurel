@@ -3,7 +3,6 @@
 from collections.abc import Callable, Sequence
 from uuid import UUID
 
-from sqlalchemy import case as sql_case
 from sqlalchemy import func, select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -145,18 +144,25 @@ class SqlAlchemyEvaluationDatasetRepository:
             EvaluationDatasetRecord.knowledge_base_id == knowledge_base_id,
         )
 
-        judgment_count = func.count(EvaluationJudgmentRecord.id).label(
-            "judgment_count"
+        judgment_count = (
+            select(func.count(EvaluationJudgmentRecord.id))
+            .where(
+                EvaluationJudgmentRecord.case_id == EvaluationCaseRecord.id
+            )
+            .correlate(EvaluationCaseRecord)
+            .scalar_subquery()
+            .label("judgment_count")
         )
-        relevant_count = func.coalesce(
-            func.sum(
-                sql_case(
-                    (EvaluationJudgmentRecord.relevance > 0, 1),
-                    else_=0,
-                )
-            ),
-            0,
-        ).label("relevant_judgment_count")
+        relevant_count = (
+            select(func.count(EvaluationJudgmentRecord.id))
+            .where(
+                EvaluationJudgmentRecord.case_id == EvaluationCaseRecord.id,
+                EvaluationJudgmentRecord.relevance > 0,
+            )
+            .correlate(EvaluationCaseRecord)
+            .scalar_subquery()
+            .label("relevant_judgment_count")
+        )
 
         case_statement = (
             select(
@@ -164,12 +170,7 @@ class SqlAlchemyEvaluationDatasetRepository:
                 judgment_count,
                 relevant_count,
             )
-            .outerjoin(
-                EvaluationJudgmentRecord,
-                EvaluationJudgmentRecord.case_id == EvaluationCaseRecord.id,
-            )
             .where(EvaluationCaseRecord.dataset_id == dataset_id)
-            .group_by(EvaluationCaseRecord.id)
             .order_by(
                 EvaluationCaseRecord.created_at.asc(),
                 EvaluationCaseRecord.id.asc(),
