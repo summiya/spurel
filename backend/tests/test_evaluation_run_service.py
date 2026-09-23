@@ -1,6 +1,5 @@
 import asyncio
 from collections.abc import Sequence
-from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 import pytest
