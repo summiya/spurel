@@ -2,7 +2,16 @@
 
 from uuid import UUID, uuid4
 
-from sqlalchemy import Computed, CheckConstraint, ForeignKey, Index, Integer, Text, UniqueConstraint, Uuid
+from sqlalchemy import (
+    CheckConstraint,
+    Computed,
+    ForeignKey,
+    Index,
+    Integer,
+    Text,
+    UniqueConstraint,
+    Uuid,
+)
 from sqlalchemy.dialects.postgresql import TSVECTOR
 from sqlalchemy.orm import Mapped, mapped_column
 
