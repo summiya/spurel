@@ -149,6 +149,7 @@ class DatasetEvaluationResponse(BaseModel):
     case_count: int = Field(ge=1, le=100)
     total_duration_ms: float = Field(ge=0)
     mean_duration_ms: float = Field(ge=0)
+    judgment_coverage_case_count: int = Field(ge=0, le=100)
     mean_judgment_coverage_at_k: float | None = Field(default=None, ge=0, le=1)
     mean_precision_at_k: float = Field(ge=0, le=1)
     mean_recall_at_k: float = Field(ge=0, le=1)
