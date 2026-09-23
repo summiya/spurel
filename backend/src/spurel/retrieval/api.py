@@ -34,7 +34,6 @@ from spurel.retrieval.schemas import (
     KeywordRetrievalMatchResponse,
     KeywordRetrievalRequest,
     KeywordRetrievalResponse,
-    RelevanceJudgmentRequest,
     RetrievalEvaluationRequest,
     RetrievalEvaluationResponse,
     RetrievalTraceComparisonRequest,
