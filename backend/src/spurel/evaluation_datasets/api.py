@@ -5,6 +5,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
+from spurel.embeddings.domain import EmbeddingError
 from spurel.evaluation_datasets.dependencies import (
     get_evaluation_dataset_service,
     get_hybrid_dataset_evaluation_service,
@@ -40,7 +41,6 @@ from spurel.evaluation_datasets.service import (
     EvaluationDatasetNotFoundError,
     EvaluationDatasetService,
 )
-from spurel.embeddings.domain import EmbeddingError
 from spurel.retrieval.domain import VectorRetrievalQueryError
 from spurel.retrieval.evaluation import (
     RelevanceJudgment,
@@ -308,10 +308,15 @@ async def evaluate_dataset_vector(
             dataset_id=dataset_id,
             top_k=payload.top_k,
         )
-    except (DatasetEvaluationQueryError, DatasetEvaluationLimitError) as exc:
+    except DatasetEvaluationQueryError as exc:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="dataset evaluation request is invalid",
+        ) from exc
+    except DatasetEvaluationLimitError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="dataset exceeds synchronous evaluation limits",
         ) from exc
     except EvaluationDatasetNotFoundError as exc:
         raise HTTPException(
@@ -351,10 +356,15 @@ async def evaluate_dataset_keyword(
             dataset_id=dataset_id,
             top_k=payload.top_k,
         )
-    except (DatasetEvaluationQueryError, DatasetEvaluationLimitError) as exc:
+    except DatasetEvaluationQueryError as exc:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="dataset evaluation request is invalid",
+        ) from exc
+    except DatasetEvaluationLimitError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="dataset exceeds synchronous evaluation limits",
         ) from exc
     except EvaluationDatasetNotFoundError as exc:
         raise HTTPException(
@@ -394,13 +404,15 @@ async def evaluate_dataset_hybrid(
             candidate_k=payload.candidate_k,
             rrf_k=payload.rrf_k,
         )
-    except (
-        DatasetEvaluationQueryError,
-        DatasetEvaluationLimitError,
-    ) as exc:
+    except DatasetEvaluationQueryError as exc:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="dataset evaluation request is invalid",
+        ) from exc
+    except DatasetEvaluationLimitError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="dataset exceeds synchronous evaluation limits",
         ) from exc
     except EvaluationDatasetNotFoundError as exc:
         raise HTTPException(
