@@ -3,7 +3,7 @@
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class VectorRetrievalRequest(BaseModel):
@@ -71,6 +71,13 @@ class HybridRetrievalRequest(BaseModel):
     top_k: int = Field(default=10, ge=1, le=100)
     candidate_k: int = Field(default=50, ge=1, le=100)
     rrf_k: int = Field(default=60, ge=1, le=1_000)
+
+    @model_validator(mode="after")
+    def validate_candidate_pool(self) -> "HybridRetrievalRequest":
+        """Require enough source candidates to satisfy the final top-k."""
+        if self.candidate_k < self.top_k:
+            raise ValueError("candidate_k must be greater than or equal to top_k")
+        return self
 
 
 class HybridRetrievalMatchResponse(BaseModel):
