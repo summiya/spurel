@@ -5,32 +5,73 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from spurel.evaluation_datasets.dependencies import get_evaluation_dataset_service
+from spurel.evaluation_datasets.dependencies import (
+    get_evaluation_dataset_service,
+    get_hybrid_dataset_evaluation_service,
+    get_keyword_dataset_evaluation_service,
+    get_vector_dataset_evaluation_service,
+)
 from spurel.evaluation_datasets.domain import (
     EvaluationCase,
     EvaluationDatasetValidationError,
+)
+from spurel.evaluation_datasets.execution import (
+    DatasetEvaluationExecutionService,
+    DatasetEvaluationLimitError,
+    DatasetEvaluationQueryError,
+    DatasetEvaluationResult,
 )
 from spurel.evaluation_datasets.ports import EvaluationDatasetPersistenceError
 from spurel.evaluation_datasets.schemas import (
     CreateEvaluationCaseRequest,
     CreateEvaluationDatasetRequest,
+    DatasetEvaluationCaseResponse,
+    DatasetEvaluationRequest,
+    DatasetEvaluationResponse,
     EvaluationCaseListResponse,
     EvaluationCaseResponse,
     EvaluationCaseSummaryResponse,
     EvaluationDatasetListResponse,
     EvaluationDatasetResponse,
     EvaluationJudgmentResponse,
+    HybridDatasetEvaluationRequest,
 )
 from spurel.evaluation_datasets.service import (
     EvaluationDatasetNotFoundError,
     EvaluationDatasetService,
 )
-from spurel.retrieval.evaluation import RelevanceJudgment
+from spurel.embeddings.domain import EmbeddingError
+from spurel.retrieval.evaluation import (
+    RelevanceJudgment,
+    RetrievalEvaluationQueryError,
+)
+from spurel.retrieval.hybrid import (
+    HybridRetrievalQueryError,
+    HybridRetrievalResultError,
+)
+from spurel.retrieval.keyword_ports import KeywordRetrievalRepositoryError
+from spurel.retrieval.ports import VectorRetrievalRepositoryError
+from spurel.retrieval.service import VectorRetrievalProviderContractError
 
 router = APIRouter(
     prefix="/knowledge-bases/{knowledge_base_id}/evaluation-datasets",
     tags=["evaluation-datasets"],
 )
+
+VectorDatasetEvaluationServiceDependency = Annotated[
+    DatasetEvaluationExecutionService,
+    Depends(get_vector_dataset_evaluation_service),
+]
+
+KeywordDatasetEvaluationServiceDependency = Annotated[
+    DatasetEvaluationExecutionService,
+    Depends(get_keyword_dataset_evaluation_service),
+]
+
+HybridDatasetEvaluationServiceDependency = Annotated[
+    DatasetEvaluationExecutionService,
+    Depends(get_hybrid_dataset_evaluation_service),
+]
 
 EvaluationDatasetServiceDependency = Annotated[
     EvaluationDatasetService,
@@ -245,4 +286,177 @@ def _case_response(case: EvaluationCase) -> EvaluationCaseResponse:
             for judgment in case.judgments
         ],
         created_at=case.created_at,
+    )
+
+
+@router.post(
+    "/{dataset_id}/evaluate/vector",
+    response_model=DatasetEvaluationResponse,
+)
+async def evaluate_dataset_vector(
+    knowledge_base_id: UUID,
+    dataset_id: UUID,
+    payload: DatasetEvaluationRequest,
+    service: VectorDatasetEvaluationServiceDependency,
+) -> DatasetEvaluationResponse:
+    """Evaluate every labeled query with vector retrieval."""
+    try:
+        result = await service.run(
+            knowledge_base_id=knowledge_base_id,
+            dataset_id=dataset_id,
+            top_k=payload.top_k,
+        )
+    except (DatasetEvaluationQueryError, DatasetEvaluationLimitError) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="dataset evaluation request is invalid",
+        ) from exc
+    except EvaluationDatasetNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="evaluation dataset was not found",
+        ) from exc
+    except (
+        EvaluationDatasetPersistenceError,
+        EmbeddingError,
+        VectorRetrievalProviderContractError,
+        VectorRetrievalRepositoryError,
+        RetrievalEvaluationQueryError,
+    ) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="dataset evaluation temporarily unavailable",
+        ) from exc
+
+    return _dataset_evaluation_response(result)
+
+
+@router.post(
+    "/{dataset_id}/evaluate/keyword",
+    response_model=DatasetEvaluationResponse,
+)
+async def evaluate_dataset_keyword(
+    knowledge_base_id: UUID,
+    dataset_id: UUID,
+    payload: DatasetEvaluationRequest,
+    service: KeywordDatasetEvaluationServiceDependency,
+) -> DatasetEvaluationResponse:
+    """Evaluate every labeled query with keyword retrieval."""
+    try:
+        result = await service.run(
+            knowledge_base_id=knowledge_base_id,
+            dataset_id=dataset_id,
+            top_k=payload.top_k,
+        )
+    except (DatasetEvaluationQueryError, DatasetEvaluationLimitError) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="dataset evaluation request is invalid",
+        ) from exc
+    except EvaluationDatasetNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="evaluation dataset was not found",
+        ) from exc
+    except (
+        EvaluationDatasetPersistenceError,
+        KeywordRetrievalRepositoryError,
+        RetrievalEvaluationQueryError,
+    ) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="dataset evaluation temporarily unavailable",
+        ) from exc
+
+    return _dataset_evaluation_response(result)
+
+
+@router.post(
+    "/{dataset_id}/evaluate/hybrid",
+    response_model=DatasetEvaluationResponse,
+)
+async def evaluate_dataset_hybrid(
+    knowledge_base_id: UUID,
+    dataset_id: UUID,
+    payload: HybridDatasetEvaluationRequest,
+    service: HybridDatasetEvaluationServiceDependency,
+) -> DatasetEvaluationResponse:
+    """Evaluate every labeled query with vector + keyword hybrid retrieval."""
+    try:
+        result = await service.run(
+            knowledge_base_id=knowledge_base_id,
+            dataset_id=dataset_id,
+            top_k=payload.top_k,
+            candidate_k=payload.candidate_k,
+            rrf_k=payload.rrf_k,
+        )
+    except (
+        DatasetEvaluationQueryError,
+        DatasetEvaluationLimitError,
+        HybridRetrievalQueryError,
+    ) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="dataset evaluation request is invalid",
+        ) from exc
+    except EvaluationDatasetNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="evaluation dataset was not found",
+        ) from exc
+    except (
+        EvaluationDatasetPersistenceError,
+        EmbeddingError,
+        VectorRetrievalProviderContractError,
+        VectorRetrievalRepositoryError,
+        KeywordRetrievalRepositoryError,
+        HybridRetrievalResultError,
+        RetrievalEvaluationQueryError,
+    ) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="dataset evaluation temporarily unavailable",
+        ) from exc
+
+    return _dataset_evaluation_response(result)
+
+
+def _dataset_evaluation_response(
+    result: DatasetEvaluationResult,
+) -> DatasetEvaluationResponse:
+    return DatasetEvaluationResponse(
+        dataset_id=result.dataset_id,
+        mode=result.mode.value,
+        top_k=result.top_k,
+        candidate_k=result.candidate_k,
+        rrf_k=result.rrf_k,
+        embedding_provider=result.embedding_provider,
+        embedding_model=result.embedding_model,
+        embedding_dimensions=result.embedding_dimensions,
+        case_count=result.case_count,
+        total_duration_ms=result.total_duration_ms,
+        mean_duration_ms=result.mean_duration_ms,
+        mean_judgment_coverage_at_k=result.mean_judgment_coverage_at_k,
+        mean_precision_at_k=result.mean_precision_at_k,
+        mean_recall_at_k=result.mean_recall_at_k,
+        mrr_at_k=result.mrr_at_k,
+        mean_ndcg_at_k=result.mean_ndcg_at_k,
+        cases=[
+            DatasetEvaluationCaseResponse(
+                case_id=case.case_id,
+                query=case.query,
+                duration_ms=case.duration_ms,
+                judged_count=case.metrics.judged_count,
+                relevant_count=case.metrics.relevant_count,
+                retrieved_count_at_k=case.metrics.retrieved_count_at_k,
+                judged_retrieved_at_k=case.metrics.judged_retrieved_at_k,
+                relevant_retrieved_at_k=case.metrics.relevant_retrieved_at_k,
+                judgment_coverage_at_k=case.metrics.judgment_coverage_at_k,
+                precision_at_k=case.metrics.precision_at_k,
+                recall_at_k=case.metrics.recall_at_k,
+                reciprocal_rank_at_k=case.metrics.reciprocal_rank_at_k,
+                ndcg_at_k=case.metrics.ndcg_at_k,
+            )
+            for case in result.cases
+        ],
     )
