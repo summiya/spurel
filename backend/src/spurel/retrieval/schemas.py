@@ -30,6 +30,8 @@ class VectorRetrievalResponse(BaseModel):
     """Public Retrieval Playground response."""
 
     mode: Literal["vector"] = "vector"
+    trace_id: UUID
+    duration_ms: float
     query: str
     top_k: int
     matches: list[VectorRetrievalMatchResponse]
@@ -59,6 +61,8 @@ class KeywordRetrievalResponse(BaseModel):
     """Public keyword Retrieval Playground response."""
 
     mode: Literal["keyword"] = "keyword"
+    trace_id: UUID
+    duration_ms: float
     query: str
     top_k: int
     matches: list[KeywordRetrievalMatchResponse]
@@ -101,6 +105,8 @@ class HybridRetrievalResponse(BaseModel):
     """Public hybrid Retrieval Playground response."""
 
     mode: Literal["hybrid"] = "hybrid"
+    trace_id: UUID
+    duration_ms: float
     query: str
     top_k: int
     candidate_k: int
