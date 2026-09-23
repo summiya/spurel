@@ -11,6 +11,7 @@ from spurel.embeddings.config import (
     OpenAIEmbeddingConfig,
 )
 from spurel.infrastructure.embeddings import OpenAIEmbeddingProvider
+from spurel.retrieval.hybrid import HybridRetrievalService
 from spurel.retrieval.keyword_service import KeywordRetrievalService
 from spurel.retrieval.service import VectorRetrievalService
 from spurel.retrieval.sqlalchemy_keyword_repository import (
@@ -50,6 +51,42 @@ async def get_vector_retrieval_service() -> AsyncIterator[VectorRetrievalService
         yield VectorRetrievalService(
             provider=provider,
             repository=repository,
+        )
+    finally:
+        await client.close()
+
+
+async def get_hybrid_retrieval_service() -> AsyncIterator[HybridRetrievalService]:
+    """Build and safely dispose vector + keyword hybrid retrieval."""
+    try:
+        config = OpenAIEmbeddingConfig.from_env()
+    except EmbeddingConfigurationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="retrieval service temporarily unavailable",
+        ) from exc
+
+    client = AsyncOpenAI(api_key=config.api_key)
+
+    try:
+        provider = OpenAIEmbeddingProvider(
+            client=client,
+            model=config.model,
+            dimensions=config.dimensions,
+        )
+        vector_service = VectorRetrievalService(
+            provider=provider,
+            repository=SqlAlchemyVectorRetrievalRepository(
+                async_session_factory
+            ),
+        )
+        keyword_service = KeywordRetrievalService(
+            SqlAlchemyKeywordRetrievalRepository(async_session_factory)
+        )
+
+        yield HybridRetrievalService(
+            vector_retriever=vector_service,
+            keyword_retriever=keyword_service,
         )
     finally:
         await client.close()
