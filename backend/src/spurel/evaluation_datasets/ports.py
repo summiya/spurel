@@ -16,6 +16,10 @@ class EvaluationDatasetPersistenceError(RuntimeError):
     """Raised when evaluation dataset persistence cannot complete."""
 
 
+class EvaluationDatasetLoadLimitError(RuntimeError):
+    """Raised when a synchronous dataset evaluation would load too much data."""
+
+
 class EvaluationDatasetRepository(Protocol):
     """Persist and read reusable evaluation datasets."""
 
@@ -51,6 +55,17 @@ class EvaluationDatasetRepository(Protocol):
         offset: int,
     ) -> Sequence[EvaluationCaseSummary] | None:
         """Return case summaries, or none when the scoped dataset is absent."""
+        ...
+
+    async def load_cases_for_evaluation(
+        self,
+        *,
+        knowledge_base_id: UUID,
+        dataset_id: UUID,
+        max_cases: int,
+        max_total_judgments: int,
+    ) -> Sequence[EvaluationCase] | None:
+        """Load a bounded complete case set for synchronous evaluation."""
         ...
 
     async def get_case(
