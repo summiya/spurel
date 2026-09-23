@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from spurel.embeddings.domain import EmbeddingError
 from spurel.retrieval.dependencies import (
+    get_retrieval_trace_comparison_service,
     get_retrieval_trace_service,
     get_traced_hybrid_retrieval_service,
     get_traced_keyword_retrieval_service,
@@ -27,6 +28,10 @@ from spurel.retrieval.schemas import (
     KeywordRetrievalMatchResponse,
     KeywordRetrievalRequest,
     KeywordRetrievalResponse,
+    RetrievalTraceComparisonRequest,
+    RetrievalTraceComparisonResponse,
+    RetrievalTraceComparisonResultResponse,
+    RetrievalTraceComparisonSideResponse,
     RetrievalTraceDetailResponse,
     RetrievalTraceListResponse,
     RetrievalTraceResultResponse,
@@ -36,6 +41,11 @@ from spurel.retrieval.schemas import (
     VectorRetrievalResponse,
 )
 from spurel.retrieval.service import VectorRetrievalProviderContractError
+from spurel.retrieval.trace_comparison import (
+    RetrievalTraceComparisonIntegrityError,
+    RetrievalTraceComparisonQueryError,
+    RetrievalTraceComparisonService,
+)
 from spurel.retrieval.trace_ports import RetrievalTracePersistenceError
 from spurel.retrieval.trace_service import (
     RetrievalTraceNotFoundError,
@@ -52,6 +62,11 @@ router = APIRouter(
     prefix="/knowledge-bases/{knowledge_base_id}/retrieval",
     tags=["retrieval"],
 )
+
+RetrievalTraceComparisonServiceDependency = Annotated[
+    RetrievalTraceComparisonService,
+    Depends(get_retrieval_trace_comparison_service),
+]
 
 RetrievalTraceServiceDependency = Annotated[
     RetrievalTraceService,
@@ -333,5 +348,97 @@ async def get_retrieval_trace(
                 keyword_rank=result.keyword_rank,
             )
             for result in trace.results
+        ],
+    )
+
+
+@router.post(
+    "/trace-comparisons",
+    response_model=RetrievalTraceComparisonResponse,
+)
+async def compare_retrieval_traces(
+    knowledge_base_id: UUID,
+    payload: RetrievalTraceComparisonRequest,
+    service: RetrievalTraceComparisonServiceDependency,
+) -> RetrievalTraceComparisonResponse:
+    """Compare two scoped historical retrieval traces side by side."""
+    try:
+        comparison = await service.compare(
+            knowledge_base_id=knowledge_base_id,
+            first_trace_id=payload.first_trace_id,
+            second_trace_id=payload.second_trace_id,
+        )
+    except RetrievalTraceComparisonQueryError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="retrieval trace comparison request is invalid",
+        ) from exc
+    except RetrievalTraceNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="retrieval trace was not found",
+        ) from exc
+    except (
+        RetrievalTracePersistenceError,
+        RetrievalTraceComparisonIntegrityError,
+    ) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="retrieval trace comparison temporarily unavailable",
+        ) from exc
+
+    return RetrievalTraceComparisonResponse(
+        first=RetrievalTraceComparisonSideResponse(
+            trace_id=comparison.first.trace_id,
+            mode=comparison.first.mode,
+            query=comparison.first.query,
+            top_k=comparison.first.top_k,
+            candidate_k=comparison.first.candidate_k,
+            rrf_k=comparison.first.rrf_k,
+            duration_ms=comparison.first.duration_ms,
+            embedding_provider=comparison.first.embedding_provider,
+            embedding_model=comparison.first.embedding_model,
+            embedding_dimensions=comparison.first.embedding_dimensions,
+            result_count=comparison.first.result_count,
+        ),
+        second=RetrievalTraceComparisonSideResponse(
+            trace_id=comparison.second.trace_id,
+            mode=comparison.second.mode,
+            query=comparison.second.query,
+            top_k=comparison.second.top_k,
+            candidate_k=comparison.second.candidate_k,
+            rrf_k=comparison.second.rrf_k,
+            duration_ms=comparison.second.duration_ms,
+            embedding_provider=comparison.second.embedding_provider,
+            embedding_model=comparison.second.embedding_model,
+            embedding_dimensions=comparison.second.embedding_dimensions,
+            result_count=comparison.second.result_count,
+        ),
+        same_query=comparison.same_query,
+        overlap_count=comparison.overlap_count,
+        union_count=comparison.union_count,
+        overlap_ratio=comparison.overlap_ratio,
+        first_only_count=comparison.first_only_count,
+        second_only_count=comparison.second_only_count,
+        duration_delta_ms=comparison.duration_delta_ms,
+        results=[
+            RetrievalTraceComparisonResultResponse(
+                chunk_id=result.chunk_id,
+                document_id=result.document_id,
+                chunk_index=result.chunk_index,
+                text=result.text,
+                start_offset=result.start_offset,
+                end_offset=result.end_offset,
+                first_rank=result.first_rank,
+                second_rank=result.second_rank,
+                rank_delta=result.rank_delta,
+                first_cosine_similarity=result.first_cosine_similarity,
+                second_cosine_similarity=result.second_cosine_similarity,
+                first_keyword_score=result.first_keyword_score,
+                second_keyword_score=result.second_keyword_score,
+                first_rrf_score=result.first_rrf_score,
+                second_rrf_score=result.second_rrf_score,
+            )
+            for result in comparison.results
         ],
     )
