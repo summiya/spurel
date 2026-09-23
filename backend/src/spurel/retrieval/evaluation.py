@@ -103,7 +103,7 @@ def evaluate_trace(
     cutoff: int,
     judgments: tuple[RelevanceJudgment, ...],
 ) -> RetrievalEvaluation:
-    """Compute Precision@K, Recall@K, MRR@K, and nDCG@K."""
+    """Compute Precision@K, Recall@K, Reciprocal Rank@K, and nDCG@K."""
     _validate_trace_inputs(trace=trace, cutoff=cutoff, judgments=judgments)
 
     metrics = calculate_retrieval_metrics(
