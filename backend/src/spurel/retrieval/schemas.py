@@ -1,4 +1,4 @@
-"""HTTP schemas for vector retrieval."""
+"""HTTP schemas for Retrieval Playground endpoints."""
 
 from typing import Literal
 from uuid import UUID
