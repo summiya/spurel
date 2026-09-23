@@ -18,6 +18,15 @@ class DocumentRepository(Protocol):
         """Persist document metadata."""
         ...
 
+    async def get_by_id(
+        self,
+        *,
+        knowledge_base_id: UUID,
+        document_id: UUID,
+    ) -> Document | None:
+        """Return one document scoped to its knowledge base."""
+        ...
+
     async def list_by_knowledge_base(
         self,
         *,
