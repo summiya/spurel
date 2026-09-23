@@ -1,5 +1,6 @@
 """Document domain."""
 
+from spurel.documents.chunk_pipeline import DocumentChunkPipeline, DocumentChunkPipelineResult
 from spurel.documents.chunk_ports import (
     DocumentChunkPersistenceError,
     DocumentChunkRepository,
@@ -51,6 +52,8 @@ __all__ = [
     "Document",
     "DocumentBlobStorage",
     "DocumentChunk",
+    "DocumentChunkPipeline",
+    "DocumentChunkPipelineResult",
     "DocumentChunkPersistenceError",
     "DocumentChunkRepository",
     "DocumentChunkService",
