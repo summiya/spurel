@@ -36,6 +36,11 @@ class OpenAIEmbeddingProvider:
         self._dimensions = dimensions
 
     @property
+    def provider(self) -> str:
+        """Return the stable provider identifier."""
+        return "openai"
+
+    @property
     def model(self) -> str:
         """Return the configured OpenAI embedding model."""
         return self._model

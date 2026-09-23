@@ -55,6 +55,7 @@ def test_openai_provider_embeds_batch_and_restores_input_order() -> None:
 
     batch = asyncio.run(provider.embed(["first", "second"]))
 
+    assert provider.provider == "openai"
     assert provider.model == "text-embedding-example"
     assert provider.dimensions == 2
     assert [vector.values for vector in batch.vectors] == [
