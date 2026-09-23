@@ -218,7 +218,7 @@ def test_evaluation_service_uses_scoped_trace_reader() -> None:
         results=(_result(rank=1, chunk_id=relevant),),
     )
     trace_service = FakeTraceService(trace)
-    service = RetrievalEvaluationService(trace_service)  # type: ignore[arg-type]
+    service = RetrievalEvaluationService(trace_service)
 
     evaluation = asyncio.run(
         service.evaluate(
