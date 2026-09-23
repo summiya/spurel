@@ -37,6 +37,23 @@ class RelevanceJudgment:
 
 
 @dataclass(frozen=True, slots=True)
+class RetrievalMetricValues:
+    """Trace-independent retrieval metric values at one cutoff."""
+
+    cutoff: int
+    judged_count: int
+    relevant_count: int
+    retrieved_count_at_k: int
+    judged_retrieved_at_k: int
+    relevant_retrieved_at_k: int
+    judgment_coverage_at_k: float | None
+    precision_at_k: float
+    recall_at_k: float
+    reciprocal_rank_at_k: float
+    ndcg_at_k: float
+
+
+@dataclass(frozen=True, slots=True)
 class RetrievalEvaluation:
     """Deterministic retrieval metrics at one cutoff."""
 
@@ -87,8 +104,50 @@ def evaluate_trace(
     judgments: tuple[RelevanceJudgment, ...],
 ) -> RetrievalEvaluation:
     """Compute Precision@K, Recall@K, MRR@K, and nDCG@K."""
-    _validate_inputs(trace=trace, cutoff=cutoff, judgments=judgments)
+    _validate_trace_inputs(trace=trace, cutoff=cutoff, judgments=judgments)
 
+    metrics = calculate_retrieval_metrics(
+        cutoff=cutoff,
+        ranked_chunk_ids=tuple(
+            result.chunk_id for result in trace.results[:cutoff]
+        ),
+        judgments=judgments,
+    )
+
+    return RetrievalEvaluation(
+        trace_id=trace.id,
+        cutoff=metrics.cutoff,
+        judged_count=metrics.judged_count,
+        relevant_count=metrics.relevant_count,
+        retrieved_count_at_k=metrics.retrieved_count_at_k,
+        judged_retrieved_at_k=metrics.judged_retrieved_at_k,
+        relevant_retrieved_at_k=metrics.relevant_retrieved_at_k,
+        judgment_coverage_at_k=metrics.judgment_coverage_at_k,
+        precision_at_k=metrics.precision_at_k,
+        recall_at_k=metrics.recall_at_k,
+        reciprocal_rank_at_k=metrics.reciprocal_rank_at_k,
+        ndcg_at_k=metrics.ndcg_at_k,
+    )
+
+
+def calculate_retrieval_metrics(
+    *,
+    cutoff: int,
+    ranked_chunk_ids: tuple[UUID, ...],
+    judgments: tuple[RelevanceJudgment, ...],
+) -> RetrievalMetricValues:
+    """Compute deterministic retrieval metrics independent of trace storage."""
+    if isinstance(cutoff, bool) or not isinstance(cutoff, int) or cutoff < 1:
+        raise RetrievalEvaluationQueryError("evaluation cutoff is invalid")
+
+    _validate_judgments(judgments)
+
+    if len(set(ranked_chunk_ids)) != len(ranked_chunk_ids):
+        raise RetrievalEvaluationQueryError(
+            "ranked retrieval results contain duplicate chunk IDs"
+        )
+
+    top_chunk_ids = ranked_chunk_ids[:cutoff]
     relevance_by_chunk = {
         judgment.chunk_id: judgment.relevance for judgment in judgments
     }
@@ -96,14 +155,13 @@ def evaluate_trace(
         1 for relevance in relevance_by_chunk.values() if relevance > 0
     )
 
-    top_results = trace.results[:cutoff]
-    retrieved_count = len(top_results)
+    retrieved_count = len(top_chunk_ids)
     retrieved_relevances = tuple(
-        relevance_by_chunk.get(result.chunk_id, 0) for result in top_results
+        relevance_by_chunk.get(chunk_id, 0) for chunk_id in top_chunk_ids
     )
 
     judged_retrieved = sum(
-        1 for result in top_results if result.chunk_id in relevance_by_chunk
+        1 for chunk_id in top_chunk_ids if chunk_id in relevance_by_chunk
     )
     relevant_retrieved = sum(
         1 for relevance in retrieved_relevances if relevance > 0
@@ -124,8 +182,7 @@ def evaluate_trace(
     )
     ideal_dcg = _dcg(ideal_relevances)
 
-    return RetrievalEvaluation(
-        trace_id=trace.id,
+    return RetrievalMetricValues(
         cutoff=cutoff,
         judged_count=len(judgments),
         relevant_count=relevant_count,
@@ -144,7 +201,7 @@ def evaluate_trace(
     )
 
 
-def _validate_inputs(
+def _validate_trace_inputs(
     *,
     trace: RetrievalTrace,
     cutoff: int,
@@ -160,6 +217,12 @@ def _validate_inputs(
             "evaluation cutoff must be between 1 and the trace top_k"
         )
 
+    _validate_judgments(judgments)
+
+
+def _validate_judgments(
+    judgments: tuple[RelevanceJudgment, ...],
+) -> None:
     if not judgments or len(judgments) > MAX_EVALUATION_JUDGMENTS:
         raise RetrievalEvaluationQueryError(
             "evaluation judgments are outside the supported range"
