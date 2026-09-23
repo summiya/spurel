@@ -1,5 +1,10 @@
 """Document domain."""
 
+from spurel.documents.chunk_ports import (
+    DocumentChunkPersistenceError,
+    DocumentChunkRepository,
+)
+from spurel.documents.chunk_service import DocumentChunkService, DocumentChunkSetError
 from spurel.documents.chunking import (
     MAX_CHUNKS_PER_DOCUMENT,
     MAX_CHUNK_SIZE_CHARACTERS,
@@ -46,6 +51,10 @@ __all__ = [
     "Document",
     "DocumentBlobStorage",
     "DocumentChunk",
+    "DocumentChunkPersistenceError",
+    "DocumentChunkRepository",
+    "DocumentChunkService",
+    "DocumentChunkSetError",
     "DocumentChunker",
     "DocumentChunkingConfigError",
     "DocumentChunkingError",
