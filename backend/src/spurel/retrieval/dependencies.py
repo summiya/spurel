@@ -116,8 +116,9 @@ def get_traced_keyword_retrieval_service() -> TracedKeywordRetrievalService:
     )
 
 
-async def get_traced_vector_retrieval_service(
-) -> AsyncIterator[TracedVectorRetrievalService]:
+async def get_traced_vector_retrieval_service() -> AsyncIterator[
+    TracedVectorRetrievalService
+]:
     """Build vector retrieval with mandatory durable tracing."""
     try:
         config = OpenAIEmbeddingConfig.from_env()
@@ -153,8 +154,9 @@ async def get_traced_vector_retrieval_service(
         await client.close()
 
 
-async def get_traced_hybrid_retrieval_service(
-) -> AsyncIterator[TracedHybridRetrievalService]:
+async def get_traced_hybrid_retrieval_service() -> AsyncIterator[
+    TracedHybridRetrievalService
+]:
     """Build hybrid retrieval with mandatory durable tracing."""
     try:
         config = OpenAIEmbeddingConfig.from_env()
