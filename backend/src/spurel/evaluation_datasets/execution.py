@@ -8,10 +8,7 @@ from typing import Protocol
 from uuid import UUID
 
 from spurel.evaluation_datasets.domain import EvaluationCase
-from spurel.evaluation_datasets.ports import (
-    EvaluationDatasetLoadLimitError,
-    EvaluationDatasetRepository,
-)
+from spurel.evaluation_datasets.ports import EvaluationDatasetLoadLimitError
 from spurel.evaluation_datasets.service import EvaluationDatasetNotFoundError
 from spurel.retrieval.domain import VectorRetrievalMatch
 from spurel.retrieval.evaluation import (
@@ -86,6 +83,21 @@ class HybridSearchRunner(Protocol):
         ...
 
 
+class DatasetEvaluationCaseReader(Protocol):
+    """Bounded labeled-case reader required by synchronous evaluation."""
+
+    async def load_cases_for_evaluation(
+        self,
+        *,
+        knowledge_base_id: UUID,
+        dataset_id: UUID,
+        max_cases: int,
+        max_total_judgments: int,
+    ) -> Sequence[EvaluationCase] | None:
+        """Load one bounded scoped dataset for evaluation."""
+        ...
+
+
 class DatasetRetriever(Protocol):
     """Mode-specific retrieval adapter used by dataset execution."""
 
@@ -127,6 +139,7 @@ class DatasetEvaluationResult:
     case_count: int
     total_duration_ms: float
     mean_duration_ms: float
+    judgment_coverage_case_count: int
     mean_judgment_coverage_at_k: float | None
     mean_precision_at_k: float
     mean_recall_at_k: float
@@ -216,7 +229,7 @@ class DatasetEvaluationExecutionService:
     def __init__(
         self,
         *,
-        repository: EvaluationDatasetRepository,
+        repository: DatasetEvaluationCaseReader,
         retriever: DatasetRetriever,
         mode: DatasetEvaluationMode,
         embedding_provider: str | None = None,
@@ -443,6 +456,7 @@ def _aggregate(
         case_count=case_count,
         total_duration_ms=total_duration_ms,
         mean_duration_ms=total_duration_ms / case_count,
+        judgment_coverage_case_count=len(coverage_values),
         mean_judgment_coverage_at_k=(
             sum(coverage_values) / len(coverage_values)
             if coverage_values
