@@ -6,7 +6,10 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from spurel.evaluation_datasets.dependencies import get_evaluation_dataset_service
-from spurel.evaluation_datasets.domain import EvaluationDatasetValidationError
+from spurel.evaluation_datasets.domain import (
+    EvaluationCase,
+    EvaluationDatasetValidationError,
+)
 from spurel.evaluation_datasets.ports import EvaluationDatasetPersistenceError
 from spurel.evaluation_datasets.schemas import (
     CreateEvaluationCaseRequest,
@@ -229,7 +232,7 @@ async def get_evaluation_case(
     return _case_response(case)
 
 
-def _case_response(case) -> EvaluationCaseResponse:
+def _case_response(case: EvaluationCase) -> EvaluationCaseResponse:
     return EvaluationCaseResponse(
         id=case.id,
         dataset_id=case.dataset_id,
