@@ -27,6 +27,7 @@ from spurel.evaluation_datasets.run_comparison import (
     EvaluationRunComparison,
     EvaluationRunComparisonQueryError,
     EvaluationRunComparisonService,
+    EvaluationRunComparisonSide,
 )
 from spurel.evaluation_datasets.run_domain import EvaluationRun, EvaluationRunSummary
 from spurel.evaluation_datasets.run_ports import EvaluationRunPersistenceError
@@ -647,6 +648,7 @@ def _run_comparison_response(
         dataset_id=comparison.dataset_id,
         first=_run_comparison_side_response(comparison.first),
         second=_run_comparison_side_response(comparison.second),
+        same_retrieval_configuration=comparison.same_retrieval_configuration,
         same_case_set=comparison.same_case_set,
         aggregate_comparable=comparison.aggregate_comparable,
         shared_case_count=comparison.shared_case_count,
@@ -664,7 +666,7 @@ def _run_comparison_response(
         cases=[
             EvaluationRunCaseComparisonResponse(
                 case_id=case.case_id,
-                presence=case.presence.value,
+                presence=case.presence,
                 first_position=case.first_position,
                 second_position=case.second_position,
                 first_query=case.first_query,
@@ -693,7 +695,7 @@ def _run_comparison_response(
 
 
 def _run_comparison_side_response(
-    side,
+    side: EvaluationRunComparisonSide,
 ) -> EvaluationRunComparisonSideResponse:
     return EvaluationRunComparisonSideResponse(
         run_id=side.run_id,
