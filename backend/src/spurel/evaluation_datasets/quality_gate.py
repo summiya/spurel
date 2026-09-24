@@ -96,6 +96,7 @@ class EvaluationQualityGateResult:
     status: EvaluationQualityGateStatus
     aggregate_comparable: bool
     same_retrieval_configuration: bool
+    unavailable_metrics: tuple[EvaluationQualityGateMetric, ...]
     checks: tuple[EvaluationQualityGateCheck, ...]
 
 
@@ -112,10 +113,12 @@ def evaluate_quality_gate(
             status=EvaluationQualityGateStatus.NOT_EVALUABLE,
             aggregate_comparable=False,
             same_retrieval_configuration=comparison.same_retrieval_configuration,
+            unavailable_metrics=_configured_metrics(thresholds),
             checks=(),
         )
 
     checks: list[EvaluationQualityGateCheck] = []
+    unavailable_metrics: list[EvaluationQualityGateMetric] = []
 
     _append_higher_is_better_check(
         checks=checks,
@@ -149,7 +152,11 @@ def evaluate_quality_gate(
     if thresholds.max_mean_judgment_coverage_drop is not None:
         first_coverage = comparison.first.mean_judgment_coverage_at_k
         second_coverage = comparison.second.mean_judgment_coverage_at_k
-        if first_coverage is not None and second_coverage is not None:
+        if first_coverage is None or second_coverage is None:
+            unavailable_metrics.append(
+                EvaluationQualityGateMetric.MEAN_JUDGMENT_COVERAGE_AT_K
+            )
+        else:
             _append_higher_is_better_check(
                 checks=checks,
                 metric=EvaluationQualityGateMetric.MEAN_JUDGMENT_COVERAGE_AT_K,
@@ -167,16 +174,20 @@ def evaluate_quality_gate(
             allowed_increase=thresholds.max_mean_duration_increase_ms,
         )
 
-    status = (
-        EvaluationQualityGateStatus.PASS
-        if checks and all(check.passed for check in checks)
-        else EvaluationQualityGateStatus.FAIL
-    )
+    if unavailable_metrics:
+        status = EvaluationQualityGateStatus.NOT_EVALUABLE
+    else:
+        status = (
+            EvaluationQualityGateStatus.PASS
+            if all(check.passed for check in checks)
+            else EvaluationQualityGateStatus.FAIL
+        )
 
     return EvaluationQualityGateResult(
         status=status,
         aggregate_comparable=True,
         same_retrieval_configuration=comparison.same_retrieval_configuration,
+        unavailable_metrics=tuple(unavailable_metrics),
         checks=tuple(checks),
     )
 
@@ -228,3 +239,26 @@ def _append_lower_is_better_check(
             passed=regression_amount <= allowed_increase,
         )
     )
+
+
+def _configured_metrics(
+    thresholds: EvaluationQualityGateThresholds,
+) -> tuple[EvaluationQualityGateMetric, ...]:
+    configured: list[EvaluationQualityGateMetric] = []
+
+    if thresholds.max_mean_precision_drop is not None:
+        configured.append(EvaluationQualityGateMetric.MEAN_PRECISION_AT_K)
+    if thresholds.max_mean_recall_drop is not None:
+        configured.append(EvaluationQualityGateMetric.MEAN_RECALL_AT_K)
+    if thresholds.max_mrr_drop is not None:
+        configured.append(EvaluationQualityGateMetric.MRR_AT_K)
+    if thresholds.max_mean_ndcg_drop is not None:
+        configured.append(EvaluationQualityGateMetric.MEAN_NDCG_AT_K)
+    if thresholds.max_mean_judgment_coverage_drop is not None:
+        configured.append(
+            EvaluationQualityGateMetric.MEAN_JUDGMENT_COVERAGE_AT_K
+        )
+    if thresholds.max_mean_duration_increase_ms is not None:
+        configured.append(EvaluationQualityGateMetric.MEAN_DURATION_MS)
+
+    return tuple(configured)
