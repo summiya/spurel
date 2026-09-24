@@ -296,7 +296,6 @@ def _configured_metrics(
     return tuple(configured)
 
 
-
 class EvaluationQualityGateService:
     """Apply explicit thresholds to a scoped persisted run comparison."""
 
