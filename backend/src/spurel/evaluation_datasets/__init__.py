@@ -5,6 +5,7 @@ from spurel.evaluation_datasets.baseline_domain import (
     EvaluationBaseline,
     EvaluationBaselineConfiguration,
     EvaluationBaselineConfigurationError,
+    EvaluationBaselinePromotion,
 )
 from spurel.evaluation_datasets.baseline_ports import (
     EvaluationBaselinePersistenceError,
@@ -95,6 +96,7 @@ __all__ = [
     "EvaluationBaseline",
     "EvaluationBaselineConfiguration",
     "EvaluationBaselineConfigurationError",
+    "EvaluationBaselinePromotion",
     "EvaluationBaselineNotFoundError",
     "EvaluationBaselinePersistenceError",
     "EvaluationBaselineQueryError",

@@ -161,3 +161,37 @@ class EvaluationBaseline:
             configuration_fingerprint=configuration.fingerprint,
             promoted_at=promoted_at or datetime.now(UTC),
         )
+
+
+
+@dataclass(frozen=True, slots=True)
+class EvaluationBaselinePromotion:
+    """Immutable audit snapshot of one explicit baseline promotion."""
+
+    id: UUID
+    baseline_id: UUID
+    knowledge_base_id: UUID
+    dataset_id: UUID
+    run_id: UUID
+    configuration: EvaluationBaselineConfiguration
+    configuration_fingerprint: str
+    promoted_at: datetime
+
+    @classmethod
+    def from_baseline(
+        cls,
+        *,
+        baseline: EvaluationBaseline,
+        promotion_id: UUID | None = None,
+    ) -> "EvaluationBaselinePromotion":
+        """Snapshot one completed baseline promotion."""
+        return cls(
+            id=promotion_id or uuid4(),
+            baseline_id=baseline.id,
+            knowledge_base_id=baseline.knowledge_base_id,
+            dataset_id=baseline.dataset_id,
+            run_id=baseline.run_id,
+            configuration=baseline.configuration,
+            configuration_fingerprint=baseline.configuration_fingerprint,
+            promoted_at=baseline.promoted_at,
+        )

@@ -413,3 +413,30 @@ class EvaluationBaselineListResponse(BaseModel):
     items: list[EvaluationBaselineResponse]
     limit: int
     offset: int
+
+
+class EvaluationBaselinePromotionResponse(BaseModel):
+    """Immutable audit snapshot of one baseline promotion."""
+
+    promotion_id: UUID
+    baseline_id: UUID
+    knowledge_base_id: UUID
+    dataset_id: UUID
+    run_id: UUID
+    configuration_fingerprint: str = Field(min_length=64, max_length=64)
+    mode: DatasetEvaluationMode
+    top_k: int = Field(ge=1, le=100)
+    candidate_k: int | None
+    rrf_k: int | None
+    embedding_provider: str | None
+    embedding_model: str | None
+    embedding_dimensions: int | None
+    promoted_at: datetime
+
+
+class EvaluationBaselinePromotionListResponse(BaseModel):
+    """Bounded append-only baseline promotion history page."""
+
+    items: list[EvaluationBaselinePromotionResponse]
+    limit: int
+    offset: int

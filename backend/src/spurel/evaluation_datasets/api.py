@@ -6,6 +6,19 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from spurel.embeddings.domain import EmbeddingError
+from spurel.evaluation_datasets.baseline_domain import (
+    EvaluationBaseline,
+    EvaluationBaselineConfiguration,
+    EvaluationBaselineConfigurationError,
+    EvaluationBaselinePromotion,
+)
+from spurel.evaluation_datasets.baseline_ports import (
+    EvaluationBaselinePersistenceError,
+)
+from spurel.evaluation_datasets.baseline_service import (
+    EvaluationBaselineNotFoundError,
+    EvaluationBaselineService,
+)
 from spurel.evaluation_datasets.dependencies import (
     get_evaluation_baseline_service,
     get_evaluation_dataset_service,
@@ -15,18 +28,6 @@ from spurel.evaluation_datasets.dependencies import (
     get_hybrid_dataset_evaluation_service,
     get_keyword_dataset_evaluation_service,
     get_vector_dataset_evaluation_service,
-)
-from spurel.evaluation_datasets.baseline_domain import (
-    EvaluationBaseline,
-    EvaluationBaselineConfiguration,
-    EvaluationBaselineConfigurationError,
-)
-from spurel.evaluation_datasets.baseline_ports import (
-    EvaluationBaselinePersistenceError,
-)
-from spurel.evaluation_datasets.baseline_service import (
-    EvaluationBaselineNotFoundError,
-    EvaluationBaselineService,
 )
 from spurel.evaluation_datasets.domain import (
     EvaluationCase,
@@ -57,12 +58,14 @@ from spurel.evaluation_datasets.run_service import (
 )
 from spurel.evaluation_datasets.schemas import (
     CreateEvaluationCaseRequest,
-    EvaluationBaselineListResponse,
-    EvaluationBaselineResponse,
     CreateEvaluationDatasetRequest,
     DatasetEvaluationCaseResponse,
     DatasetEvaluationRequest,
     DatasetEvaluationResponse,
+    EvaluationBaselineListResponse,
+    EvaluationBaselinePromotionListResponse,
+    EvaluationBaselinePromotionResponse,
+    EvaluationBaselineResponse,
     EvaluationCaseListResponse,
     EvaluationCaseResponse,
     EvaluationCaseSummaryResponse,
@@ -72,8 +75,6 @@ from spurel.evaluation_datasets.schemas import (
     EvaluationQualityGateCheckResponse,
     EvaluationQualityGateRequest,
     EvaluationQualityGateResponse,
-    PromoteEvaluationBaselineRequest,
-    ResolveEvaluationBaselineRequest,
     EvaluationRunCaseComparisonResponse,
     EvaluationRunComparisonRequest,
     EvaluationRunComparisonResponse,
@@ -81,6 +82,8 @@ from spurel.evaluation_datasets.schemas import (
     EvaluationRunListResponse,
     EvaluationRunSummaryResponse,
     HybridDatasetEvaluationRequest,
+    PromoteEvaluationBaselineRequest,
+    ResolveEvaluationBaselineRequest,
 )
 from spurel.evaluation_datasets.service import (
     EvaluationDatasetNotFoundError,
@@ -895,6 +898,41 @@ async def list_evaluation_baselines(
     )
 
 
+@router.get(
+    "/{dataset_id}/baselines/history",
+    response_model=EvaluationBaselinePromotionListResponse,
+)
+async def list_evaluation_baseline_history(
+    knowledge_base_id: UUID,
+    dataset_id: UUID,
+    service: EvaluationBaselineServiceDependency,
+    limit: Annotated[int, Query(ge=1, le=100)] = 50,
+    offset: Annotated[int, Query(ge=0)] = 0,
+) -> EvaluationBaselinePromotionListResponse:
+    """List immutable baseline promotion audit history."""
+    try:
+        promotions = await service.list_history_by_dataset(
+            knowledge_base_id=knowledge_base_id,
+            dataset_id=dataset_id,
+            limit=limit,
+            offset=offset,
+        )
+    except EvaluationBaselinePersistenceError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="evaluation baseline service temporarily unavailable",
+        ) from exc
+
+    return EvaluationBaselinePromotionListResponse(
+        items=[
+            _baseline_promotion_response(promotion)
+            for promotion in promotions
+        ],
+        limit=limit,
+        offset=offset,
+    )
+
+
 @router.post(
     "/{dataset_id}/baselines/resolve",
     response_model=EvaluationBaselineResponse,
@@ -959,4 +997,25 @@ def _baseline_response(
         embedding_model=configuration.embedding_model,
         embedding_dimensions=configuration.embedding_dimensions,
         promoted_at=baseline.promoted_at,
+    )
+
+def _baseline_promotion_response(
+    promotion: EvaluationBaselinePromotion,
+) -> EvaluationBaselinePromotionResponse:
+    configuration = promotion.configuration
+    return EvaluationBaselinePromotionResponse(
+        promotion_id=promotion.id,
+        baseline_id=promotion.baseline_id,
+        knowledge_base_id=promotion.knowledge_base_id,
+        dataset_id=promotion.dataset_id,
+        run_id=promotion.run_id,
+        configuration_fingerprint=promotion.configuration_fingerprint,
+        mode=configuration.mode,
+        top_k=configuration.top_k,
+        candidate_k=configuration.candidate_k,
+        rrf_k=configuration.rrf_k,
+        embedding_provider=configuration.embedding_provider,
+        embedding_model=configuration.embedding_model,
+        embedding_dimensions=configuration.embedding_dimensions,
+        promoted_at=promotion.promoted_at,
     )

@@ -8,6 +8,7 @@ from spurel.evaluation_datasets.baseline_domain import (
     MAX_BASELINE_PAGE_SIZE,
     EvaluationBaseline,
     EvaluationBaselineConfiguration,
+    EvaluationBaselinePromotion,
 )
 from spurel.evaluation_datasets.baseline_ports import EvaluationBaselineRepository
 from spurel.evaluation_datasets.run_domain import EvaluationRun
@@ -74,6 +75,23 @@ class EvaluationBaselineService:
         """List promoted baselines for one dataset."""
         _validate_page(limit=limit, offset=offset)
         return await self._repository.list_by_dataset(
+            knowledge_base_id=knowledge_base_id,
+            dataset_id=dataset_id,
+            limit=limit,
+            offset=offset,
+        )
+
+    async def list_history_by_dataset(
+        self,
+        *,
+        knowledge_base_id: UUID,
+        dataset_id: UUID,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> Sequence[EvaluationBaselinePromotion]:
+        """List append-only baseline promotion history for one dataset."""
+        _validate_page(limit=limit, offset=offset)
+        return await self._repository.list_history_by_dataset(
             knowledge_base_id=knowledge_base_id,
             dataset_id=dataset_id,
             limit=limit,

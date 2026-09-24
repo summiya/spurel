@@ -12,8 +12,12 @@ from spurel.evaluation_datasets.baseline_domain import (
     EvaluationBaseline,
     EvaluationBaselineConfiguration,
     EvaluationBaselineConfigurationError,
+    EvaluationBaselinePromotion,
 )
-from spurel.evaluation_datasets.baseline_persistence import EvaluationBaselineRecord
+from spurel.evaluation_datasets.baseline_persistence import (
+    EvaluationBaselinePromotionRecord,
+    EvaluationBaselineRecord,
+)
 from spurel.evaluation_datasets.baseline_ports import (
     EvaluationBaselinePersistenceError,
 )
@@ -26,7 +30,7 @@ class SqlAlchemyEvaluationBaselineRepository:
         self._session_factory = session_factory
 
     async def upsert(self, baseline: EvaluationBaseline) -> EvaluationBaseline:
-        """Atomically create or replace the baseline for one configuration."""
+        """Atomically promote a baseline and append its audit snapshot."""
         configuration = baseline.configuration
         statement = (
             insert(EvaluationBaselineRecord)
@@ -59,7 +63,15 @@ class SqlAlchemyEvaluationBaselineRepository:
             async with self._session_factory() as session:
                 async with session.begin():
                     record = (await session.execute(statement)).scalar_one()
-                    return record.to_domain()
+                    promoted = record.to_domain()
+                    session.add(
+                        EvaluationBaselinePromotionRecord.from_domain(
+                            EvaluationBaselinePromotion.from_baseline(
+                                baseline=promoted
+                            )
+                        )
+                    )
+                    return promoted
         except (SQLAlchemyError, EvaluationBaselineConfigurationError) as exc:
             raise EvaluationBaselinePersistenceError(
                 "failed to promote evaluation baseline"
@@ -121,4 +133,37 @@ class SqlAlchemyEvaluationBaselineRepository:
         except (SQLAlchemyError, EvaluationBaselineConfigurationError) as exc:
             raise EvaluationBaselinePersistenceError(
                 "failed to resolve evaluation baseline"
+            ) from exc
+
+    async def list_history_by_dataset(
+        self,
+        *,
+        knowledge_base_id: UUID,
+        dataset_id: UUID,
+        limit: int,
+        offset: int,
+    ) -> Sequence[EvaluationBaselinePromotion]:
+        """Return append-only promotion history newest first."""
+        statement = (
+            select(EvaluationBaselinePromotionRecord)
+            .where(
+                EvaluationBaselinePromotionRecord.knowledge_base_id
+                == knowledge_base_id,
+                EvaluationBaselinePromotionRecord.dataset_id == dataset_id,
+            )
+            .order_by(
+                EvaluationBaselinePromotionRecord.promoted_at.desc(),
+                EvaluationBaselinePromotionRecord.id.desc(),
+            )
+            .limit(limit)
+            .offset(offset)
+        )
+
+        try:
+            async with self._session_factory() as session:
+                records = (await session.execute(statement)).scalars().all()
+                return tuple(record.to_domain() for record in records)
+        except (SQLAlchemyError, EvaluationBaselineConfigurationError) as exc:
+            raise EvaluationBaselinePersistenceError(
+                "failed to list evaluation baseline promotion history"
             ) from exc
