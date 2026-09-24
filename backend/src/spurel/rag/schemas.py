@@ -21,6 +21,19 @@ class RAGAnswerRequest(BaseModel):
         return self
 
 
+class RAGSourceResponse(BaseModel):
+    """One exact context excerpt available for source attribution."""
+
+    label: str = Field(min_length=2, max_length=8)
+    retrieval_rank: int = Field(ge=1, le=20)
+    chunk_id: UUID
+    document_id: UUID
+    chunk_index: int = Field(ge=0)
+    excerpt: str = Field(min_length=1)
+    start_offset: int = Field(ge=0)
+    end_offset: int = Field(ge=0)
+
+
 class RAGAnswerResponse(BaseModel):
     """Public grounded-answer response."""
 
@@ -29,3 +42,4 @@ class RAGAnswerResponse(BaseModel):
     retrieved_chunk_count: int = Field(ge=0, le=20)
     generation_provider: str | None
     generation_model: str | None
+    sources: list[RAGSourceResponse]

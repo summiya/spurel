@@ -9,7 +9,11 @@ from spurel.embeddings.domain import EmbeddingError
 from spurel.generation.domain import TextGenerationResultError
 from spurel.generation.ports import TextGenerationProviderError
 from spurel.rag.dependencies import get_rag_answer_service
-from spurel.rag.schemas import RAGAnswerRequest, RAGAnswerResponse
+from spurel.rag.schemas import (
+    RAGAnswerRequest,
+    RAGAnswerResponse,
+    RAGSourceResponse,
+)
 from spurel.rag.service import RAGAnswerService, RAGContextError
 from spurel.retrieval.hybrid import (
     HybridRetrievalQueryError,
@@ -74,4 +78,17 @@ async def answer_with_rag(
         retrieved_chunk_count=result.retrieved_chunk_count,
         generation_provider=result.generation_provider,
         generation_model=result.generation_model,
+        sources=[
+            RAGSourceResponse(
+                label=source.label,
+                retrieval_rank=source.retrieval_rank,
+                chunk_id=source.chunk_id,
+                document_id=source.document_id,
+                chunk_index=source.chunk_index,
+                excerpt=source.excerpt,
+                start_offset=source.start_offset,
+                end_offset=source.end_offset,
+            )
+            for source in result.sources
+        ],
     )
