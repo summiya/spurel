@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 import sys
 from collections.abc import Mapping, Sequence
@@ -29,6 +30,13 @@ class QualityGateCliExitCode(IntEnum):
 
 class QualityGateCliError(RuntimeError):
     """Raised when the CLI cannot evaluate a gate safely."""
+
+
+class _QualityGateArgumentParser(argparse.ArgumentParser):
+    """Argument parser that preserves the CLI's stable error exit code."""
+
+    def error(self, message: str) -> None:
+        raise QualityGateCliError(message)
 
 
 class JsonHttpTransport(Protocol):
@@ -159,7 +167,7 @@ def main() -> None:
 
 
 def _parse_config(argv: Sequence[str] | None) -> QualityGateCliConfig:
-    parser = argparse.ArgumentParser(
+    parser = _QualityGateArgumentParser(
         prog="spurel-quality-gate",
         description=(
             "Evaluate a persisted Spurel benchmark quality gate and return "
@@ -320,9 +328,13 @@ def _positive_float(value: str) -> float:
 
 def _float(value: str) -> float:
     try:
-        return float(value)
+        parsed = float(value)
     except ValueError as exc:
         raise argparse.ArgumentTypeError("must be a number") from exc
+
+    if not math.isfinite(parsed):
+        raise argparse.ArgumentTypeError("must be a finite number")
+    return parsed
 
 
 def _safe_http_error_detail(exc: HTTPError) -> str:
