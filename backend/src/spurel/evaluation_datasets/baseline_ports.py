@@ -19,7 +19,7 @@ class EvaluationBaselineRepository(Protocol):
     """Persist and resolve explicitly promoted evaluation baselines."""
 
     async def upsert(self, baseline: EvaluationBaseline) -> EvaluationBaseline:
-        """Create or replace the promoted run for one exact configuration."""
+        """Promote the run and append its audit snapshot atomically."""
         ...
 
     async def list_by_dataset(
