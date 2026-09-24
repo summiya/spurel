@@ -30,7 +30,7 @@ class SqlAlchemyEvaluationBaselineRepository:
         self._session_factory = session_factory
 
     async def upsert(self, baseline: EvaluationBaseline) -> EvaluationBaseline:
-        """Atomically create or replace the baseline for one configuration."""
+        """Atomically promote a baseline and append its audit snapshot."""
         configuration = baseline.configuration
         statement = (
             insert(EvaluationBaselineRecord)
@@ -134,7 +134,6 @@ class SqlAlchemyEvaluationBaselineRepository:
             raise EvaluationBaselinePersistenceError(
                 "failed to resolve evaluation baseline"
             ) from exc
-
 
     async def list_history_by_dataset(
         self,
