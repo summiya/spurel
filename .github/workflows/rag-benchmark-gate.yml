@@ -64,6 +64,11 @@ on:
         description: "Optional maximum mean latency increase in milliseconds"
         required: false
         type: string
+      promote_on_pass:
+        description: "Promote a passing candidate as the new baseline"
+        required: false
+        default: false
+        type: boolean
 
   workflow_call:
     inputs:
@@ -110,6 +115,10 @@ on:
       max_mean_duration_increase_ms:
         required: false
         type: string
+      promote_on_pass:
+        required: false
+        default: false
+        type: boolean
     secrets:
       SPUREL_API_TOKEN:
         required: false
@@ -138,6 +147,7 @@ jobs:
       MAX_MEAN_NDCG_DROP: ${{ inputs.max_mean_ndcg_drop }}
       MAX_MEAN_JUDGMENT_COVERAGE_DROP: ${{ inputs.max_mean_judgment_coverage_drop }}
       MAX_MEAN_DURATION_INCREASE_MS: ${{ inputs.max_mean_duration_increase_ms }}
+      PROMOTE_ON_PASS: ${{ inputs.promote_on_pass }}
 
     steps:
       - name: Check out repository
@@ -196,6 +206,9 @@ jobs:
               --max-mean-duration-increase-ms
               "$MAX_MEAN_DURATION_INCREASE_MS"
             )
+          fi
+          if [[ "$PROMOTE_ON_PASS" == "true" ]]; then
+            args+=(--promote-on-pass)
           fi
 
           spurel-benchmark-gate "${args[@]}"

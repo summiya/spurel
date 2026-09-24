@@ -300,12 +300,65 @@ jobs:
       max_mean_ndcg_drop: "0.02"
       max_mean_recall_drop: "0.03"
       max_mean_duration_increase_ms: "50"
+      promote_on_pass: true
     secrets:
       SPUREL_API_TOKEN: ${{ secrets.SPUREL_API_TOKEN }}
 ```
 
 The workflow succeeds only when the newly created candidate benchmark passes every
 configured quality threshold.
+
+### Promote a passing candidate
+
+Promotion is opt-in. Add:
+
+```bash
+--promote-on-pass
+```
+
+to the CLI, or set:
+
+```yaml
+promote_on_pass: true
+```
+
+in the reusable workflow.
+
+The order is strict:
+
+```text
+run candidate
+    ↓
+resolve baseline
+    ↓
+quality gate
+    ↓
+PASS only
+    ↓
+PUT candidate run as promoted baseline
+```
+
+A `fail` or `not_evaluable` result never changes the baseline.
+
+If promotion itself fails after a passing gate, the CLI returns exit code `3` instead
+of silently reporting success. The candidate run remains persisted for investigation.
+
+Successful human-readable output includes:
+
+```text
+Candidate promoted as baseline: yes
+```
+
+JSON output includes:
+
+```json
+{
+  "candidate_promoted": true
+}
+```
+
+Promotion remains disabled by default so existing CI pipelines keep their current
+behavior.
 
 The reusable workflow's `baseline_run_id` input is optional. When omitted, Spurel
 resolves the explicitly promoted baseline for the candidate's exact persisted retrieval

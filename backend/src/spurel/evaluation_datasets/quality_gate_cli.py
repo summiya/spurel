@@ -40,7 +40,7 @@ class _QualityGateArgumentParser(argparse.ArgumentParser):
 
 
 class JsonHttpTransport(Protocol):
-    """Minimal HTTP capability required by the CLI."""
+    """Minimal JSON HTTP capability required by the CI CLIs."""
 
     def post_json(
         self,
@@ -51,6 +51,17 @@ class JsonHttpTransport(Protocol):
         timeout_seconds: float,
     ) -> Mapping[str, object]:
         """POST JSON and return a decoded JSON object."""
+        ...
+
+    def put_json(
+        self,
+        *,
+        url: str,
+        payload: Mapping[str, object],
+        headers: Mapping[str, str],
+        timeout_seconds: float,
+    ) -> Mapping[str, object]:
+        """PUT JSON and return a decoded JSON object."""
         ...
 
 
@@ -65,12 +76,45 @@ class UrllibJsonHttpTransport:
         headers: Mapping[str, str],
         timeout_seconds: float,
     ) -> Mapping[str, object]:
+        return self._send_json(
+            method="POST",
+            url=url,
+            payload=payload,
+            headers=headers,
+            timeout_seconds=timeout_seconds,
+        )
+
+    def put_json(
+        self,
+        *,
+        url: str,
+        payload: Mapping[str, object],
+        headers: Mapping[str, str],
+        timeout_seconds: float,
+    ) -> Mapping[str, object]:
+        return self._send_json(
+            method="PUT",
+            url=url,
+            payload=payload,
+            headers=headers,
+            timeout_seconds=timeout_seconds,
+        )
+
+    def _send_json(
+        self,
+        *,
+        method: str,
+        url: str,
+        payload: Mapping[str, object],
+        headers: Mapping[str, str],
+        timeout_seconds: float,
+    ) -> Mapping[str, object]:
         body = json.dumps(payload).encode("utf-8")
         request = Request(
             url,
             data=body,
             headers=dict(headers),
-            method="POST",
+            method=method,
         )
 
         try:

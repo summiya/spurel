@@ -39,6 +39,27 @@ class FakeTransport:
             raise QualityGateCliError("unexpected extra API call")
         return self.responses.pop(0)
 
+    def put_json(
+        self,
+        *,
+        url: str,
+        payload: Mapping[str, object],
+        headers: Mapping[str, str],
+        timeout_seconds: float,
+    ) -> Mapping[str, object]:
+        self.calls.append(
+            {
+                "method": "PUT",
+                "url": url,
+                "payload": payload,
+                "headers": headers,
+                "timeout_seconds": timeout_seconds,
+            }
+        )
+        if not self.responses:
+            raise QualityGateCliError("unexpected extra API call")
+        return self.responses.pop(0)
+
 
 def _args(
     *,
@@ -544,3 +565,148 @@ def test_benchmark_gate_refuses_token_over_plain_http(monkeypatch) -> None:
 
     assert code == int(QualityGateCliExitCode.ERROR)
     assert "requires an https:// API base URL" in error.getvalue()
+
+
+
+def test_promote_on_pass_updates_baseline_only_after_gate_passes() -> None:
+    knowledge_base_id = uuid4()
+    dataset_id = uuid4()
+    baseline_run_id = uuid4()
+    candidate_run_id = uuid4()
+    transport = FakeTransport(
+        [
+            _candidate(run_id=candidate_run_id, mode=BenchmarkMode.KEYWORD),
+            _baseline(run_id=baseline_run_id),
+            {"status": "pass", "checks": [], "unavailable_metrics": []},
+            _baseline(run_id=candidate_run_id),
+        ]
+    )
+    output = io.StringIO()
+
+    code = run_benchmark_gate_cli(
+        [
+            *_args(
+                mode=BenchmarkMode.KEYWORD,
+                knowledge_base_id=knowledge_base_id,
+                dataset_id=dataset_id,
+            ),
+            "--promote-on-pass",
+        ],
+        transport=transport,
+        stdout=output,
+        stderr=io.StringIO(),
+    )
+
+    assert code == int(QualityGateCliExitCode.PASS)
+    assert len(transport.calls) == 4
+    assert transport.calls[3]["method"] == "PUT"
+    assert transport.calls[3]["url"] == (
+        f"https://spurel.example/api/knowledge-bases/{knowledge_base_id}"
+        f"/evaluation-datasets/{dataset_id}/baselines"
+    )
+    assert transport.calls[3]["payload"] == {
+        "run_id": str(candidate_run_id)
+    }
+    assert "Candidate promoted as baseline: yes" in output.getvalue()
+
+
+@pytest.mark.parametrize(
+    ("status", "expected"),
+    [
+        ("fail", QualityGateCliExitCode.FAIL),
+        ("not_evaluable", QualityGateCliExitCode.NOT_EVALUABLE),
+    ],
+)
+def test_promote_on_pass_never_promotes_non_passing_gate(
+    status: str,
+    expected: QualityGateCliExitCode,
+) -> None:
+    baseline_run_id = uuid4()
+    candidate_run_id = uuid4()
+    transport = FakeTransport(
+        [
+            _candidate(run_id=candidate_run_id, mode=BenchmarkMode.KEYWORD),
+            _baseline(run_id=baseline_run_id),
+            {"status": status, "checks": [], "unavailable_metrics": []},
+        ]
+    )
+
+    code = run_benchmark_gate_cli(
+        [
+            *_args(
+                mode=BenchmarkMode.KEYWORD,
+                knowledge_base_id=uuid4(),
+                dataset_id=uuid4(),
+            ),
+            "--promote-on-pass",
+        ],
+        transport=transport,
+        stdout=io.StringIO(),
+        stderr=io.StringIO(),
+    )
+
+    assert code == int(expected)
+    assert len(transport.calls) == 3
+    assert all(call.get("method") != "PUT" for call in transport.calls)
+
+
+def test_promotion_failure_turns_passing_gate_into_error() -> None:
+    candidate_run_id = uuid4()
+    transport = FakeTransport(
+        [
+            _candidate(run_id=candidate_run_id, mode=BenchmarkMode.KEYWORD),
+            _baseline(run_id=uuid4()),
+            {"status": "pass", "checks": [], "unavailable_metrics": []},
+            {"run_id": str(uuid4())},
+        ]
+    )
+    error = io.StringIO()
+
+    code = run_benchmark_gate_cli(
+        [
+            *_args(
+                mode=BenchmarkMode.KEYWORD,
+                knowledge_base_id=uuid4(),
+                dataset_id=uuid4(),
+            ),
+            "--promote-on-pass",
+        ],
+        transport=transport,
+        stdout=io.StringIO(),
+        stderr=error,
+    )
+
+    assert code == int(QualityGateCliExitCode.ERROR)
+    assert f"Candidate evaluation run: {candidate_run_id}" in error.getvalue()
+    assert "did not reference the candidate run" in error.getvalue()
+
+
+def test_json_output_reports_candidate_promotion() -> None:
+    candidate_run_id = uuid4()
+    transport = FakeTransport(
+        [
+            _candidate(run_id=candidate_run_id, mode=BenchmarkMode.KEYWORD),
+            _baseline(run_id=uuid4()),
+            {"status": "pass", "checks": [], "unavailable_metrics": []},
+            _baseline(run_id=candidate_run_id),
+        ]
+    )
+    output = io.StringIO()
+
+    code = run_benchmark_gate_cli(
+        [
+            *_args(
+                mode=BenchmarkMode.KEYWORD,
+                knowledge_base_id=uuid4(),
+                dataset_id=uuid4(),
+            ),
+            "--promote-on-pass",
+            "--json",
+        ],
+        transport=transport,
+        stdout=output,
+        stderr=io.StringIO(),
+    )
+
+    assert code == int(QualityGateCliExitCode.PASS)
+    assert '"candidate_promoted": true' in output.getvalue()
