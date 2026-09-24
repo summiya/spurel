@@ -59,12 +59,11 @@ class SqlAlchemyEvaluationBaselineRepository:
             async with self._session_factory() as session:
                 async with session.begin():
                     record = (await session.execute(statement)).scalar_one()
+                    return record.to_domain()
         except (SQLAlchemyError, EvaluationBaselineConfigurationError) as exc:
             raise EvaluationBaselinePersistenceError(
                 "failed to promote evaluation baseline"
             ) from exc
-
-        return record.to_domain()
 
     async def list_by_dataset(
         self,
@@ -92,12 +91,11 @@ class SqlAlchemyEvaluationBaselineRepository:
         try:
             async with self._session_factory() as session:
                 records = (await session.execute(statement)).scalars().all()
+                return tuple(record.to_domain() for record in records)
         except (SQLAlchemyError, EvaluationBaselineConfigurationError) as exc:
             raise EvaluationBaselinePersistenceError(
                 "failed to list evaluation baselines"
             ) from exc
-
-        return tuple(record.to_domain() for record in records)
 
     async def resolve(
         self,
@@ -119,9 +117,8 @@ class SqlAlchemyEvaluationBaselineRepository:
                 record = (
                     await session.execute(statement)
                 ).scalar_one_or_none()
+                return record.to_domain() if record is not None else None
         except (SQLAlchemyError, EvaluationBaselineConfigurationError) as exc:
             raise EvaluationBaselinePersistenceError(
                 "failed to resolve evaluation baseline"
             ) from exc
-
-        return record.to_domain() if record is not None else None
