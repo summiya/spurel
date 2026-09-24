@@ -29,6 +29,23 @@ from spurel.evaluation_datasets.ports import (
     EvaluationDatasetPersistenceError,
     EvaluationDatasetRepository,
 )
+from spurel.evaluation_datasets.run_domain import (
+    EvaluationRun,
+    EvaluationRunCase,
+    EvaluationRunSummary,
+)
+from spurel.evaluation_datasets.run_ports import (
+    EvaluationRunPersistenceError,
+    EvaluationRunRepository,
+)
+from spurel.evaluation_datasets.run_service import (
+    MAX_EVALUATION_RUN_PAGE_SIZE,
+    DatasetEvaluationExecutor,
+    EvaluationRunNotFoundError,
+    EvaluationRunQueryError,
+    EvaluationRunService,
+    PersistedDatasetEvaluationService,
+)
 from spurel.evaluation_datasets.service import (
     MAX_EVALUATION_DATASET_PAGE_SIZE,
     EvaluationDatasetNotFoundError,
@@ -37,6 +54,17 @@ from spurel.evaluation_datasets.service import (
 )
 
 __all__ = [
+    "MAX_EVALUATION_RUN_PAGE_SIZE",
+    "DatasetEvaluationExecutor",
+    "EvaluationRun",
+    "EvaluationRunCase",
+    "EvaluationRunNotFoundError",
+    "EvaluationRunPersistenceError",
+    "EvaluationRunQueryError",
+    "EvaluationRunRepository",
+    "EvaluationRunService",
+    "EvaluationRunSummary",
+    "PersistedDatasetEvaluationService",
     "MAX_DATASET_EVALUATION_CASES",
     "MAX_DATASET_EVALUATION_JUDGMENTS",
     "MAX_DATASET_EVALUATION_TOP_K",

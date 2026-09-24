@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from spurel.embeddings.domain import EmbeddingError
 from spurel.evaluation_datasets.dependencies import (
     get_evaluation_dataset_service,
+    get_evaluation_run_service,
     get_hybrid_dataset_evaluation_service,
     get_keyword_dataset_evaluation_service,
     get_vector_dataset_evaluation_service,
@@ -17,12 +18,17 @@ from spurel.evaluation_datasets.domain import (
     EvaluationDatasetValidationError,
 )
 from spurel.evaluation_datasets.execution import (
-    DatasetEvaluationExecutionService,
     DatasetEvaluationLimitError,
     DatasetEvaluationQueryError,
-    DatasetEvaluationResult,
 )
 from spurel.evaluation_datasets.ports import EvaluationDatasetPersistenceError
+from spurel.evaluation_datasets.run_domain import EvaluationRun, EvaluationRunSummary
+from spurel.evaluation_datasets.run_ports import EvaluationRunPersistenceError
+from spurel.evaluation_datasets.run_service import (
+    EvaluationRunNotFoundError,
+    EvaluationRunService,
+    PersistedDatasetEvaluationService,
+)
 from spurel.evaluation_datasets.schemas import (
     CreateEvaluationCaseRequest,
     CreateEvaluationDatasetRequest,
@@ -35,6 +41,8 @@ from spurel.evaluation_datasets.schemas import (
     EvaluationDatasetListResponse,
     EvaluationDatasetResponse,
     EvaluationJudgmentResponse,
+    EvaluationRunListResponse,
+    EvaluationRunSummaryResponse,
     HybridDatasetEvaluationRequest,
 )
 from spurel.evaluation_datasets.service import (
@@ -61,18 +69,23 @@ router = APIRouter(
 )
 
 VectorDatasetEvaluationServiceDependency = Annotated[
-    DatasetEvaluationExecutionService,
+    PersistedDatasetEvaluationService,
     Depends(get_vector_dataset_evaluation_service),
 ]
 
 KeywordDatasetEvaluationServiceDependency = Annotated[
-    DatasetEvaluationExecutionService,
+    PersistedDatasetEvaluationService,
     Depends(get_keyword_dataset_evaluation_service),
 ]
 
 HybridDatasetEvaluationServiceDependency = Annotated[
-    DatasetEvaluationExecutionService,
+    PersistedDatasetEvaluationService,
     Depends(get_hybrid_dataset_evaluation_service),
+]
+
+EvaluationRunServiceDependency = Annotated[
+    EvaluationRunService,
+    Depends(get_evaluation_run_service),
 ]
 
 EvaluationDatasetServiceDependency = Annotated[
@@ -325,6 +338,7 @@ async def evaluate_dataset_vector(
         ) from exc
     except (
         EvaluationDatasetPersistenceError,
+        EvaluationRunPersistenceError,
         EmbeddingError,
         VectorRetrievalProviderContractError,
         VectorRetrievalQueryError,
@@ -373,6 +387,7 @@ async def evaluate_dataset_keyword(
         ) from exc
     except (
         EvaluationDatasetPersistenceError,
+        EvaluationRunPersistenceError,
         KeywordRetrievalQueryError,
         KeywordRetrievalRepositoryError,
         RetrievalEvaluationQueryError,
@@ -421,6 +436,7 @@ async def evaluate_dataset_hybrid(
         ) from exc
     except (
         EvaluationDatasetPersistenceError,
+        EvaluationRunPersistenceError,
         EmbeddingError,
         VectorRetrievalProviderContractError,
         VectorRetrievalRepositoryError,
@@ -438,28 +454,32 @@ async def evaluate_dataset_hybrid(
 
 
 def _dataset_evaluation_response(
-    result: DatasetEvaluationResult,
+    run: EvaluationRun,
 ) -> DatasetEvaluationResponse:
     return DatasetEvaluationResponse(
-        dataset_id=result.dataset_id,
-        mode=result.mode,
-        top_k=result.top_k,
-        candidate_k=result.candidate_k,
-        rrf_k=result.rrf_k,
-        embedding_provider=result.embedding_provider,
-        embedding_model=result.embedding_model,
-        embedding_dimensions=result.embedding_dimensions,
-        case_count=result.case_count,
-        total_duration_ms=result.total_duration_ms,
-        mean_duration_ms=result.mean_duration_ms,
-        judgment_coverage_case_count=result.judgment_coverage_case_count,
-        mean_judgment_coverage_at_k=result.mean_judgment_coverage_at_k,
-        mean_precision_at_k=result.mean_precision_at_k,
-        mean_recall_at_k=result.mean_recall_at_k,
-        mrr_at_k=result.mrr_at_k,
-        mean_ndcg_at_k=result.mean_ndcg_at_k,
+        run_id=run.id,
+        knowledge_base_id=run.knowledge_base_id,
+        dataset_id=run.dataset_id,
+        mode=run.mode,
+        top_k=run.top_k,
+        candidate_k=run.candidate_k,
+        rrf_k=run.rrf_k,
+        embedding_provider=run.embedding_provider,
+        embedding_model=run.embedding_model,
+        embedding_dimensions=run.embedding_dimensions,
+        case_count=run.case_count,
+        total_duration_ms=run.total_duration_ms,
+        mean_duration_ms=run.mean_duration_ms,
+        judgment_coverage_case_count=run.judgment_coverage_case_count,
+        mean_judgment_coverage_at_k=run.mean_judgment_coverage_at_k,
+        mean_precision_at_k=run.mean_precision_at_k,
+        mean_recall_at_k=run.mean_recall_at_k,
+        mrr_at_k=run.mrr_at_k,
+        mean_ndcg_at_k=run.mean_ndcg_at_k,
+        created_at=run.created_at,
         cases=[
             DatasetEvaluationCaseResponse(
+                position=case.position,
                 case_id=case.case_id,
                 query=case.query,
                 duration_ms=case.duration_ms,
@@ -474,6 +494,95 @@ def _dataset_evaluation_response(
                 reciprocal_rank_at_k=case.metrics.reciprocal_rank_at_k,
                 ndcg_at_k=case.metrics.ndcg_at_k,
             )
-            for case in result.cases
+            for case in run.cases
         ],
+    )
+
+
+@router.get(
+    "/{dataset_id}/runs",
+    response_model=EvaluationRunListResponse,
+)
+async def list_evaluation_runs(
+    knowledge_base_id: UUID,
+    dataset_id: UUID,
+    service: EvaluationRunServiceDependency,
+    limit: Annotated[int, Query(ge=1, le=100)] = 50,
+    offset: Annotated[int, Query(ge=0)] = 0,
+) -> EvaluationRunListResponse:
+    """Return bounded newest-first benchmark history for one dataset identity."""
+    try:
+        runs = await service.list_by_dataset(
+            knowledge_base_id=knowledge_base_id,
+            dataset_id=dataset_id,
+            limit=limit,
+            offset=offset,
+        )
+    except EvaluationRunPersistenceError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="evaluation run history temporarily unavailable",
+        ) from exc
+
+    return EvaluationRunListResponse(
+        items=[_run_summary_response(run) for run in runs],
+        limit=limit,
+        offset=offset,
+    )
+
+
+@router.get(
+    "/{dataset_id}/runs/{run_id}",
+    response_model=DatasetEvaluationResponse,
+)
+async def get_evaluation_run(
+    knowledge_base_id: UUID,
+    dataset_id: UUID,
+    run_id: UUID,
+    service: EvaluationRunServiceDependency,
+) -> DatasetEvaluationResponse:
+    """Return one scoped persisted benchmark with all per-case metrics."""
+    try:
+        run = await service.get_by_id(
+            knowledge_base_id=knowledge_base_id,
+            dataset_id=dataset_id,
+            run_id=run_id,
+        )
+    except EvaluationRunNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="evaluation run was not found",
+        ) from exc
+    except EvaluationRunPersistenceError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="evaluation run history temporarily unavailable",
+        ) from exc
+
+    return _dataset_evaluation_response(run)
+
+
+def _run_summary_response(
+    run: EvaluationRunSummary,
+) -> EvaluationRunSummaryResponse:
+    return EvaluationRunSummaryResponse(
+        run_id=run.id,
+        dataset_id=run.dataset_id,
+        mode=run.mode,
+        top_k=run.top_k,
+        candidate_k=run.candidate_k,
+        rrf_k=run.rrf_k,
+        embedding_provider=run.embedding_provider,
+        embedding_model=run.embedding_model,
+        embedding_dimensions=run.embedding_dimensions,
+        case_count=run.case_count,
+        total_duration_ms=run.total_duration_ms,
+        mean_duration_ms=run.mean_duration_ms,
+        judgment_coverage_case_count=run.judgment_coverage_case_count,
+        mean_judgment_coverage_at_k=run.mean_judgment_coverage_at_k,
+        mean_precision_at_k=run.mean_precision_at_k,
+        mean_recall_at_k=run.mean_recall_at_k,
+        mrr_at_k=run.mrr_at_k,
+        mean_ndcg_at_k=run.mean_ndcg_at_k,
+        created_at=run.created_at,
     )

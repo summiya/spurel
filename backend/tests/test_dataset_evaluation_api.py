@@ -13,13 +13,15 @@ from spurel.evaluation_datasets.execution import (
     DatasetEvaluationMode,
     DatasetEvaluationResult,
 )
+from spurel.evaluation_datasets.run_domain import EvaluationRun
+from spurel.evaluation_datasets.run_ports import EvaluationRunPersistenceError
 from spurel.evaluation_datasets.service import EvaluationDatasetNotFoundError
 from spurel.main import create_app
 from spurel.retrieval.evaluation import RetrievalMetricValues
 
 
 class FakeDatasetEvaluationService:
-    def __init__(self, result: DatasetEvaluationResult | None = None) -> None:
+    def __init__(self, result: EvaluationRun | None = None) -> None:
         self.result = result
         self.error: Exception | None = None
         self.last_call: dict[str, object] | None = None
@@ -32,7 +34,7 @@ class FakeDatasetEvaluationService:
         top_k: int,
         candidate_k: int | None = None,
         rrf_k: int | None = None,
-    ) -> DatasetEvaluationResult:
+    ) -> EvaluationRun:
         self.last_call = {
             "knowledge_base_id": knowledge_base_id,
             "dataset_id": dataset_id,
@@ -46,13 +48,14 @@ class FakeDatasetEvaluationService:
         return self.result
 
 
-def _result(
+def _run(
     *,
+    knowledge_base_id: UUID,
     dataset_id: UUID,
     mode: DatasetEvaluationMode,
     candidate_k: int | None = None,
     rrf_k: int | None = None,
-) -> DatasetEvaluationResult:
+) -> EvaluationRun:
     metrics = RetrievalMetricValues(
         cutoff=10,
         judged_count=3,
@@ -73,7 +76,7 @@ def _result(
         metrics=metrics,
     )
     uses_embeddings = mode is not DatasetEvaluationMode.KEYWORD
-    return DatasetEvaluationResult(
+    execution = DatasetEvaluationResult(
         dataset_id=dataset_id,
         mode=mode,
         top_k=10,
@@ -92,6 +95,10 @@ def _result(
         mrr_at_k=0.5,
         mean_ndcg_at_k=0.75,
         cases=(case,),
+    )
+    return EvaluationRun.from_execution(
+        knowledge_base_id=knowledge_base_id,
+        result=execution,
     )
 
 
@@ -117,12 +124,15 @@ def _client(
     return TestClient(application)
 
 
-def test_keyword_dataset_evaluation_returns_aggregate_and_case_metrics() -> None:
+def test_keyword_dataset_evaluation_returns_persisted_run_metrics() -> None:
     knowledge_base_id = uuid4()
     dataset_id = uuid4()
-    service = FakeDatasetEvaluationService(
-        _result(dataset_id=dataset_id, mode=DatasetEvaluationMode.KEYWORD)
+    run = _run(
+        knowledge_base_id=knowledge_base_id,
+        dataset_id=dataset_id,
+        mode=DatasetEvaluationMode.KEYWORD,
     )
+    service = FakeDatasetEvaluationService(run)
     client = _client(keyword=service)
 
     response = client.post(
@@ -132,12 +142,13 @@ def test_keyword_dataset_evaluation_returns_aggregate_and_case_metrics() -> None
 
     assert response.status_code == 200
     body = response.json()
+    assert body["run_id"] == str(run.id)
+    assert body["knowledge_base_id"] == str(knowledge_base_id)
     assert body["dataset_id"] == str(dataset_id)
     assert body["mode"] == "keyword"
     assert body["mrr_at_k"] == 0.5
     assert body["judgment_coverage_case_count"] == 1
-    assert body["mean_precision_at_k"] == 0.2
-    assert body["mean_recall_at_k"] == 1.0
+    assert body["cases"][0]["position"] == 1
     assert body["cases"][0]["reciprocal_rank_at_k"] == 0.5
     assert service.last_call == {
         "knowledge_base_id": knowledge_base_id,
@@ -152,7 +163,8 @@ def test_hybrid_dataset_evaluation_preserves_fusion_configuration() -> None:
     knowledge_base_id = uuid4()
     dataset_id = uuid4()
     service = FakeDatasetEvaluationService(
-        _result(
+        _run(
+            knowledge_base_id=knowledge_base_id,
             dataset_id=dataset_id,
             mode=DatasetEvaluationMode.HYBRID,
             candidate_k=50,
@@ -163,11 +175,7 @@ def test_hybrid_dataset_evaluation_preserves_fusion_configuration() -> None:
 
     response = client.post(
         f"/knowledge-bases/{knowledge_base_id}/evaluation-datasets/{dataset_id}/evaluate/hybrid",
-        json={
-            "top_k": 10,
-            "candidate_k": 50,
-            "rrf_k": 60,
-        },
+        json={"top_k": 10, "candidate_k": 50, "rrf_k": 60},
     )
 
     assert response.status_code == 200
@@ -179,17 +187,11 @@ def test_hybrid_dataset_evaluation_preserves_fusion_configuration() -> None:
 
 
 def test_hybrid_dataset_evaluation_rejects_small_candidate_pool() -> None:
-    client = _client(
-        hybrid=FakeDatasetEvaluationService()
-    )
+    client = _client(hybrid=FakeDatasetEvaluationService())
 
     response = client.post(
         f"/knowledge-bases/{uuid4()}/evaluation-datasets/{uuid4()}/evaluate/hybrid",
-        json={
-            "top_k": 20,
-            "candidate_k": 10,
-            "rrf_k": 60,
-        },
+        json={"top_k": 20, "candidate_k": 10, "rrf_k": 60},
     )
 
     assert response.status_code == 422
@@ -227,15 +229,37 @@ def test_dataset_evaluation_hides_synchronous_size_limit_details() -> None:
     assert "50,001 labels found" not in response.text
 
 
+def test_dataset_evaluation_hides_run_persistence_failure() -> None:
+    service = FakeDatasetEvaluationService()
+    service.error = EvaluationRunPersistenceError("database secret detail")
+    client = _client(keyword=service)
+
+    response = client.post(
+        f"/knowledge-bases/{uuid4()}/evaluation-datasets/{uuid4()}/evaluate/keyword",
+        json={"top_k": 10},
+    )
+
+    assert response.status_code == 503
+    assert response.json() == {
+        "detail": "dataset evaluation temporarily unavailable"
+    }
+    assert "database secret detail" not in response.text
+
+
 def test_vector_dataset_evaluation_returns_embedding_configuration() -> None:
+    knowledge_base_id = uuid4()
     dataset_id = uuid4()
     service = FakeDatasetEvaluationService(
-        _result(dataset_id=dataset_id, mode=DatasetEvaluationMode.VECTOR)
+        _run(
+            knowledge_base_id=knowledge_base_id,
+            dataset_id=dataset_id,
+            mode=DatasetEvaluationMode.VECTOR,
+        )
     )
     client = _client(vector=service)
 
     response = client.post(
-        f"/knowledge-bases/{uuid4()}/evaluation-datasets/{dataset_id}/evaluate/vector",
+        f"/knowledge-bases/{knowledge_base_id}/evaluation-datasets/{dataset_id}/evaluate/vector",
         json={"top_k": 10},
     )
 

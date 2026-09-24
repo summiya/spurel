@@ -17,9 +17,16 @@ from spurel.evaluation_datasets.execution import (
     KeywordDatasetRetriever,
     VectorDatasetRetriever,
 )
+from spurel.evaluation_datasets.run_service import (
+    EvaluationRunService,
+    PersistedDatasetEvaluationService,
+)
 from spurel.evaluation_datasets.service import EvaluationDatasetService
 from spurel.evaluation_datasets.sqlalchemy_repository import (
     SqlAlchemyEvaluationDatasetRepository,
+)
+from spurel.evaluation_datasets.sqlalchemy_run_repository import (
+    SqlAlchemyEvaluationRunRepository,
 )
 from spurel.infrastructure.embeddings import OpenAIEmbeddingProvider
 from spurel.retrieval.hybrid import HybridRetrievalService
@@ -40,22 +47,33 @@ def get_evaluation_dataset_service() -> EvaluationDatasetService:
     )
 
 
-def get_keyword_dataset_evaluation_service() -> DatasetEvaluationExecutionService:
+def get_evaluation_run_service() -> EvaluationRunService:
+    """Build durable benchmark run history."""
+    return EvaluationRunService(
+        SqlAlchemyEvaluationRunRepository(async_session_factory)
+    )
+
+
+def get_keyword_dataset_evaluation_service() -> PersistedDatasetEvaluationService:
     """Build keyword-only dataset evaluation without provider credentials."""
     repository = SqlAlchemyEvaluationDatasetRepository(async_session_factory)
     keyword_retriever = KeywordRetrievalService(
         SqlAlchemyKeywordRetrievalRepository(async_session_factory)
     )
 
-    return DatasetEvaluationExecutionService(
+    executor = DatasetEvaluationExecutionService(
         repository=repository,
         retriever=KeywordDatasetRetriever(keyword_retriever),
         mode=DatasetEvaluationMode.KEYWORD,
     )
+    return PersistedDatasetEvaluationService(
+        executor=executor,
+        runs=get_evaluation_run_service(),
+    )
 
 
 async def get_vector_dataset_evaluation_service() -> AsyncIterator[
-    DatasetEvaluationExecutionService
+    PersistedDatasetEvaluationService
 ]:
     """Build vector dataset evaluation with safe provider lifecycle."""
     config = _load_embedding_config()
@@ -74,7 +92,7 @@ async def get_vector_dataset_evaluation_service() -> AsyncIterator[
             ),
         )
 
-        yield DatasetEvaluationExecutionService(
+        executor = DatasetEvaluationExecutionService(
             repository=SqlAlchemyEvaluationDatasetRepository(
                 async_session_factory
             ),
@@ -84,12 +102,16 @@ async def get_vector_dataset_evaluation_service() -> AsyncIterator[
             embedding_model=provider.model,
             embedding_dimensions=provider.dimensions,
         )
+        yield PersistedDatasetEvaluationService(
+            executor=executor,
+            runs=get_evaluation_run_service(),
+        )
     finally:
         await client.close()
 
 
 async def get_hybrid_dataset_evaluation_service() -> AsyncIterator[
-    DatasetEvaluationExecutionService
+    PersistedDatasetEvaluationService
 ]:
     """Build hybrid dataset evaluation with safe provider lifecycle."""
     config = _load_embedding_config()
@@ -115,7 +137,7 @@ async def get_hybrid_dataset_evaluation_service() -> AsyncIterator[
             keyword_retriever=keyword_retriever,
         )
 
-        yield DatasetEvaluationExecutionService(
+        executor = DatasetEvaluationExecutionService(
             repository=SqlAlchemyEvaluationDatasetRepository(
                 async_session_factory
             ),
@@ -124,6 +146,10 @@ async def get_hybrid_dataset_evaluation_service() -> AsyncIterator[
             embedding_provider=provider.provider,
             embedding_model=provider.model,
             embedding_dimensions=provider.dimensions,
+        )
+        yield PersistedDatasetEvaluationService(
+            executor=executor,
+            runs=get_evaluation_run_service(),
         )
     finally:
         await client.close()
