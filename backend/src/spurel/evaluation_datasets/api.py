@@ -58,14 +58,14 @@ from spurel.evaluation_datasets.run_service import (
 )
 from spurel.evaluation_datasets.schemas import (
     CreateEvaluationCaseRequest,
-    EvaluationBaselineListResponse,
-    EvaluationBaselinePromotionListResponse,
-    EvaluationBaselinePromotionResponse,
-    EvaluationBaselineResponse,
     CreateEvaluationDatasetRequest,
     DatasetEvaluationCaseResponse,
     DatasetEvaluationRequest,
     DatasetEvaluationResponse,
+    EvaluationBaselineListResponse,
+    EvaluationBaselinePromotionListResponse,
+    EvaluationBaselinePromotionResponse,
+    EvaluationBaselineResponse,
     EvaluationCaseListResponse,
     EvaluationCaseResponse,
     EvaluationCaseSummaryResponse,
@@ -75,8 +75,6 @@ from spurel.evaluation_datasets.schemas import (
     EvaluationQualityGateCheckResponse,
     EvaluationQualityGateRequest,
     EvaluationQualityGateResponse,
-    PromoteEvaluationBaselineRequest,
-    ResolveEvaluationBaselineRequest,
     EvaluationRunCaseComparisonResponse,
     EvaluationRunComparisonRequest,
     EvaluationRunComparisonResponse,
@@ -84,6 +82,8 @@ from spurel.evaluation_datasets.schemas import (
     EvaluationRunListResponse,
     EvaluationRunSummaryResponse,
     HybridDatasetEvaluationRequest,
+    PromoteEvaluationBaselineRequest,
+    ResolveEvaluationBaselineRequest,
 )
 from spurel.evaluation_datasets.service import (
     EvaluationDatasetNotFoundError,
@@ -998,8 +998,6 @@ def _baseline_response(
         embedding_dimensions=configuration.embedding_dimensions,
         promoted_at=baseline.promoted_at,
     )
-
-
 
 def _baseline_promotion_response(
     promotion: EvaluationBaselinePromotion,
