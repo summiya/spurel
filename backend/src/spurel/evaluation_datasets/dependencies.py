@@ -17,6 +17,9 @@ from spurel.evaluation_datasets.execution import (
     KeywordDatasetRetriever,
     VectorDatasetRetriever,
 )
+from spurel.evaluation_datasets.run_comparison import (
+    EvaluationRunComparisonService,
+)
 from spurel.evaluation_datasets.run_service import (
     EvaluationRunService,
     PersistedDatasetEvaluationService,
@@ -163,3 +166,8 @@ def _load_embedding_config() -> OpenAIEmbeddingConfig:
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="dataset evaluation service temporarily unavailable",
         ) from exc
+
+
+def get_evaluation_run_comparison_service() -> EvaluationRunComparisonService:
+    """Build descriptive persisted benchmark comparison."""
+    return EvaluationRunComparisonService(get_evaluation_run_service())
