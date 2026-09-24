@@ -10,6 +10,7 @@ from spurel.evaluation_datasets.domain import (
     MAX_EVALUATION_QUERY_LENGTH,
 )
 from spurel.evaluation_datasets.execution import DatasetEvaluationMode
+from spurel.evaluation_datasets.run_comparison import EvaluationRunCasePresence
 from spurel.retrieval.evaluation import (
     MAX_EVALUATION_JUDGMENTS,
     MAX_RELEVANCE_GRADE,
@@ -234,7 +235,7 @@ class EvaluationRunCaseComparisonResponse(BaseModel):
     """Aligned per-query metric differences between two benchmark runs."""
 
     case_id: UUID
-    presence: str
+    presence: EvaluationRunCasePresence
     first_position: int | None
     second_position: int | None
     first_query: str | None
@@ -270,6 +271,7 @@ class EvaluationRunComparisonResponse(BaseModel):
     first: EvaluationRunComparisonSideResponse
     second: EvaluationRunComparisonSideResponse
 
+    same_retrieval_configuration: bool
     same_case_set: bool
     aggregate_comparable: bool
     shared_case_count: int = Field(ge=0, le=100)
