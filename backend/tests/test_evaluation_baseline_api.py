@@ -124,7 +124,10 @@ def test_promote_baseline_returns_exact_run_configuration() -> None:
     client = _client(service)
 
     response = client.put(
-        f"/knowledge-bases/{knowledge_base_id}/evaluation-datasets/{dataset_id}/baselines",
+        (
+            f"/knowledge-bases/{knowledge_base_id}/evaluation-datasets/"
+            f"{dataset_id}/baselines"
+        ),
         json={"run_id": str(run_id)},
     )
 
@@ -155,7 +158,10 @@ def test_resolve_baseline_uses_exact_configuration() -> None:
     client = _client(service)
 
     response = client.post(
-        f"/knowledge-bases/{knowledge_base_id}/evaluation-datasets/{dataset_id}/baselines/resolve",
+        (
+            f"/knowledge-bases/{knowledge_base_id}/evaluation-datasets/"
+            f"{dataset_id}/baselines/resolve"
+        ),
         json={
             "mode": "vector",
             "top_k": 10,
