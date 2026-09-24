@@ -31,6 +31,13 @@ class BenchmarkMode(StrEnum):
     HYBRID = "hybrid"
 
 
+class BenchmarkBaselineSource(StrEnum):
+    """How the baseline run was selected."""
+
+    EXPLICIT = "explicit"
+    PROMOTED = "promoted"
+
+
 class _BenchmarkArgumentParser(argparse.ArgumentParser):
     """Argument parser preserving the stable CI error exit code."""
 
@@ -45,7 +52,7 @@ class BenchmarkGateCliConfig:
     api_base_url: str
     knowledge_base_id: UUID
     dataset_id: UUID
-    baseline_run_id: UUID
+    baseline_run_id: UUID | None
     mode: BenchmarkMode
     top_k: int
     candidate_k: int | None
@@ -67,6 +74,10 @@ class BenchmarkGateCliConfig:
         return f"{self.dataset_base_url}/evaluate/{self.mode.value}"
 
     @property
+    def baseline_resolve_endpoint(self) -> str:
+        return f"{self.dataset_base_url}/baselines/resolve"
+
+    @property
     def quality_gate_endpoint(self) -> str:
         return f"{self.dataset_base_url}/quality-gates/evaluate"
 
@@ -78,9 +89,10 @@ def run_benchmark_gate_cli(
     stdout=None,
     stderr=None,
 ) -> int:
-    """Run a candidate benchmark, then gate it against a baseline run."""
+    """Run a candidate benchmark, resolve its baseline, then quality-gate it."""
     output = stdout or sys.stdout
     error_output = stderr or sys.stderr
+    candidate_run_id: UUID | None = None
 
     try:
         config = _parse_config(argv)
@@ -96,16 +108,24 @@ def run_benchmark_gate_cli(
             timeout_seconds=config.timeout_seconds,
         )
         candidate_run_id = _candidate_run_id(candidate)
+        _validate_candidate_response(candidate=candidate, config=config)
 
-        if candidate_run_id == config.baseline_run_id:
+        baseline_run_id, baseline_source = _resolve_baseline_run(
+            config=config,
+            candidate=candidate,
+            client=client,
+            headers=headers,
+        )
+
+        if candidate_run_id == baseline_run_id:
             raise QualityGateCliError(
-                "candidate benchmark returned the configured baseline run ID"
+                "candidate benchmark resolved to the same run as its baseline"
             )
 
         gate = client.post_json(
             url=config.quality_gate_endpoint,
             payload={
-                "first_run_id": str(config.baseline_run_id),
+                "first_run_id": str(baseline_run_id),
                 "second_run_id": str(candidate_run_id),
                 "thresholds": dict(config.thresholds),
             },
@@ -118,6 +138,8 @@ def run_benchmark_gate_cli(
             print(
                 json.dumps(
                     {
+                        "baseline_run_id": str(baseline_run_id),
+                        "baseline_source": baseline_source.value,
                         "candidate_run_id": str(candidate_run_id),
                         "quality_gate": gate,
                     },
@@ -127,6 +149,8 @@ def run_benchmark_gate_cli(
             )
         else:
             _print_human_summary(
+                baseline_run_id=baseline_run_id,
+                baseline_source=baseline_source,
                 candidate_run_id=candidate_run_id,
                 gate=gate,
                 output=output,
@@ -134,6 +158,11 @@ def run_benchmark_gate_cli(
 
         return int(exit_code)
     except QualityGateCliError as exc:
+        if candidate_run_id is not None:
+            print(
+                f"Candidate evaluation run: {candidate_run_id}",
+                file=error_output,
+            )
         print(f"spurel-benchmark-gate: {exc}", file=error_output)
         return int(QualityGateCliExitCode.ERROR)
 
@@ -147,15 +176,23 @@ def _parse_config(argv: Sequence[str] | None) -> BenchmarkGateCliConfig:
     parser = _BenchmarkArgumentParser(
         prog="spurel-benchmark-gate",
         description=(
-            "Create a persisted candidate evaluation run, compare it with a "
-            "baseline run, and return a CI-friendly quality-gate exit code."
+            "Create a persisted candidate evaluation run, resolve its promoted "
+            "baseline or use an explicit baseline override, and return a "
+            "CI-friendly quality-gate exit code."
         ),
     )
 
     parser.add_argument("--api-base-url", required=True)
     parser.add_argument("--knowledge-base-id", required=True, type=UUID)
     parser.add_argument("--dataset-id", required=True, type=UUID)
-    parser.add_argument("--baseline-run-id", required=True, type=UUID)
+    parser.add_argument(
+        "--baseline-run-id",
+        type=UUID,
+        help=(
+            "Optional explicit baseline override. When omitted, Spurel resolves "
+            "the promoted baseline for the candidate's exact persisted config."
+        ),
+    )
     parser.add_argument(
         "--mode",
         required=True,
@@ -182,7 +219,10 @@ def _parse_config(argv: Sequence[str] | None) -> BenchmarkGateCliConfig:
         "--json",
         action="store_true",
         dest="json_output",
-        help="Print candidate run ID plus quality-gate response as JSON.",
+        help=(
+            "Print baseline source/run, candidate run, and quality-gate "
+            "response as JSON."
+        ),
     )
 
     args = parser.parse_args(argv)
@@ -257,19 +297,138 @@ def _evaluation_payload(config: BenchmarkGateCliConfig) -> dict[str, int]:
     return payload
 
 
-def _candidate_run_id(response: Mapping[str, object]) -> UUID:
-    raw_run_id = response.get("run_id")
-    if not isinstance(raw_run_id, str):
+def _resolve_baseline_run(
+    *,
+    config: BenchmarkGateCliConfig,
+    candidate: Mapping[str, object],
+    client: JsonHttpTransport,
+    headers: Mapping[str, str],
+) -> tuple[UUID, BenchmarkBaselineSource]:
+    if config.baseline_run_id is not None:
+        return config.baseline_run_id, BenchmarkBaselineSource.EXPLICIT
+
+    baseline = client.post_json(
+        url=config.baseline_resolve_endpoint,
+        payload=_candidate_baseline_configuration(candidate),
+        headers=headers,
+        timeout_seconds=config.timeout_seconds,
+    )
+    return _baseline_run_id(baseline), BenchmarkBaselineSource.PROMOTED
+
+
+def _candidate_baseline_configuration(
+    candidate: Mapping[str, object],
+) -> dict[str, object]:
+    required_keys = (
+        "mode",
+        "top_k",
+        "candidate_k",
+        "rrf_k",
+        "embedding_provider",
+        "embedding_model",
+        "embedding_dimensions",
+    )
+    missing = [key for key in required_keys if key not in candidate]
+    if missing:
         raise QualityGateCliError(
-            "candidate evaluation response did not contain a run_id"
+            "candidate evaluation response did not contain complete "
+            "retrieval configuration"
+        )
+
+    return {key: candidate[key] for key in required_keys}
+
+
+def _candidate_run_id(response: Mapping[str, object]) -> UUID:
+    return _uuid_field(
+        response=response,
+        field="run_id",
+        context="candidate evaluation",
+    )
+
+
+def _baseline_run_id(response: Mapping[str, object]) -> UUID:
+    return _uuid_field(
+        response=response,
+        field="run_id",
+        context="promoted baseline",
+    )
+
+
+def _uuid_field(
+    *,
+    response: Mapping[str, object],
+    field: str,
+    context: str,
+) -> UUID:
+    raw_value = response.get(field)
+    if not isinstance(raw_value, str):
+        raise QualityGateCliError(
+            f"{context} response did not contain a {field}"
         )
 
     try:
-        return UUID(raw_run_id)
+        return UUID(raw_value)
     except ValueError as exc:
         raise QualityGateCliError(
-            "candidate evaluation response contained an invalid run_id"
+            f"{context} response contained an invalid {field}"
         ) from exc
+
+
+def _validate_candidate_response(
+    *,
+    candidate: Mapping[str, object],
+    config: BenchmarkGateCliConfig,
+) -> None:
+    mode = candidate.get("mode")
+    top_k = candidate.get("top_k")
+
+    if mode != config.mode.value:
+        raise QualityGateCliError(
+            "candidate evaluation response mode does not match the request"
+        )
+    if top_k != config.top_k:
+        raise QualityGateCliError(
+            "candidate evaluation response top_k does not match the request"
+        )
+
+    candidate_k = candidate.get("candidate_k")
+    rrf_k = candidate.get("rrf_k")
+    if candidate_k != config.candidate_k or rrf_k != config.rrf_k:
+        raise QualityGateCliError(
+            "candidate evaluation response retrieval config does not match "
+            "the request"
+        )
+
+    embedding_provider = candidate.get("embedding_provider")
+    embedding_model = candidate.get("embedding_model")
+    embedding_dimensions = candidate.get("embedding_dimensions")
+
+    if config.mode is BenchmarkMode.KEYWORD:
+        if any(
+            value is not None
+            for value in (
+                embedding_provider,
+                embedding_model,
+                embedding_dimensions,
+            )
+        ):
+            raise QualityGateCliError(
+                "keyword candidate unexpectedly returned embedding config"
+            )
+        return
+
+    if (
+        not isinstance(embedding_provider, str)
+        or not embedding_provider.strip()
+        or not isinstance(embedding_model, str)
+        or not embedding_model.strip()
+        or isinstance(embedding_dimensions, bool)
+        or not isinstance(embedding_dimensions, int)
+        or embedding_dimensions < 1
+    ):
+        raise QualityGateCliError(
+            "candidate evaluation response embedding config is invalid"
+        )
 
 
 def _exit_code_from_gate(
@@ -289,10 +448,17 @@ def _exit_code_from_gate(
 
 def _print_human_summary(
     *,
+    baseline_run_id: UUID,
+    baseline_source: BenchmarkBaselineSource,
     candidate_run_id: UUID,
     gate: Mapping[str, object],
     output,
 ) -> None:
+    print(
+        f"Baseline evaluation run: {baseline_run_id} "
+        f"({baseline_source.value})",
+        file=output,
+    )
     print(f"Candidate evaluation run: {candidate_run_id}", file=output)
     print(f"Spurel quality gate: {gate.get('status')}", file=output)
 
