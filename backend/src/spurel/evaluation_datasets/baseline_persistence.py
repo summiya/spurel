@@ -184,7 +184,6 @@ class EvaluationBaselineRecord(Base):
         )
 
 
-
 class EvaluationBaselinePromotionRecord(Base):
     """Append-only audit snapshot of one completed baseline promotion."""
 
