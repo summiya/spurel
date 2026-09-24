@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 from spurel.db import Base
 from spurel.documents import chunk_persistence, persistence as document_persistence
 from spurel.embeddings import persistence as embedding_persistence
+from spurel.evaluation_datasets import baseline_persistence as baseline_persistence
 from spurel.evaluation_datasets import persistence as evaluation_persistence
 from spurel.evaluation_datasets import run_persistence as evaluation_run_persistence
 from spurel.knowledge_bases import persistence as knowledge_base_persistence
@@ -30,6 +31,7 @@ if database_url:
 
 _ = document_persistence.DocumentRecord
 _ = embedding_persistence.ChunkEmbeddingRecord
+_ = baseline_persistence.EvaluationBaselineRecord
 _ = evaluation_persistence.EvaluationDatasetRecord
 _ = evaluation_persistence.EvaluationCaseRecord
 _ = evaluation_persistence.EvaluationJudgmentRecord
