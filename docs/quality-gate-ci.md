@@ -107,7 +107,6 @@ jobs:
       max_mean_ndcg_drop: "0.02"
       max_mean_recall_drop: "0.03"
       max_mean_duration_increase_ms: "50"
-      promote_on_pass: true
     secrets:
       SPUREL_API_TOKEN: ${{ secrets.SPUREL_API_TOKEN }}
 ```
@@ -301,6 +300,7 @@ jobs:
       max_mean_ndcg_drop: "0.02"
       max_mean_recall_drop: "0.03"
       max_mean_duration_increase_ms: "50"
+      promote_on_pass: true
     secrets:
       SPUREL_API_TOKEN: ${{ secrets.SPUREL_API_TOKEN }}
 ```
