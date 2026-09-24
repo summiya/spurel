@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from spurel.evaluation_datasets.baseline_domain import (
     EvaluationBaseline,
     EvaluationBaselineConfiguration,
+    EvaluationBaselineConfigurationError,
 )
 from spurel.evaluation_datasets.baseline_persistence import EvaluationBaselineRecord
 from spurel.evaluation_datasets.baseline_ports import (
@@ -58,7 +59,7 @@ class SqlAlchemyEvaluationBaselineRepository:
             async with self._session_factory() as session:
                 async with session.begin():
                     record = (await session.execute(statement)).scalar_one()
-        except SQLAlchemyError as exc:
+        except (SQLAlchemyError, EvaluationBaselineConfigurationError) as exc:
             raise EvaluationBaselinePersistenceError(
                 "failed to promote evaluation baseline"
             ) from exc
@@ -91,7 +92,7 @@ class SqlAlchemyEvaluationBaselineRepository:
         try:
             async with self._session_factory() as session:
                 records = (await session.execute(statement)).scalars().all()
-        except SQLAlchemyError as exc:
+        except (SQLAlchemyError, EvaluationBaselineConfigurationError) as exc:
             raise EvaluationBaselinePersistenceError(
                 "failed to list evaluation baselines"
             ) from exc
@@ -118,7 +119,7 @@ class SqlAlchemyEvaluationBaselineRepository:
                 record = (
                     await session.execute(statement)
                 ).scalar_one_or_none()
-        except SQLAlchemyError as exc:
+        except (SQLAlchemyError, EvaluationBaselineConfigurationError) as exc:
             raise EvaluationBaselinePersistenceError(
                 "failed to resolve evaluation baseline"
             ) from exc
