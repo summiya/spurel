@@ -16,6 +16,9 @@ dependencies = [
     "uvicorn[standard]>=0.34.0,<1.0.0",
 ]
 
+[project.scripts]
+spurel-quality-gate = "spurel.evaluation_datasets.quality_gate_cli:main"
+
 [project.optional-dependencies]
 dev = [
     "httpx>=0.28.0,<1.0.0",
