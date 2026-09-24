@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from spurel.embeddings.domain import EmbeddingError
 from spurel.evaluation_datasets.dependencies import (
     get_evaluation_dataset_service,
+    get_evaluation_quality_gate_service,
     get_evaluation_run_comparison_service,
     get_evaluation_run_service,
     get_hybrid_dataset_evaluation_service,
@@ -23,6 +24,11 @@ from spurel.evaluation_datasets.execution import (
     DatasetEvaluationQueryError,
 )
 from spurel.evaluation_datasets.ports import EvaluationDatasetPersistenceError
+from spurel.evaluation_datasets.quality_gate import (
+    EvaluationQualityGateService,
+    EvaluationQualityGateThresholdError,
+    EvaluationQualityGateThresholds,
+)
 from spurel.evaluation_datasets.run_comparison import (
     EvaluationRunComparison,
     EvaluationRunComparisonQueryError,
@@ -48,6 +54,9 @@ from spurel.evaluation_datasets.schemas import (
     EvaluationDatasetListResponse,
     EvaluationDatasetResponse,
     EvaluationJudgmentResponse,
+    EvaluationQualityGateCheckResponse,
+    EvaluationQualityGateRequest,
+    EvaluationQualityGateResponse,
     EvaluationRunCaseComparisonResponse,
     EvaluationRunComparisonRequest,
     EvaluationRunComparisonResponse,
@@ -92,6 +101,11 @@ KeywordDatasetEvaluationServiceDependency = Annotated[
 HybridDatasetEvaluationServiceDependency = Annotated[
     PersistedDatasetEvaluationService,
     Depends(get_hybrid_dataset_evaluation_service),
+]
+
+EvaluationQualityGateServiceDependency = Annotated[
+    EvaluationQualityGateService,
+    Depends(get_evaluation_quality_gate_service),
 ]
 
 EvaluationRunComparisonServiceDependency = Annotated[
@@ -716,4 +730,80 @@ def _run_comparison_side_response(
         mrr_at_k=side.mrr_at_k,
         mean_ndcg_at_k=side.mean_ndcg_at_k,
         created_at=side.created_at,
+    )
+
+
+@router.post(
+    "/{dataset_id}/quality-gates/evaluate",
+    response_model=EvaluationQualityGateResponse,
+)
+async def evaluate_evaluation_quality_gate(
+    knowledge_base_id: UUID,
+    dataset_id: UUID,
+    payload: EvaluationQualityGateRequest,
+    service: EvaluationQualityGateServiceDependency,
+) -> EvaluationQualityGateResponse:
+    """Evaluate explicit regression thresholds between two persisted runs."""
+    thresholds = EvaluationQualityGateThresholds(
+        max_mean_precision_drop=payload.thresholds.max_mean_precision_drop,
+        max_mean_recall_drop=payload.thresholds.max_mean_recall_drop,
+        max_mrr_drop=payload.thresholds.max_mrr_drop,
+        max_mean_ndcg_drop=payload.thresholds.max_mean_ndcg_drop,
+        max_mean_judgment_coverage_drop=(
+            payload.thresholds.max_mean_judgment_coverage_drop
+        ),
+        max_mean_duration_increase_ms=(
+            payload.thresholds.max_mean_duration_increase_ms
+        ),
+    )
+
+    try:
+        result = await service.evaluate(
+            knowledge_base_id=knowledge_base_id,
+            dataset_id=dataset_id,
+            first_run_id=payload.first_run_id,
+            second_run_id=payload.second_run_id,
+            thresholds=thresholds,
+        )
+    except (
+        EvaluationQualityGateThresholdError,
+        EvaluationRunComparisonQueryError,
+    ) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="evaluation quality gate request is invalid",
+        ) from exc
+    except EvaluationRunNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="evaluation run was not found",
+        ) from exc
+    except EvaluationRunPersistenceError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="evaluation quality gate temporarily unavailable",
+        ) from exc
+
+    return EvaluationQualityGateResponse(
+        dataset_id=dataset_id,
+        first_run_id=payload.first_run_id,
+        second_run_id=payload.second_run_id,
+        status=result.status,
+        aggregate_comparable=result.aggregate_comparable,
+        same_retrieval_configuration=result.same_retrieval_configuration,
+        thresholds=payload.thresholds,
+        unavailable_metrics=list(result.unavailable_metrics),
+        checks=[
+            EvaluationQualityGateCheckResponse(
+                metric=check.metric,
+                regression_kind=check.regression_kind,
+                first_value=check.first_value,
+                second_value=check.second_value,
+                delta=check.delta,
+                allowed_regression=check.allowed_regression,
+                regression_amount=check.regression_amount,
+                passed=check.passed,
+            )
+            for check in result.checks
+        ],
     )
