@@ -1,3 +1,4 @@
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 from fastapi.testclient import TestClient
@@ -69,6 +70,7 @@ def _side(
         mean_recall_at_k=1.0,
         mrr_at_k=0.5,
         mean_ndcg_at_k=ndcg,
+        created_at=datetime.now(UTC),
     )
 
 
