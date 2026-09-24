@@ -16,8 +16,8 @@ on:
         required: true
         type: string
       baseline_run_id:
-        description: "Persisted baseline evaluation run UUID"
-        required: true
+        description: "Optional explicit baseline run UUID override"
+        required: false
         type: string
       mode:
         description: "Candidate retrieval mode"
@@ -77,7 +77,7 @@ on:
         required: true
         type: string
       baseline_run_id:
-        required: true
+        required: false
         type: string
       mode:
         required: true
@@ -160,11 +160,13 @@ jobs:
             --api-base-url "$SPUREL_API_BASE_URL"
             --knowledge-base-id "$SPUREL_KNOWLEDGE_BASE_ID"
             --dataset-id "$SPUREL_DATASET_ID"
-            --baseline-run-id "$SPUREL_BASELINE_RUN_ID"
             --mode "$SPUREL_MODE"
             --top-k "$SPUREL_TOP_K"
           )
 
+          if [[ -n "$SPUREL_BASELINE_RUN_ID" ]]; then
+            args+=(--baseline-run-id "$SPUREL_BASELINE_RUN_ID")
+          fi
           if [[ -n "$SPUREL_CANDIDATE_K" ]]; then
             args+=(--candidate-k "$SPUREL_CANDIDATE_K")
           fi
