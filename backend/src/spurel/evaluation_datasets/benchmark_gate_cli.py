@@ -141,7 +141,7 @@ def run_benchmark_gate_cli(
         promoted = False
 
         if (
-            exit_code is QualityGateCliExitCode.PASS
+            exit_code == QualityGateCliExitCode.PASS
             and config.promote_on_pass
         ):
             promoted = _promote_candidate_baseline(
