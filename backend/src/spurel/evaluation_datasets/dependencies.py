@@ -10,6 +10,7 @@ from spurel.embeddings.config import (
     EmbeddingConfigurationError,
     OpenAIEmbeddingConfig,
 )
+from spurel.evaluation_datasets.baseline_service import EvaluationBaselineService
 from spurel.evaluation_datasets.execution import (
     DatasetEvaluationExecutionService,
     DatasetEvaluationMode,
@@ -26,6 +27,9 @@ from spurel.evaluation_datasets.run_service import (
     PersistedDatasetEvaluationService,
 )
 from spurel.evaluation_datasets.service import EvaluationDatasetService
+from spurel.evaluation_datasets.sqlalchemy_baseline_repository import (
+    SqlAlchemyEvaluationBaselineRepository,
+)
 from spurel.evaluation_datasets.sqlalchemy_repository import (
     SqlAlchemyEvaluationDatasetRepository,
 )
@@ -178,4 +182,13 @@ def get_evaluation_quality_gate_service() -> EvaluationQualityGateService:
     """Build explicit threshold-based benchmark quality gates."""
     return EvaluationQualityGateService(
         get_evaluation_run_comparison_service()
+    )
+
+
+
+def get_evaluation_baseline_service() -> EvaluationBaselineService:
+    """Build explicit promoted evaluation baseline management."""
+    return EvaluationBaselineService(
+        repository=SqlAlchemyEvaluationBaselineRepository(async_session_factory),
+        runs=get_evaluation_run_service(),
     )

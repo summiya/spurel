@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from spurel.embeddings.domain import EmbeddingError
 from spurel.evaluation_datasets.dependencies import (
+    get_evaluation_baseline_service,
     get_evaluation_dataset_service,
     get_evaluation_quality_gate_service,
     get_evaluation_run_comparison_service,
@@ -14,6 +15,18 @@ from spurel.evaluation_datasets.dependencies import (
     get_hybrid_dataset_evaluation_service,
     get_keyword_dataset_evaluation_service,
     get_vector_dataset_evaluation_service,
+)
+from spurel.evaluation_datasets.baseline_domain import (
+    EvaluationBaseline,
+    EvaluationBaselineConfiguration,
+    EvaluationBaselineConfigurationError,
+)
+from spurel.evaluation_datasets.baseline_ports import (
+    EvaluationBaselinePersistenceError,
+)
+from spurel.evaluation_datasets.baseline_service import (
+    EvaluationBaselineNotFoundError,
+    EvaluationBaselineService,
 )
 from spurel.evaluation_datasets.domain import (
     EvaluationCase,
@@ -44,6 +57,8 @@ from spurel.evaluation_datasets.run_service import (
 )
 from spurel.evaluation_datasets.schemas import (
     CreateEvaluationCaseRequest,
+    EvaluationBaselineListResponse,
+    EvaluationBaselineResponse,
     CreateEvaluationDatasetRequest,
     DatasetEvaluationCaseResponse,
     DatasetEvaluationRequest,
@@ -57,6 +72,8 @@ from spurel.evaluation_datasets.schemas import (
     EvaluationQualityGateCheckResponse,
     EvaluationQualityGateRequest,
     EvaluationQualityGateResponse,
+    PromoteEvaluationBaselineRequest,
+    ResolveEvaluationBaselineRequest,
     EvaluationRunCaseComparisonResponse,
     EvaluationRunComparisonRequest,
     EvaluationRunComparisonResponse,
@@ -82,6 +99,11 @@ from spurel.retrieval.keyword_domain import KeywordRetrievalQueryError
 from spurel.retrieval.keyword_ports import KeywordRetrievalRepositoryError
 from spurel.retrieval.ports import VectorRetrievalRepositoryError
 from spurel.retrieval.service import VectorRetrievalProviderContractError
+
+EvaluationBaselineServiceDependency = Annotated[
+    EvaluationBaselineService,
+    Depends(get_evaluation_baseline_service),
+]
 
 router = APIRouter(
     prefix="/knowledge-bases/{knowledge_base_id}/evaluation-datasets",
@@ -806,4 +828,135 @@ async def evaluate_evaluation_quality_gate(
             )
             for check in result.checks
         ],
+    )
+
+
+
+@router.put(
+    "/{dataset_id}/baselines",
+    response_model=EvaluationBaselineResponse,
+)
+async def promote_evaluation_baseline(
+    knowledge_base_id: UUID,
+    dataset_id: UUID,
+    payload: PromoteEvaluationBaselineRequest,
+    service: EvaluationBaselineServiceDependency,
+) -> EvaluationBaselineResponse:
+    """Promote one persisted run for its exact retrieval configuration."""
+    try:
+        baseline = await service.promote(
+            knowledge_base_id=knowledge_base_id,
+            dataset_id=dataset_id,
+            run_id=payload.run_id,
+        )
+    except EvaluationRunNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="evaluation run was not found",
+        ) from exc
+    except EvaluationBaselinePersistenceError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="evaluation baseline service temporarily unavailable",
+        ) from exc
+
+    return _baseline_response(baseline)
+
+
+@router.get(
+    "/{dataset_id}/baselines",
+    response_model=EvaluationBaselineListResponse,
+)
+async def list_evaluation_baselines(
+    knowledge_base_id: UUID,
+    dataset_id: UUID,
+    service: EvaluationBaselineServiceDependency,
+    limit: Annotated[int, Query(ge=1, le=100)] = 50,
+    offset: Annotated[int, Query(ge=0)] = 0,
+) -> EvaluationBaselineListResponse:
+    """List explicitly promoted baselines for one dataset."""
+    try:
+        baselines = await service.list_by_dataset(
+            knowledge_base_id=knowledge_base_id,
+            dataset_id=dataset_id,
+            limit=limit,
+            offset=offset,
+        )
+    except EvaluationBaselinePersistenceError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="evaluation baseline service temporarily unavailable",
+        ) from exc
+
+    return EvaluationBaselineListResponse(
+        items=[_baseline_response(baseline) for baseline in baselines],
+        limit=limit,
+        offset=offset,
+    )
+
+
+@router.post(
+    "/{dataset_id}/baselines/resolve",
+    response_model=EvaluationBaselineResponse,
+)
+async def resolve_evaluation_baseline(
+    knowledge_base_id: UUID,
+    dataset_id: UUID,
+    payload: ResolveEvaluationBaselineRequest,
+    service: EvaluationBaselineServiceDependency,
+) -> EvaluationBaselineResponse:
+    """Resolve the explicitly promoted baseline for an exact configuration."""
+    configuration = EvaluationBaselineConfiguration(
+        mode=payload.mode,
+        top_k=payload.top_k,
+        candidate_k=payload.candidate_k,
+        rrf_k=payload.rrf_k,
+        embedding_provider=payload.embedding_provider,
+        embedding_model=payload.embedding_model,
+        embedding_dimensions=payload.embedding_dimensions,
+    )
+
+    try:
+        baseline = await service.resolve(
+            knowledge_base_id=knowledge_base_id,
+            dataset_id=dataset_id,
+            configuration=configuration,
+        )
+    except EvaluationBaselineConfigurationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="evaluation baseline configuration is invalid",
+        ) from exc
+    except EvaluationBaselineNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="evaluation baseline was not found",
+        ) from exc
+    except EvaluationBaselinePersistenceError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="evaluation baseline service temporarily unavailable",
+        ) from exc
+
+    return _baseline_response(baseline)
+
+
+def _baseline_response(
+    baseline: EvaluationBaseline,
+) -> EvaluationBaselineResponse:
+    configuration = baseline.configuration
+    return EvaluationBaselineResponse(
+        baseline_id=baseline.id,
+        knowledge_base_id=baseline.knowledge_base_id,
+        dataset_id=baseline.dataset_id,
+        run_id=baseline.run_id,
+        configuration_fingerprint=baseline.configuration_fingerprint,
+        mode=configuration.mode,
+        top_k=configuration.top_k,
+        candidate_k=configuration.candidate_k,
+        rrf_k=configuration.rrf_k,
+        embedding_provider=configuration.embedding_provider,
+        embedding_model=configuration.embedding_model,
+        embedding_dimensions=configuration.embedding_dimensions,
+        promoted_at=baseline.promoted_at,
     )

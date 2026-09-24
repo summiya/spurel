@@ -369,3 +369,47 @@ class EvaluationQualityGateResponse(BaseModel):
     thresholds: EvaluationQualityGateThresholdsSchema
     unavailable_metrics: list[EvaluationQualityGateMetric]
     checks: list[EvaluationQualityGateCheckResponse]
+
+
+class PromoteEvaluationBaselineRequest(BaseModel):
+    """Promote one persisted evaluation run as its configuration baseline."""
+
+    run_id: UUID
+
+
+class ResolveEvaluationBaselineRequest(BaseModel):
+    """Exact retrieval configuration used to resolve a promoted baseline."""
+
+    mode: DatasetEvaluationMode
+    top_k: int = Field(ge=1, le=100)
+    candidate_k: int | None = Field(default=None, ge=1, le=100)
+    rrf_k: int | None = Field(default=None, ge=1, le=1_000)
+    embedding_provider: str | None = Field(default=None, min_length=1, max_length=100)
+    embedding_model: str | None = Field(default=None, min_length=1, max_length=255)
+    embedding_dimensions: int | None = Field(default=None, ge=1)
+
+
+class EvaluationBaselineResponse(BaseModel):
+    """Public explicitly promoted baseline."""
+
+    baseline_id: UUID
+    knowledge_base_id: UUID
+    dataset_id: UUID
+    run_id: UUID
+    configuration_fingerprint: str = Field(min_length=64, max_length=64)
+    mode: DatasetEvaluationMode
+    top_k: int = Field(ge=1, le=100)
+    candidate_k: int | None
+    rrf_k: int | None
+    embedding_provider: str | None
+    embedding_model: str | None
+    embedding_dimensions: int | None
+    promoted_at: datetime
+
+
+class EvaluationBaselineListResponse(BaseModel):
+    """Bounded promoted-baseline page."""
+
+    items: list[EvaluationBaselineResponse]
+    limit: int
+    offset: int

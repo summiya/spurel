@@ -1,5 +1,20 @@
 """Evaluation dataset application boundaries."""
 
+from spurel.evaluation_datasets.baseline_domain import (
+    MAX_BASELINE_PAGE_SIZE,
+    EvaluationBaseline,
+    EvaluationBaselineConfiguration,
+    EvaluationBaselineConfigurationError,
+)
+from spurel.evaluation_datasets.baseline_ports import (
+    EvaluationBaselinePersistenceError,
+    EvaluationBaselineRepository,
+)
+from spurel.evaluation_datasets.baseline_service import (
+    EvaluationBaselineNotFoundError,
+    EvaluationBaselineQueryError,
+    EvaluationBaselineService,
+)
 from spurel.evaluation_datasets.domain import (
     MAX_EVALUATION_DATASET_NAME_LENGTH,
     MAX_EVALUATION_QUERY_LENGTH,
@@ -76,6 +91,15 @@ from spurel.evaluation_datasets.service import (
 )
 
 __all__ = [
+    "MAX_BASELINE_PAGE_SIZE",
+    "EvaluationBaseline",
+    "EvaluationBaselineConfiguration",
+    "EvaluationBaselineConfigurationError",
+    "EvaluationBaselineNotFoundError",
+    "EvaluationBaselinePersistenceError",
+    "EvaluationBaselineQueryError",
+    "EvaluationBaselineRepository",
+    "EvaluationBaselineService",
     "EvaluationQualityGateCheck",
     "EvaluationQualityGateMetric",
     "EvaluationQualityGateRegressionKind",
