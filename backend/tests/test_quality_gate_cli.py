@@ -6,7 +6,6 @@ import pytest
 
 from spurel.evaluation_datasets.quality_gate_cli import (
     QualityGateCliExitCode,
-    QualityGateCliError,
     run_quality_gate_cli,
 )
 
@@ -271,3 +270,32 @@ def test_cli_rejects_same_run_ids() -> None:
 
     assert code == int(QualityGateCliExitCode.ERROR)
     assert "must be different" in error.getvalue()
+
+
+
+def test_cli_refuses_bearer_token_over_plain_http(monkeypatch) -> None:
+    monkeypatch.setenv("SPUREL_API_TOKEN", "secret-token")
+    error = io.StringIO()
+
+    code = run_quality_gate_cli(
+        [
+            "--api-base-url",
+            "http://spurel.example",
+            "--knowledge-base-id",
+            str(uuid4()),
+            "--dataset-id",
+            str(uuid4()),
+            "--first-run-id",
+            str(uuid4()),
+            "--second-run-id",
+            str(uuid4()),
+            "--max-mrr-drop",
+            "0.01",
+        ],
+        transport=FakeTransport({"status": "pass"}),
+        stdout=io.StringIO(),
+        stderr=error,
+    )
+
+    assert code == int(QualityGateCliExitCode.ERROR)
+    assert "requires an https:// API base URL" in error.getvalue()
