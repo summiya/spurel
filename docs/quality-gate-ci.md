@@ -147,3 +147,146 @@ The CLI fails closed:
 - structurally non-comparable runs → exit `2`
 
 This keeps CI behavior explicit instead of allowing ambiguous benchmark results to pass.
+
+
+## One-command benchmark + gate
+
+When the baseline run already exists, CI does not need to create the candidate run in a
+separate step.
+
+Install the backend and run:
+
+```bash
+spurel-benchmark-gate \
+  --api-base-url "https://spurel.example.com" \
+  --knowledge-base-id "00000000-0000-0000-0000-000000000001" \
+  --dataset-id "00000000-0000-0000-0000-000000000002" \
+  --baseline-run-id "00000000-0000-0000-0000-000000000003" \
+  --mode hybrid \
+  --top-k 10 \
+  --candidate-k 50 \
+  --rrf-k 60 \
+  --max-mrr-drop 0.02 \
+  --max-mean-ndcg-drop 0.02 \
+  --max-mean-recall-drop 0.03 \
+  --max-mean-duration-increase-ms 50
+```
+
+The command performs:
+
+```text
+persisted baseline run
+        +
+evaluation dataset
+        ↓
+run candidate dataset evaluation
+        ↓
+persist candidate run
+        ↓
+capture candidate run_id
+        ↓
+evaluate baseline vs candidate quality gate
+        ↓
+return CI exit code
+```
+
+The candidate run is persisted before the gate is evaluated. If the gate fails, the
+candidate run remains available in benchmark history for investigation.
+
+The exit codes are identical to `spurel-quality-gate`:
+
+```text
+0 = pass
+1 = regression threshold failed
+2 = not evaluable
+3 = configuration / API / network / response error
+```
+
+### Retrieval modes
+
+`--mode` is required and must be one of:
+
+```text
+vector
+keyword
+hybrid
+```
+
+All modes support:
+
+```text
+--top-k
+```
+
+Hybrid additionally supports:
+
+```text
+--candidate-k
+--rrf-k
+```
+
+When omitted for hybrid mode:
+
+```text
+candidate_k = 50
+rrf_k = 60
+```
+
+Hybrid candidate size must be greater than or equal to `top_k`.
+
+### Machine-readable result
+
+Use:
+
+```bash
+spurel-benchmark-gate ... --json
+```
+
+The output includes the new candidate run ID and the complete quality-gate response:
+
+```json
+{
+  "candidate_run_id": "...",
+  "quality_gate": {
+    "status": "pass"
+  }
+}
+```
+
+This preserves the candidate run identity even when the gate exits non-zero.
+
+## One-command GitHub Actions workflow
+
+The repository also includes:
+
+```text
+.github/workflows/rag-benchmark-gate.yml
+```
+
+It supports both manual execution and reusable `workflow_call`.
+
+Example reusable caller:
+
+```yaml
+jobs:
+  rag-benchmark:
+    uses: ./.github/workflows/rag-benchmark-gate.yml
+    with:
+      api_base_url: ${{ vars.SPUREL_API_BASE_URL }}
+      knowledge_base_id: ${{ vars.SPUREL_KNOWLEDGE_BASE_ID }}
+      dataset_id: ${{ vars.SPUREL_EVALUATION_DATASET_ID }}
+      baseline_run_id: ${{ vars.SPUREL_BASELINE_RUN_ID }}
+      mode: "hybrid"
+      top_k: "10"
+      candidate_k: "50"
+      rrf_k: "60"
+      max_mrr_drop: "0.02"
+      max_mean_ndcg_drop: "0.02"
+      max_mean_recall_drop: "0.03"
+      max_mean_duration_increase_ms: "50"
+    secrets:
+      SPUREL_API_TOKEN: ${{ secrets.SPUREL_API_TOKEN }}
+```
+
+The workflow succeeds only when the newly created candidate benchmark passes every
+configured quality threshold.

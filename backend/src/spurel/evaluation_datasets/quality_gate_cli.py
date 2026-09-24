@@ -79,25 +79,25 @@ class UrllibJsonHttpTransport:
         except HTTPError as exc:
             detail = _safe_http_error_detail(exc)
             raise QualityGateCliError(
-                f"quality gate API returned HTTP {exc.code}: {detail}"
+                f"Spurel API returned HTTP {exc.code}: {detail}"
             ) from exc
         except URLError as exc:
             raise QualityGateCliError(
-                "quality gate API could not be reached"
+                "Spurel API could not be reached"
             ) from exc
         except TimeoutError as exc:
-            raise QualityGateCliError("quality gate API request timed out") from exc
+            raise QualityGateCliError("Spurel API request timed out") from exc
 
         try:
             decoded = json.loads(raw.decode("utf-8"))
         except (UnicodeDecodeError, json.JSONDecodeError) as exc:
             raise QualityGateCliError(
-                "quality gate API returned invalid JSON"
+                "Spurel API returned invalid JSON"
             ) from exc
 
         if not isinstance(decoded, dict):
             raise QualityGateCliError(
-                "quality gate API returned an unexpected JSON shape"
+                "Spurel API returned an unexpected JSON shape"
             )
         return decoded
 
@@ -351,9 +351,11 @@ def _safe_http_error_detail(exc: HTTPError) -> str:
     return "request failed"
 
 
-
 def _validate_transport_security(config: QualityGateCliConfig) -> None:
-    if os.getenv(_BEARER_TOKEN_ENV) and not config.api_base_url.startswith("https://"):
+    if (
+        os.getenv(_BEARER_TOKEN_ENV)
+        and not config.api_base_url.startswith("https://")
+    ):
         raise QualityGateCliError(
             "SPUREL_API_TOKEN requires an https:// API base URL"
         )

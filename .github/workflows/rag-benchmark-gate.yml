@@ -1,0 +1,199 @@
+name: RAG Benchmark Gate
+
+on:
+  workflow_dispatch:
+    inputs:
+      api_base_url:
+        description: "Base URL of the deployed Spurel API"
+        required: true
+        type: string
+      knowledge_base_id:
+        description: "Knowledge base UUID"
+        required: true
+        type: string
+      dataset_id:
+        description: "Evaluation dataset UUID"
+        required: true
+        type: string
+      baseline_run_id:
+        description: "Persisted baseline evaluation run UUID"
+        required: true
+        type: string
+      mode:
+        description: "Candidate retrieval mode"
+        required: true
+        type: choice
+        options:
+          - vector
+          - keyword
+          - hybrid
+      top_k:
+        description: "Final retrieval cutoff"
+        required: false
+        default: "10"
+        type: string
+      candidate_k:
+        description: "Hybrid candidate pool size"
+        required: false
+        type: string
+      rrf_k:
+        description: "Hybrid reciprocal-rank-fusion constant"
+        required: false
+        type: string
+      max_mean_precision_drop:
+        description: "Optional maximum mean Precision@K drop"
+        required: false
+        type: string
+      max_mean_recall_drop:
+        description: "Optional maximum mean Recall@K drop"
+        required: false
+        type: string
+      max_mrr_drop:
+        description: "Optional maximum MRR@K drop"
+        required: false
+        type: string
+      max_mean_ndcg_drop:
+        description: "Optional maximum mean nDCG@K drop"
+        required: false
+        type: string
+      max_mean_judgment_coverage_drop:
+        description: "Optional maximum judgment-coverage drop"
+        required: false
+        type: string
+      max_mean_duration_increase_ms:
+        description: "Optional maximum mean latency increase in milliseconds"
+        required: false
+        type: string
+
+  workflow_call:
+    inputs:
+      api_base_url:
+        required: true
+        type: string
+      knowledge_base_id:
+        required: true
+        type: string
+      dataset_id:
+        required: true
+        type: string
+      baseline_run_id:
+        required: true
+        type: string
+      mode:
+        required: true
+        type: string
+      top_k:
+        required: false
+        default: "10"
+        type: string
+      candidate_k:
+        required: false
+        type: string
+      rrf_k:
+        required: false
+        type: string
+      max_mean_precision_drop:
+        required: false
+        type: string
+      max_mean_recall_drop:
+        required: false
+        type: string
+      max_mrr_drop:
+        required: false
+        type: string
+      max_mean_ndcg_drop:
+        required: false
+        type: string
+      max_mean_judgment_coverage_drop:
+        required: false
+        type: string
+      max_mean_duration_increase_ms:
+        required: false
+        type: string
+    secrets:
+      SPUREL_API_TOKEN:
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  benchmark-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    env:
+      SPUREL_API_TOKEN: ${{ secrets.SPUREL_API_TOKEN }}
+      SPUREL_API_BASE_URL: ${{ inputs.api_base_url }}
+      SPUREL_KNOWLEDGE_BASE_ID: ${{ inputs.knowledge_base_id }}
+      SPUREL_DATASET_ID: ${{ inputs.dataset_id }}
+      SPUREL_BASELINE_RUN_ID: ${{ inputs.baseline_run_id }}
+      SPUREL_MODE: ${{ inputs.mode }}
+      SPUREL_TOP_K: ${{ inputs.top_k }}
+      SPUREL_CANDIDATE_K: ${{ inputs.candidate_k }}
+      SPUREL_RRF_K: ${{ inputs.rrf_k }}
+      MAX_MEAN_PRECISION_DROP: ${{ inputs.max_mean_precision_drop }}
+      MAX_MEAN_RECALL_DROP: ${{ inputs.max_mean_recall_drop }}
+      MAX_MRR_DROP: ${{ inputs.max_mrr_drop }}
+      MAX_MEAN_NDCG_DROP: ${{ inputs.max_mean_ndcg_drop }}
+      MAX_MEAN_JUDGMENT_COVERAGE_DROP: ${{ inputs.max_mean_judgment_coverage_drop }}
+      MAX_MEAN_DURATION_INCREASE_MS: ${{ inputs.max_mean_duration_increase_ms }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7.0.1
+
+      - name: Set up Python
+        uses: actions/setup-python@v7.0.0
+        with:
+          python-version: "3.13"
+
+      - name: Install Spurel backend
+        run: python -m pip install -e ./backend
+
+      - name: Run candidate benchmark and quality gate
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          args=(
+            --api-base-url "$SPUREL_API_BASE_URL"
+            --knowledge-base-id "$SPUREL_KNOWLEDGE_BASE_ID"
+            --dataset-id "$SPUREL_DATASET_ID"
+            --baseline-run-id "$SPUREL_BASELINE_RUN_ID"
+            --mode "$SPUREL_MODE"
+            --top-k "$SPUREL_TOP_K"
+          )
+
+          if [[ -n "$SPUREL_CANDIDATE_K" ]]; then
+            args+=(--candidate-k "$SPUREL_CANDIDATE_K")
+          fi
+          if [[ -n "$SPUREL_RRF_K" ]]; then
+            args+=(--rrf-k "$SPUREL_RRF_K")
+          fi
+          if [[ -n "$MAX_MEAN_PRECISION_DROP" ]]; then
+            args+=(--max-mean-precision-drop "$MAX_MEAN_PRECISION_DROP")
+          fi
+          if [[ -n "$MAX_MEAN_RECALL_DROP" ]]; then
+            args+=(--max-mean-recall-drop "$MAX_MEAN_RECALL_DROP")
+          fi
+          if [[ -n "$MAX_MRR_DROP" ]]; then
+            args+=(--max-mrr-drop "$MAX_MRR_DROP")
+          fi
+          if [[ -n "$MAX_MEAN_NDCG_DROP" ]]; then
+            args+=(--max-mean-ndcg-drop "$MAX_MEAN_NDCG_DROP")
+          fi
+          if [[ -n "$MAX_MEAN_JUDGMENT_COVERAGE_DROP" ]]; then
+            args+=(
+              --max-mean-judgment-coverage-drop
+              "$MAX_MEAN_JUDGMENT_COVERAGE_DROP"
+            )
+          fi
+          if [[ -n "$MAX_MEAN_DURATION_INCREASE_MS" ]]; then
+            args+=(
+              --max-mean-duration-increase-ms
+              "$MAX_MEAN_DURATION_INCREASE_MS"
+            )
+          fi
+
+          spurel-benchmark-gate "${args[@]}"
