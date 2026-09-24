@@ -58,6 +58,7 @@ class BenchmarkGateCliConfig:
     candidate_k: int | None
     rrf_k: int | None
     thresholds: Mapping[str, float]
+    promote_on_pass: bool
     timeout_seconds: float
     json_output: bool
 
@@ -76,6 +77,10 @@ class BenchmarkGateCliConfig:
     @property
     def baseline_resolve_endpoint(self) -> str:
         return f"{self.dataset_base_url}/baselines/resolve"
+
+    @property
+    def baseline_promote_endpoint(self) -> str:
+        return f"{self.dataset_base_url}/baselines"
 
     @property
     def quality_gate_endpoint(self) -> str:
@@ -133,6 +138,18 @@ def run_benchmark_gate_cli(
             timeout_seconds=config.timeout_seconds,
         )
         exit_code = _exit_code_from_gate(gate)
+        promoted = False
+
+        if (
+            exit_code is QualityGateCliExitCode.PASS
+            and config.promote_on_pass
+        ):
+            promoted = _promote_candidate_baseline(
+                config=config,
+                candidate_run_id=candidate_run_id,
+                client=client,
+                headers=headers,
+            )
 
         if config.json_output:
             print(
@@ -141,6 +158,7 @@ def run_benchmark_gate_cli(
                         "baseline_run_id": str(baseline_run_id),
                         "baseline_source": baseline_source.value,
                         "candidate_run_id": str(candidate_run_id),
+                        "candidate_promoted": promoted,
                         "quality_gate": gate,
                     },
                     sort_keys=True,
@@ -152,6 +170,7 @@ def run_benchmark_gate_cli(
                 baseline_run_id=baseline_run_id,
                 baseline_source=baseline_source,
                 candidate_run_id=candidate_run_id,
+                promoted=promoted,
                 gate=gate,
                 output=output,
             )
@@ -209,6 +228,14 @@ def _parse_config(argv: Sequence[str] | None) -> BenchmarkGateCliConfig:
     parser.add_argument("--max-mean-ndcg-drop", type=_unit_interval)
     parser.add_argument("--max-mean-judgment-coverage-drop", type=_unit_interval)
     parser.add_argument("--max-mean-duration-increase-ms", type=_non_negative_float)
+    parser.add_argument(
+        "--promote-on-pass",
+        action="store_true",
+        help=(
+            "Promote the persisted candidate as the new baseline only after "
+            "the quality gate returns pass."
+        ),
+    )
 
     parser.add_argument(
         "--timeout-seconds",
@@ -263,6 +290,7 @@ def _parse_config(argv: Sequence[str] | None) -> BenchmarkGateCliConfig:
         candidate_k=candidate_k,
         rrf_k=rrf_k,
         thresholds=thresholds,
+        promote_on_pass=args.promote_on_pass,
         timeout_seconds=args.timeout_seconds,
         json_output=args.json_output,
     )
@@ -431,6 +459,31 @@ def _validate_candidate_response(
         )
 
 
+def _promote_candidate_baseline(
+    *,
+    config: BenchmarkGateCliConfig,
+    candidate_run_id: UUID,
+    client: JsonHttpTransport,
+    headers: Mapping[str, str],
+) -> bool:
+    baseline = client.put_json(
+        url=config.baseline_promote_endpoint,
+        payload={"run_id": str(candidate_run_id)},
+        headers=headers,
+        timeout_seconds=config.timeout_seconds,
+    )
+    promoted_run_id = _uuid_field(
+        response=baseline,
+        field="run_id",
+        context="baseline promotion",
+    )
+    if promoted_run_id != candidate_run_id:
+        raise QualityGateCliError(
+            "baseline promotion response did not reference the candidate run"
+        )
+    return True
+
+
 def _exit_code_from_gate(
     response: Mapping[str, object],
 ) -> QualityGateCliExitCode:
@@ -451,6 +504,7 @@ def _print_human_summary(
     baseline_run_id: UUID,
     baseline_source: BenchmarkBaselineSource,
     candidate_run_id: UUID,
+    promoted: bool,
     gate: Mapping[str, object],
     output,
 ) -> None:
@@ -461,6 +515,8 @@ def _print_human_summary(
     )
     print(f"Candidate evaluation run: {candidate_run_id}", file=output)
     print(f"Spurel quality gate: {gate.get('status')}", file=output)
+    if promoted:
+        print("Candidate promoted as baseline: yes", file=output)
 
     checks = gate.get("checks")
     if isinstance(checks, list):
