@@ -2,8 +2,25 @@
 
 from dataclasses import dataclass
 from enum import StrEnum
+from typing import Protocol
+from uuid import UUID
 
 from spurel.evaluation_datasets.run_comparison import EvaluationRunComparison
+
+
+class EvaluationRunComparator(Protocol):
+    """Run-comparison capability required by quality gates."""
+
+    async def compare(
+        self,
+        *,
+        knowledge_base_id: UUID,
+        dataset_id: UUID,
+        first_run_id: UUID,
+        second_run_id: UUID,
+    ) -> EvaluationRunComparison:
+        """Return one scoped persisted benchmark comparison."""
+        ...
 
 
 class EvaluationQualityGateStatus(StrEnum):
@@ -272,3 +289,33 @@ def _configured_metrics(
         configured.append(EvaluationQualityGateMetric.MEAN_DURATION_MS)
 
     return tuple(configured)
+
+
+
+class EvaluationQualityGateService:
+    """Apply explicit thresholds to a scoped persisted run comparison."""
+
+    def __init__(self, comparisons: EvaluationRunComparator) -> None:
+        self._comparisons = comparisons
+
+    async def evaluate(
+        self,
+        *,
+        knowledge_base_id: UUID,
+        dataset_id: UUID,
+        first_run_id: UUID,
+        second_run_id: UUID,
+        thresholds: EvaluationQualityGateThresholds,
+    ) -> EvaluationQualityGateResult:
+        """Compare two runs and evaluate the configured quality gate."""
+        thresholds.validate()
+        comparison = await self._comparisons.compare(
+            knowledge_base_id=knowledge_base_id,
+            dataset_id=dataset_id,
+            first_run_id=first_run_id,
+            second_run_id=second_run_id,
+        )
+        return evaluate_quality_gate(
+            comparison=comparison,
+            thresholds=thresholds,
+        )
