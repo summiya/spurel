@@ -6,16 +6,6 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from spurel.embeddings.domain import EmbeddingError
-from spurel.evaluation_datasets.dependencies import (
-    get_evaluation_baseline_service,
-    get_evaluation_dataset_service,
-    get_evaluation_quality_gate_service,
-    get_evaluation_run_comparison_service,
-    get_evaluation_run_service,
-    get_hybrid_dataset_evaluation_service,
-    get_keyword_dataset_evaluation_service,
-    get_vector_dataset_evaluation_service,
-)
 from spurel.evaluation_datasets.baseline_domain import (
     EvaluationBaseline,
     EvaluationBaselineConfiguration,
@@ -28,6 +18,16 @@ from spurel.evaluation_datasets.baseline_ports import (
 from spurel.evaluation_datasets.baseline_service import (
     EvaluationBaselineNotFoundError,
     EvaluationBaselineService,
+)
+from spurel.evaluation_datasets.dependencies import (
+    get_evaluation_baseline_service,
+    get_evaluation_dataset_service,
+    get_evaluation_quality_gate_service,
+    get_evaluation_run_comparison_service,
+    get_evaluation_run_service,
+    get_hybrid_dataset_evaluation_service,
+    get_keyword_dataset_evaluation_service,
+    get_vector_dataset_evaluation_service,
 )
 from spurel.evaluation_datasets.domain import (
     EvaluationCase,
