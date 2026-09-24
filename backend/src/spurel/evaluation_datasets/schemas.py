@@ -10,6 +10,11 @@ from spurel.evaluation_datasets.domain import (
     MAX_EVALUATION_QUERY_LENGTH,
 )
 from spurel.evaluation_datasets.execution import DatasetEvaluationMode
+from spurel.evaluation_datasets.quality_gate import (
+    EvaluationQualityGateMetric,
+    EvaluationQualityGateRegressionKind,
+    EvaluationQualityGateStatus,
+)
 from spurel.evaluation_datasets.run_comparison import EvaluationRunCasePresence
 from spurel.retrieval.evaluation import (
     MAX_EVALUATION_JUDGMENTS,
@@ -290,3 +295,77 @@ class EvaluationRunComparisonResponse(BaseModel):
     mean_ndcg_delta: float | None
 
     cases: list[EvaluationRunCaseComparisonResponse]
+
+
+class EvaluationQualityGateThresholdsSchema(BaseModel):
+    """Explicit tolerated regressions for one benchmark quality gate."""
+
+    max_mean_precision_drop: float | None = Field(default=None, ge=0, le=1)
+    max_mean_recall_drop: float | None = Field(default=None, ge=0, le=1)
+    max_mrr_drop: float | None = Field(default=None, ge=0, le=1)
+    max_mean_ndcg_drop: float | None = Field(default=None, ge=0, le=1)
+    max_mean_judgment_coverage_drop: float | None = Field(
+        default=None,
+        ge=0,
+        le=1,
+    )
+    max_mean_duration_increase_ms: float | None = Field(default=None, ge=0)
+
+    @model_validator(mode="after")
+    def validate_any_threshold(self) -> "EvaluationQualityGateThresholdsSchema":
+        """Require at least one explicit quality threshold."""
+        if all(
+            value is None
+            for value in (
+                self.max_mean_precision_drop,
+                self.max_mean_recall_drop,
+                self.max_mrr_drop,
+                self.max_mean_ndcg_drop,
+                self.max_mean_judgment_coverage_drop,
+                self.max_mean_duration_increase_ms,
+            )
+        ):
+            raise ValueError("at least one quality-gate threshold is required")
+        return self
+
+
+class EvaluationQualityGateRequest(BaseModel):
+    """Request payload for evaluating one benchmark quality gate."""
+
+    first_run_id: UUID
+    second_run_id: UUID
+    thresholds: EvaluationQualityGateThresholdsSchema
+
+    @model_validator(mode="after")
+    def validate_distinct_runs(self) -> "EvaluationQualityGateRequest":
+        """Require two distinct benchmark runs."""
+        if self.first_run_id == self.second_run_id:
+            raise ValueError("quality gate requires two distinct run IDs")
+        return self
+
+
+class EvaluationQualityGateCheckResponse(BaseModel):
+    """Evidence for one configured quality-gate threshold."""
+
+    metric: EvaluationQualityGateMetric
+    regression_kind: EvaluationQualityGateRegressionKind
+    first_value: float
+    second_value: float
+    delta: float
+    allowed_regression: float = Field(ge=0)
+    regression_amount: float = Field(ge=0)
+    passed: bool
+
+
+class EvaluationQualityGateResponse(BaseModel):
+    """Deterministic quality-gate result for two persisted benchmark runs."""
+
+    dataset_id: UUID
+    first_run_id: UUID
+    second_run_id: UUID
+    status: EvaluationQualityGateStatus
+    aggregate_comparable: bool
+    same_retrieval_configuration: bool
+    thresholds: EvaluationQualityGateThresholdsSchema
+    unavailable_metrics: list[EvaluationQualityGateMetric]
+    checks: list[EvaluationQualityGateCheckResponse]

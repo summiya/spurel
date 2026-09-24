@@ -29,6 +29,18 @@ from spurel.evaluation_datasets.ports import (
     EvaluationDatasetPersistenceError,
     EvaluationDatasetRepository,
 )
+from spurel.evaluation_datasets.quality_gate import (
+    EvaluationQualityGateCheck,
+    EvaluationQualityGateMetric,
+    EvaluationQualityGateRegressionKind,
+    EvaluationQualityGateResult,
+    EvaluationQualityGateService,
+    EvaluationQualityGateStatus,
+    EvaluationQualityGateThresholdError,
+    EvaluationQualityGateThresholds,
+    EvaluationRunComparator,
+    evaluate_quality_gate,
+)
 from spurel.evaluation_datasets.run_comparison import (
     EvaluationRunCaseComparison,
     EvaluationRunCasePresence,
@@ -64,6 +76,16 @@ from spurel.evaluation_datasets.service import (
 )
 
 __all__ = [
+    "EvaluationQualityGateCheck",
+    "EvaluationQualityGateMetric",
+    "EvaluationQualityGateRegressionKind",
+    "EvaluationQualityGateResult",
+    "EvaluationQualityGateService",
+    "EvaluationQualityGateStatus",
+    "EvaluationQualityGateThresholdError",
+    "EvaluationQualityGateThresholds",
+    "EvaluationRunComparator",
+    "evaluate_quality_gate",
     "EvaluationRunCaseComparison",
     "EvaluationRunCasePresence",
     "EvaluationRunComparison",
