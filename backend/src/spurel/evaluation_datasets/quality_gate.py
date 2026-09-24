@@ -25,6 +25,13 @@ class EvaluationQualityGateMetric(StrEnum):
     MEAN_DURATION_MS = "mean_duration_ms"
 
 
+class EvaluationQualityGateRegressionKind(StrEnum):
+    """How a metric can regress relative to its baseline."""
+
+    DROP = "drop"
+    INCREASE = "increase"
+
+
 class EvaluationQualityGateThresholdError(ValueError):
     """Raised when a quality-gate threshold configuration is invalid."""
 
@@ -81,6 +88,7 @@ class EvaluationQualityGateCheck:
     """Evidence for one configured threshold."""
 
     metric: EvaluationQualityGateMetric
+    regression_kind: EvaluationQualityGateRegressionKind
     first_value: float
     second_value: float
     delta: float
@@ -208,6 +216,7 @@ def _append_higher_is_better_check(
     checks.append(
         EvaluationQualityGateCheck(
             metric=metric,
+            regression_kind=EvaluationQualityGateRegressionKind.DROP,
             first_value=first_value,
             second_value=second_value,
             delta=delta,
@@ -231,6 +240,7 @@ def _append_lower_is_better_check(
     checks.append(
         EvaluationQualityGateCheck(
             metric=metric,
+            regression_kind=EvaluationQualityGateRegressionKind.INCREASE,
             first_value=first_value,
             second_value=second_value,
             delta=delta,
