@@ -229,6 +229,7 @@ class EvaluationRunComparisonSideResponse(BaseModel):
     mean_recall_at_k: float = Field(ge=0, le=1)
     mrr_at_k: float = Field(ge=0, le=1)
     mean_ndcg_at_k: float = Field(ge=0, le=1)
+    created_at: datetime
 
 
 class EvaluationRunCaseComparisonResponse(BaseModel):
