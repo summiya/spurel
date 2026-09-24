@@ -5,17 +5,28 @@ from fastapi.testclient import TestClient
 from spurel.generation.ports import TextGenerationProviderError
 from spurel.main import create_app
 from spurel.rag.dependencies import get_rag_answer_service
-from spurel.rag.service import RAGAnswer
+from spurel.rag.service import RAGAnswer, RAGSource
 
 
 class FakeRAGAnswerService:
     def __init__(self) -> None:
+        self.source = RAGSource(
+            label="S1",
+            retrieval_rank=1,
+            chunk_id=uuid4(),
+            document_id=uuid4(),
+            chunk_index=2,
+            excerpt="source excerpt",
+            start_offset=100,
+            end_offset=114,
+        )
         self.result = RAGAnswer(
             trace_id=uuid4(),
-            answer="Grounded answer.",
-            retrieved_chunk_count=2,
+            answer="Grounded answer [S1].",
+            retrieved_chunk_count=1,
             generation_provider="fake",
             generation_model="fake-model",
+            sources=(self.source,),
         )
         self.error: Exception | None = None
         self.last_call: dict[str, object] | None = None
@@ -47,7 +58,7 @@ def _client(service: FakeRAGAnswerService) -> TestClient:
     return TestClient(application)
 
 
-def test_rag_answer_returns_grounded_result_metadata() -> None:
+def test_rag_answer_returns_grounded_result_with_source_manifest() -> None:
     knowledge_base_id = uuid4()
     service = FakeRAGAnswerService()
     client = _client(service)
@@ -65,10 +76,22 @@ def test_rag_answer_returns_grounded_result_metadata() -> None:
     assert response.status_code == 200
     assert response.json() == {
         "trace_id": str(service.result.trace_id),
-        "answer": "Grounded answer.",
-        "retrieved_chunk_count": 2,
+        "answer": "Grounded answer [S1].",
+        "retrieved_chunk_count": 1,
         "generation_provider": "fake",
         "generation_model": "fake-model",
+        "sources": [
+            {
+                "label": "S1",
+                "retrieval_rank": 1,
+                "chunk_id": str(service.source.chunk_id),
+                "document_id": str(service.source.document_id),
+                "chunk_index": 2,
+                "excerpt": "source excerpt",
+                "start_offset": 100,
+                "end_offset": 114,
+            }
+        ],
     }
     assert service.last_call == {
         "knowledge_base_id": knowledge_base_id,
