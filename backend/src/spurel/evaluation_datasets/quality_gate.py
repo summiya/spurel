@@ -7,6 +7,8 @@ from uuid import UUID
 
 from spurel.evaluation_datasets.run_comparison import EvaluationRunComparison
 
+_FLOAT_COMPARISON_EPSILON = 1e-12
+
 
 class EvaluationRunComparator(Protocol):
     """Run-comparison capability required by quality gates."""
@@ -239,7 +241,7 @@ def _append_higher_is_better_check(
             delta=delta,
             allowed_regression=allowed_drop,
             regression_amount=regression_amount,
-            passed=regression_amount <= allowed_drop,
+            passed=regression_amount <= allowed_drop + _FLOAT_COMPARISON_EPSILON,
         )
     )
 
@@ -263,7 +265,10 @@ def _append_lower_is_better_check(
             delta=delta,
             allowed_regression=allowed_increase,
             regression_amount=regression_amount,
-            passed=regression_amount <= allowed_increase,
+            passed=(
+                regression_amount
+                <= allowed_increase + _FLOAT_COMPARISON_EPSILON
+            ),
         )
     )
 
