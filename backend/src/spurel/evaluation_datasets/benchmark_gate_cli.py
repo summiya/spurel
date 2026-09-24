@@ -331,7 +331,10 @@ def _request_headers() -> dict[str, str]:
 
 
 def _validate_transport_security(config: BenchmarkGateCliConfig) -> None:
-    if os.getenv(_BEARER_TOKEN_ENV) and not config.api_base_url.startswith("https://"):
+    if (
+        os.getenv(_BEARER_TOKEN_ENV)
+        and not config.api_base_url.startswith("https://")
+    ):
         raise QualityGateCliError(
             "SPUREL_API_TOKEN requires an https:// API base URL"
         )
