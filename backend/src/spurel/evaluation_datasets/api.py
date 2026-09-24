@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from spurel.embeddings.domain import EmbeddingError
 from spurel.evaluation_datasets.dependencies import (
     get_evaluation_dataset_service,
+    get_evaluation_run_comparison_service,
     get_evaluation_run_service,
     get_hybrid_dataset_evaluation_service,
     get_keyword_dataset_evaluation_service,
@@ -22,6 +23,12 @@ from spurel.evaluation_datasets.execution import (
     DatasetEvaluationQueryError,
 )
 from spurel.evaluation_datasets.ports import EvaluationDatasetPersistenceError
+from spurel.evaluation_datasets.run_comparison import (
+    EvaluationRunComparison,
+    EvaluationRunComparisonQueryError,
+    EvaluationRunComparisonService,
+    EvaluationRunComparisonSide,
+)
 from spurel.evaluation_datasets.run_domain import EvaluationRun, EvaluationRunSummary
 from spurel.evaluation_datasets.run_ports import EvaluationRunPersistenceError
 from spurel.evaluation_datasets.run_service import (
@@ -41,6 +48,10 @@ from spurel.evaluation_datasets.schemas import (
     EvaluationDatasetListResponse,
     EvaluationDatasetResponse,
     EvaluationJudgmentResponse,
+    EvaluationRunCaseComparisonResponse,
+    EvaluationRunComparisonRequest,
+    EvaluationRunComparisonResponse,
+    EvaluationRunComparisonSideResponse,
     EvaluationRunListResponse,
     EvaluationRunSummaryResponse,
     HybridDatasetEvaluationRequest,
@@ -81,6 +92,11 @@ KeywordDatasetEvaluationServiceDependency = Annotated[
 HybridDatasetEvaluationServiceDependency = Annotated[
     PersistedDatasetEvaluationService,
     Depends(get_hybrid_dataset_evaluation_service),
+]
+
+EvaluationRunComparisonServiceDependency = Annotated[
+    EvaluationRunComparisonService,
+    Depends(get_evaluation_run_comparison_service),
 ]
 
 EvaluationRunServiceDependency = Annotated[
@@ -585,4 +601,119 @@ def _run_summary_response(
         mrr_at_k=run.mrr_at_k,
         mean_ndcg_at_k=run.mean_ndcg_at_k,
         created_at=run.created_at,
+    )
+
+
+@router.post(
+    "/{dataset_id}/run-comparisons",
+    response_model=EvaluationRunComparisonResponse,
+)
+async def compare_evaluation_runs(
+    knowledge_base_id: UUID,
+    dataset_id: UUID,
+    payload: EvaluationRunComparisonRequest,
+    service: EvaluationRunComparisonServiceDependency,
+) -> EvaluationRunComparisonResponse:
+    """Compare two scoped persisted benchmark runs."""
+    try:
+        comparison = await service.compare(
+            knowledge_base_id=knowledge_base_id,
+            dataset_id=dataset_id,
+            first_run_id=payload.first_run_id,
+            second_run_id=payload.second_run_id,
+        )
+    except EvaluationRunComparisonQueryError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="evaluation run comparison request is invalid",
+        ) from exc
+    except EvaluationRunNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="evaluation run was not found",
+        ) from exc
+    except EvaluationRunPersistenceError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="evaluation run comparison temporarily unavailable",
+        ) from exc
+
+    return _run_comparison_response(comparison)
+
+
+def _run_comparison_response(
+    comparison: EvaluationRunComparison,
+) -> EvaluationRunComparisonResponse:
+    return EvaluationRunComparisonResponse(
+        dataset_id=comparison.dataset_id,
+        first=_run_comparison_side_response(comparison.first),
+        second=_run_comparison_side_response(comparison.second),
+        same_retrieval_configuration=comparison.same_retrieval_configuration,
+        same_case_set=comparison.same_case_set,
+        aggregate_comparable=comparison.aggregate_comparable,
+        shared_case_count=comparison.shared_case_count,
+        first_only_case_count=comparison.first_only_case_count,
+        second_only_case_count=comparison.second_only_case_count,
+        comparable_case_count=comparison.comparable_case_count,
+        query_changed_case_count=comparison.query_changed_case_count,
+        total_duration_delta_ms=comparison.total_duration_delta_ms,
+        mean_duration_delta_ms=comparison.mean_duration_delta_ms,
+        mean_judgment_coverage_delta=comparison.mean_judgment_coverage_delta,
+        mean_precision_delta=comparison.mean_precision_delta,
+        mean_recall_delta=comparison.mean_recall_delta,
+        mrr_delta=comparison.mrr_delta,
+        mean_ndcg_delta=comparison.mean_ndcg_delta,
+        cases=[
+            EvaluationRunCaseComparisonResponse(
+                case_id=case.case_id,
+                presence=case.presence,
+                first_position=case.first_position,
+                second_position=case.second_position,
+                first_query=case.first_query,
+                second_query=case.second_query,
+                query_changed=case.query_changed,
+                comparable=case.comparable,
+                first_duration_ms=case.first_duration_ms,
+                second_duration_ms=case.second_duration_ms,
+                duration_delta_ms=case.duration_delta_ms,
+                first_precision_at_k=case.first_precision_at_k,
+                second_precision_at_k=case.second_precision_at_k,
+                precision_delta=case.precision_delta,
+                first_recall_at_k=case.first_recall_at_k,
+                second_recall_at_k=case.second_recall_at_k,
+                recall_delta=case.recall_delta,
+                first_reciprocal_rank_at_k=case.first_reciprocal_rank_at_k,
+                second_reciprocal_rank_at_k=case.second_reciprocal_rank_at_k,
+                reciprocal_rank_delta=case.reciprocal_rank_delta,
+                first_ndcg_at_k=case.first_ndcg_at_k,
+                second_ndcg_at_k=case.second_ndcg_at_k,
+                ndcg_delta=case.ndcg_delta,
+            )
+            for case in comparison.cases
+        ],
+    )
+
+
+def _run_comparison_side_response(
+    side: EvaluationRunComparisonSide,
+) -> EvaluationRunComparisonSideResponse:
+    return EvaluationRunComparisonSideResponse(
+        run_id=side.run_id,
+        mode=side.mode,
+        top_k=side.top_k,
+        candidate_k=side.candidate_k,
+        rrf_k=side.rrf_k,
+        embedding_provider=side.embedding_provider,
+        embedding_model=side.embedding_model,
+        embedding_dimensions=side.embedding_dimensions,
+        case_count=side.case_count,
+        total_duration_ms=side.total_duration_ms,
+        mean_duration_ms=side.mean_duration_ms,
+        judgment_coverage_case_count=side.judgment_coverage_case_count,
+        mean_judgment_coverage_at_k=side.mean_judgment_coverage_at_k,
+        mean_precision_at_k=side.mean_precision_at_k,
+        mean_recall_at_k=side.mean_recall_at_k,
+        mrr_at_k=side.mrr_at_k,
+        mean_ndcg_at_k=side.mean_ndcg_at_k,
+        created_at=side.created_at,
     )
