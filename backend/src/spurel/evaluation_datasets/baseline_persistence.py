@@ -19,6 +19,7 @@ from spurel.db import Base
 from spurel.evaluation_datasets.baseline_domain import (
     EvaluationBaseline,
     EvaluationBaselineConfiguration,
+    EvaluationBaselineConfigurationError,
 )
 from spurel.evaluation_datasets.execution import DatasetEvaluationMode
 
@@ -166,6 +167,11 @@ class EvaluationBaselineRecord(Base):
             embedding_model=self.embedding_model,
             embedding_dimensions=self.embedding_dimensions,
         )
+        if self.configuration_fingerprint != configuration.fingerprint:
+            raise EvaluationBaselineConfigurationError(
+                "persisted baseline configuration fingerprint is invalid"
+            )
+
         return EvaluationBaseline(
             id=self.id,
             knowledge_base_id=self.knowledge_base_id,
