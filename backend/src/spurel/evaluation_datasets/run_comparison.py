@@ -2,12 +2,15 @@
 
 import asyncio
 from dataclasses import dataclass
+from datetime import datetime
 from enum import StrEnum
 from typing import Protocol
 from uuid import UUID
 
 from spurel.evaluation_datasets.execution import DatasetEvaluationMode
 from spurel.evaluation_datasets.run_domain import EvaluationRun, EvaluationRunCase
+
+
 class EvaluationRunReader(Protocol):
     """Scoped persisted run reader required by comparison."""
 
@@ -55,6 +58,7 @@ class EvaluationRunComparisonSide:
     mean_recall_at_k: float
     mrr_at_k: float
     mean_ndcg_at_k: float
+    created_at: datetime
 
 
 @dataclass(frozen=True, slots=True)
@@ -385,6 +389,7 @@ def _side(run: EvaluationRun) -> EvaluationRunComparisonSide:
         mean_recall_at_k=run.mean_recall_at_k,
         mrr_at_k=run.mrr_at_k,
         mean_ndcg_at_k=run.mean_ndcg_at_k,
+        created_at=run.created_at,
     )
 
 
