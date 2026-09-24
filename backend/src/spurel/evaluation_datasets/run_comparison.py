@@ -240,8 +240,6 @@ def _compare_case(
         first_duration_ms=first.duration_ms if first is not None else None,
         second_duration_ms=second.duration_ms if second is not None else None,
         duration_delta_ms=_case_delta(
-            first=first,
-            second=second,
             first_value=(first.duration_ms if first is not None else None),
             second_value=(second.duration_ms if second is not None else None),
             comparable=comparable,
@@ -253,8 +251,6 @@ def _compare_case(
             second.metrics.precision_at_k if second is not None else None
         ),
         precision_delta=_case_delta(
-            first=first,
-            second=second,
             first_value=(
                 first.metrics.precision_at_k if first is not None else None
             ),
@@ -270,8 +266,6 @@ def _compare_case(
             second.metrics.recall_at_k if second is not None else None
         ),
         recall_delta=_case_delta(
-            first=first,
-            second=second,
             first_value=first.metrics.recall_at_k if first is not None else None,
             second_value=(
                 second.metrics.recall_at_k if second is not None else None
@@ -285,8 +279,6 @@ def _compare_case(
             second.metrics.reciprocal_rank_at_k if second is not None else None
         ),
         reciprocal_rank_delta=_case_delta(
-            first=first,
-            second=second,
             first_value=(
                 first.metrics.reciprocal_rank_at_k
                 if first is not None
@@ -304,8 +296,6 @@ def _compare_case(
             second.metrics.ndcg_at_k if second is not None else None
         ),
         ndcg_delta=_case_delta(
-            first=first,
-            second=second,
             first_value=first.metrics.ndcg_at_k if first is not None else None,
             second_value=(
                 second.metrics.ndcg_at_k if second is not None else None
@@ -317,13 +307,10 @@ def _compare_case(
 
 def _case_delta(
     *,
-    first: EvaluationRunCase | None,
-    second: EvaluationRunCase | None,
     first_value: float | None,
     second_value: float | None,
     comparable: bool,
 ) -> float | None:
-    del first, second
     if not comparable or first_value is None or second_value is None:
         return None
     return second_value - first_value
