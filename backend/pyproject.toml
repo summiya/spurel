@@ -18,6 +18,7 @@ dependencies = [
 
 [project.scripts]
 spurel-quality-gate = "spurel.evaluation_datasets.quality_gate_cli:main"
+spurel-benchmark-gate = "spurel.evaluation_datasets.benchmark_gate_cli:main"
 
 [project.optional-dependencies]
 dev = [
