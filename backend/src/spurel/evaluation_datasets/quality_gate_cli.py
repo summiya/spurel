@@ -138,6 +138,7 @@ def run_quality_gate_cli(
 
     try:
         config = _parse_config(argv)
+        _validate_transport_security(config)
         response = (transport or UrllibJsonHttpTransport()).post_json(
             url=config.endpoint,
             payload={
@@ -348,3 +349,11 @@ def _safe_http_error_detail(exc: HTTPError) -> str:
     except (UnicodeDecodeError, json.JSONDecodeError, OSError):
         pass
     return "request failed"
+
+
+
+def _validate_transport_security(config: QualityGateCliConfig) -> None:
+    if os.getenv(_BEARER_TOKEN_ENV) and not config.api_base_url.startswith("https://"):
+        raise QualityGateCliError(
+            "SPUREL_API_TOKEN requires an https:// API base URL"
+        )
