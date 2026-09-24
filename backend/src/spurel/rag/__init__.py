@@ -5,6 +5,7 @@ from spurel.rag.service import (
     RAGAnswerService,
     RAGContextError,
     RAGHybridRetriever,
+    RAGSource,
 )
 
 __all__ = [
@@ -12,4 +13,5 @@ __all__ = [
     "RAGAnswerService",
     "RAGContextError",
     "RAGHybridRetriever",
+    "RAGSource",
 ]
