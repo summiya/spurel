@@ -151,8 +151,8 @@ This keeps CI behavior explicit instead of allowing ambiguous benchmark results 
 
 ## One-command benchmark + gate
 
-When the baseline run already exists, CI does not need to create the candidate run in a
-separate step.
+When a promoted baseline exists for the candidate's exact retrieval configuration, CI
+does not need to supply a baseline run UUID or create the candidate run separately.
 
 Install the backend and run:
 
@@ -161,7 +161,6 @@ spurel-benchmark-gate \
   --api-base-url "https://spurel.example.com" \
   --knowledge-base-id "00000000-0000-0000-0000-000000000001" \
   --dataset-id "00000000-0000-0000-0000-000000000002" \
-  --baseline-run-id "00000000-0000-0000-0000-000000000003" \
   --mode hybrid \
   --top-k 10 \
   --candidate-k 50 \
@@ -175,23 +174,38 @@ spurel-benchmark-gate \
 The command performs:
 
 ```text
-persisted baseline run
-        +
 evaluation dataset
         ↓
 run candidate dataset evaluation
         ↓
 persist candidate run
         ↓
-capture candidate run_id
+read candidate's actual persisted retrieval config
+        ↓
+resolve explicitly promoted baseline for that exact config
         ↓
 evaluate baseline vs candidate quality gate
         ↓
 return CI exit code
 ```
 
-The candidate run is persisted before the gate is evaluated. If the gate fails, the
-candidate run remains available in benchmark history for investigation.
+The candidate run is persisted before baseline resolution and before the gate is
+evaluated. If no promoted baseline exists, or if the gate fails, the candidate run
+remains available in benchmark history for investigation.
+
+The baseline lookup uses the configuration returned by the persisted candidate run,
+including the server-selected embedding provider, model, and dimensions. CI therefore
+does not guess the embedding space.
+
+To bypass promoted-baseline resolution for a deliberate cross-configuration comparison,
+supply an explicit override:
+
+```bash
+spurel-benchmark-gate ... \
+  --baseline-run-id "00000000-0000-0000-0000-000000000003"
+```
+
+When `--baseline-run-id` is supplied, the baseline-resolution API is skipped.
 
 The exit codes are identical to `spurel-quality-gate`:
 
@@ -246,6 +260,8 @@ The output includes the new candidate run ID and the complete quality-gate respo
 
 ```json
 {
+  "baseline_run_id": "...",
+  "baseline_source": "promoted",
   "candidate_run_id": "...",
   "quality_gate": {
     "status": "pass"
@@ -253,7 +269,8 @@ The output includes the new candidate run ID and the complete quality-gate respo
 }
 ```
 
-This preserves the candidate run identity even when the gate exits non-zero.
+This preserves both baseline selection and candidate run identity when the gate exits
+non-zero.
 
 ## One-command GitHub Actions workflow
 
@@ -275,7 +292,6 @@ jobs:
       api_base_url: ${{ vars.SPUREL_API_BASE_URL }}
       knowledge_base_id: ${{ vars.SPUREL_KNOWLEDGE_BASE_ID }}
       dataset_id: ${{ vars.SPUREL_EVALUATION_DATASET_ID }}
-      baseline_run_id: ${{ vars.SPUREL_BASELINE_RUN_ID }}
       mode: "hybrid"
       top_k: "10"
       candidate_k: "50"
@@ -290,3 +306,10 @@ jobs:
 
 The workflow succeeds only when the newly created candidate benchmark passes every
 configured quality threshold.
+
+The reusable workflow's `baseline_run_id` input is optional. When omitted, Spurel
+resolves the explicitly promoted baseline for the candidate's exact persisted retrieval
+configuration. Set `baseline_run_id` only when an explicit override is intentional.
+
+If no promoted baseline exists for the candidate configuration, the command exits with
+code `3` and the newly persisted candidate run ID is still printed for investigation.
