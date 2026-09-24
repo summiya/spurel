@@ -3,11 +3,23 @@
 import asyncio
 from dataclasses import dataclass
 from enum import StrEnum
+from typing import Protocol
 from uuid import UUID
 
 from spurel.evaluation_datasets.execution import DatasetEvaluationMode
 from spurel.evaluation_datasets.run_domain import EvaluationRun, EvaluationRunCase
-from spurel.evaluation_datasets.run_service import EvaluationRunService
+class EvaluationRunReader(Protocol):
+    """Scoped persisted run reader required by comparison."""
+
+    async def get_by_id(
+        self,
+        *,
+        knowledge_base_id: UUID,
+        dataset_id: UUID,
+        run_id: UUID,
+    ) -> EvaluationRun:
+        """Return one scoped persisted benchmark run."""
+        ...
 
 
 class EvaluationRunComparisonQueryError(ValueError):
@@ -87,6 +99,7 @@ class EvaluationRunComparison:
     first: EvaluationRunComparisonSide
     second: EvaluationRunComparisonSide
 
+    same_retrieval_configuration: bool
     same_case_set: bool
     aggregate_comparable: bool
     shared_case_count: int
@@ -109,7 +122,7 @@ class EvaluationRunComparison:
 class EvaluationRunComparisonService:
     """Compare two scoped immutable benchmark runs."""
 
-    def __init__(self, runs: EvaluationRunService) -> None:
+    def __init__(self, runs: EvaluationRunReader) -> None:
         self._runs = runs
 
     async def compare(
@@ -187,6 +200,7 @@ def compare_evaluation_runs(
         dataset_id=first.dataset_id,
         first=_side(first),
         second=_side(second),
+        same_retrieval_configuration=_same_configuration(first, second),
         same_case_set=same_case_set,
         aggregate_comparable=aggregate_comparable,
         shared_case_count=len(shared_ids),
@@ -371,4 +385,16 @@ def _side(run: EvaluationRun) -> EvaluationRunComparisonSide:
         mean_recall_at_k=run.mean_recall_at_k,
         mrr_at_k=run.mrr_at_k,
         mean_ndcg_at_k=run.mean_ndcg_at_k,
+    )
+
+
+def _same_configuration(first: EvaluationRun, second: EvaluationRun) -> bool:
+    return (
+        first.mode == second.mode
+        and first.top_k == second.top_k
+        and first.candidate_k == second.candidate_k
+        and first.rrf_k == second.rrf_k
+        and first.embedding_provider == second.embedding_provider
+        and first.embedding_model == second.embedding_model
+        and first.embedding_dimensions == second.embedding_dimensions
     )
