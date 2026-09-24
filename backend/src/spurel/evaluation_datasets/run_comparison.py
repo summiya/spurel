@@ -88,19 +88,20 @@ class EvaluationRunComparison:
     second: EvaluationRunComparisonSide
 
     same_case_set: bool
+    aggregate_comparable: bool
     shared_case_count: int
     first_only_case_count: int
     second_only_case_count: int
     comparable_case_count: int
     query_changed_case_count: int
 
-    total_duration_delta_ms: float
-    mean_duration_delta_ms: float
+    total_duration_delta_ms: float | None
+    mean_duration_delta_ms: float | None
     mean_judgment_coverage_delta: float | None
-    mean_precision_delta: float
-    mean_recall_delta: float
-    mrr_delta: float
-    mean_ndcg_delta: float
+    mean_precision_delta: float | None
+    mean_recall_delta: float | None
+    mrr_delta: float | None
+    mean_ndcg_delta: float | None
 
     cases: tuple[EvaluationRunCaseComparison, ...]
 
@@ -179,29 +180,58 @@ def compare_evaluation_runs(
 
     comparable_case_count = sum(1 for case in cases if case.comparable)
     query_changed_case_count = sum(1 for case in cases if case.query_changed)
+    same_case_set = first_ids == second_ids
+    aggregate_comparable = same_case_set and query_changed_case_count == 0
 
     return EvaluationRunComparison(
         dataset_id=first.dataset_id,
         first=_side(first),
         second=_side(second),
-        same_case_set=first_ids == second_ids,
+        same_case_set=same_case_set,
+        aggregate_comparable=aggregate_comparable,
         shared_case_count=len(shared_ids),
         first_only_case_count=len(first_ids - second_ids),
         second_only_case_count=len(second_ids - first_ids),
         comparable_case_count=comparable_case_count,
         query_changed_case_count=query_changed_case_count,
-        total_duration_delta_ms=second.total_duration_ms - first.total_duration_ms,
-        mean_duration_delta_ms=second.mean_duration_ms - first.mean_duration_ms,
-        mean_judgment_coverage_delta=_optional_delta(
-            first.mean_judgment_coverage_at_k,
-            second.mean_judgment_coverage_at_k,
+        total_duration_delta_ms=(
+            second.total_duration_ms - first.total_duration_ms
+            if aggregate_comparable
+            else None
+        ),
+        mean_duration_delta_ms=(
+            second.mean_duration_ms - first.mean_duration_ms
+            if aggregate_comparable
+            else None
+        ),
+        mean_judgment_coverage_delta=(
+            _optional_delta(
+                first.mean_judgment_coverage_at_k,
+                second.mean_judgment_coverage_at_k,
+            )
+            if aggregate_comparable
+            else None
         ),
         mean_precision_delta=(
             second.mean_precision_at_k - first.mean_precision_at_k
+            if aggregate_comparable
+            else None
         ),
-        mean_recall_delta=second.mean_recall_at_k - first.mean_recall_at_k,
-        mrr_delta=second.mrr_at_k - first.mrr_at_k,
-        mean_ndcg_delta=second.mean_ndcg_at_k - first.mean_ndcg_at_k,
+        mean_recall_delta=(
+            second.mean_recall_at_k - first.mean_recall_at_k
+            if aggregate_comparable
+            else None
+        ),
+        mrr_delta=(
+            second.mrr_at_k - first.mrr_at_k
+            if aggregate_comparable
+            else None
+        ),
+        mean_ndcg_delta=(
+            second.mean_ndcg_at_k - first.mean_ndcg_at_k
+            if aggregate_comparable
+            else None
+        ),
         cases=cases,
     )
 
