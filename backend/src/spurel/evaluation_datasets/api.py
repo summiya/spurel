@@ -715,4 +715,5 @@ def _run_comparison_side_response(
         mean_recall_at_k=side.mean_recall_at_k,
         mrr_at_k=side.mrr_at_k,
         mean_ndcg_at_k=side.mean_ndcg_at_k,
+        created_at=side.created_at,
     )
