@@ -151,7 +151,7 @@ describe("Spurel live Overview", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("Live FastAPI / PostgreSQL")).toBeInTheDocument();
     expect(screen.getByText("real retention policy")).toBeInTheDocument();
-    expect(screen.getByText("80.0%")).toBeInTheDocument();
+    expect(await screen.findByText("80.0%")).toBeInTheDocument();
     expect(screen.getByText("18.4 ms")).toBeInTheDocument();
     const indexedCard = screen.getByText("Indexed documents").closest(".metric-card");
     expect(indexedCard).not.toBeNull();
