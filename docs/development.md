@@ -195,10 +195,9 @@ The chart only connects stored runs, never invents daily values, and indicates
 when the selected period has insufficient data. Load older run-history pages
 explicitly when needed; only loaded history is charted. Model calls are not
 initiated and no global totals, p95 or other unmeasured statistics are invented.
-The overview is intentionally separate from SP-16's unbuilt backend token-aware
-chunking.
+The overview is intentionally separate from SP-16 token-aware chunking and SP-17's optional structural splitting.
 
-## SP-16: opt-in token-aware processing (in review)
+## SP-16: opt-in token-aware processing (merged)
 
 The Knowledge Bases document panel keeps its existing **Process / Reprocess**
 buttons. New adjacent chunk settings permit switching from the unchanged
@@ -232,6 +231,44 @@ The new backend processing request body is optional:
 The frontend allows only these keys and values, and rejects invalid or
 cross-origin requests before contacting FastAPI. Processing requires normal
 embedding credentials; only explicit Process / Reprocess triggers embedding.
+
+
+## SP-17: recursive, Markdown and sentence-aware chunking (in review)
+
+The existing Knowledge Bases document-processing panel adds three *optional*
+character-bounded strategies to the existing Characters and Model tokens:
+`recursive`, `markdown`, and `sentences`. Existing bodyless POST requests
+retain the original 1,000-character/200-overlap path. Token mode remains
+unchanged and continues using the configured embedding-model tokenizer.
+
+The structured chunker prefers paragraph/line boundaries for recursive
+mode, true Markdown heading starts outside fenced code for Markdown mode,
+and punctuation boundaries with common-abbreviation handling for sentence
+mode. When a unit is too long, the chunker falls back through smaller
+separators to a bounded hard character window. Chunks preserve exact original
+Unicode source excerpts and Python-character offsets. Size is 1..20,000
+characters; overlap is 0..(size-1). Effective overlap can be smaller than
+requested to preserve structure and is never carried across a Markdown
+section heading.
+
+A new mode is used **only** after clicking Process/Reprocess and confirming
+the possible embedding charge; no UI selection automatically changes stored
+records. Existing per-document version staging, old chunk snapshots,
+embedding validation and atomic promotion are preserved; a failed attempt
+does not publish an incomplete index. No migration or extra API provider is
+required. Historical chunks and the dashboard quality chart remain intact.
+
+For an explicit API request, POST to the existing secured document endpoint
+with, for example:
+
+```json
+{"strategy":"markdown","chunk_size":1000,"overlap":200}
+```
+
+Repeat with `"recursive"` or `"sentences"`. The frontend proxy strictly
+validates the same allowlist; unknown modes and size/overlap violations are
+rejected before calling the backend. Existing blank-body processing is
+unchanged. Smoke tests must never trigger paid embeddings automatically.
 
 ## Environment and secrets
 

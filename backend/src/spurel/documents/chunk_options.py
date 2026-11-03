@@ -11,6 +11,9 @@ MAX_CHUNK_SIZE_TOKENS = 2_000
 class ChunkStrategy(StrEnum):
     CHARACTERS = "characters"
     TOKENS = "tokens"
+    RECURSIVE = "recursive"
+    MARKDOWN = "markdown"
+    SENTENCES = "sentences"
 
 
 @dataclass(frozen=True, slots=True)

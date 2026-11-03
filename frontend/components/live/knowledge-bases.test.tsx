@@ -152,6 +152,28 @@ describe("live source management", () => {
     });
   });
 
+  it("offers all three structured modes without removing existing methods", async () => {
+    vi.stubGlobal("confirm", vi.fn(() => true));
+    render(<LiveKnowledgeBasesPage />);
+    await screen.findByText("readme.txt");
+    const select = screen.getByRole("combobox", { name: "Chunking method" });
+    for (const strategy of ["characters", "tokens", "recursive", "markdown", "sentences"]) {
+      expect(select).toContainHTML(`value="${strategy}"`);
+    }
+    fireEvent.change(select, { target: { value: "markdown" } });
+    expect(screen.getByRole("spinbutton", { name: /Chunk size/ })).toHaveValue(1000);
+    expect(screen.getByText(/Prefer Markdown headings as section boundaries/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /^Process$/i }));
+    await screen.findByText(/Indexed · version 1/);
+    const call = vi.mocked(fetch).mock.calls.find(([url, init]) =>
+      String(url).endsWith("/process") && init?.method === "POST",
+    );
+    expect(JSON.parse(String(call?.[1]?.body))).toEqual({
+      strategy: "markdown", chunk_size: 1000, overlap: 200,
+    });
+    expect(window.confirm).toHaveBeenCalledOnce();
+  });
+
   it("does not process when the opt-in confirmation is declined", async () => {
     vi.stubGlobal(
       "confirm",

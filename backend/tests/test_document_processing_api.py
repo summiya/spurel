@@ -154,3 +154,52 @@ def test_processing_rejects_unsafe_token_settings_before_running_pipeline() -> N
     for body in invalid:
         assert client.post(endpoint, json=body).status_code == 422
     assert service.last_call is None
+
+
+
+def test_sp17_structured_strategies_are_explicit_and_do_not_change_legacy_requests() -> None:
+    knowledge_base_id = uuid4()
+    document_id = uuid4()
+    service = FakeDocumentProcessingService()
+    service.result = DocumentProcessingResult(
+        document_id=document_id,
+        knowledge_base_id=knowledge_base_id,
+        chunk_count=2,
+        embedded_chunk_count=2,
+        embedding_provider="openai",
+        embedding_model="text-embedding-3-small",
+        embedding_dimensions=1536,
+    )
+    client = _client(service)
+    endpoint = f"/knowledge-bases/{knowledge_base_id}/documents/{document_id}/process"
+
+    for strategy in ("recursive", "markdown", "sentences"):
+        response = client.post(
+            endpoint, json={"strategy": strategy, "chunk_size": 512, "overlap": 64}
+        )
+        assert response.status_code == 200
+        assert service.last_options == DocumentChunkOptions(
+            strategy=ChunkStrategy(strategy), chunk_size=512, overlap=64
+        )
+
+    response = client.post(endpoint)
+    assert response.status_code == 200
+    assert service.last_options is None
+
+
+def test_sp17_rejects_malformed_structured_settings_before_processing() -> None:
+    service = FakeDocumentProcessingService()
+    client = _client(service)
+    endpoint = f"/knowledge-bases/{uuid4()}/documents/{uuid4()}/process"
+
+    for payload in (
+        {"strategy": "markdown", "chunk_size": 0, "overlap": 0},
+        {"strategy": "recursive", "chunk_size": 100, "overlap": 100},
+        {"strategy": "sentences", "chunk_size": 20001, "overlap": 10},
+        {"strategy": "sentences", "chunk_size": True, "overlap": 0},
+        {"strategy": "recursive", "chunk_size": 100, "overlap": 0, "data": "extra"},
+        {"strategy": "not-supported", "chunk_size": 100, "overlap": 10},
+    ):
+        assert client.post(endpoint, json=payload).status_code == 422
+
+    assert service.last_call is None

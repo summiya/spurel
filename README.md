@@ -116,13 +116,13 @@ only loaded benchmark pages (50 runs per page) and does not imply identical
 query/judgment sets merely because settings match. Additional pages can be
 loaded where supported; link through to Evaluations for run comparisons.
 No database migrations, new provider adapters or backend changes are required.
-This work is intentionally separate from planned SP-16 token-aware chunking.
+This Overview work is separate from merged SP-16 token-aware chunking and the SP-17 structured-chunking review branch.
 
-## SP-16: opt-in token-aware chunking (in review)
+## SP-16: opt-in token-aware chunking (merged)
 
 Spurel's existing character chunking remains the default: **1,000 characters**
 with **200-character overlap**, with the same processing button and version
-history. The SP-16 branch adds a `Model tokens` option alongside those
+history. SP-16 adds a `Model tokens` option alongside those
 controls in the Knowledge Bases document panel. Token size defaults to
 **512**, overlap to **64**, both adjustable within validated bounds.
 
@@ -139,6 +139,31 @@ The backend processing endpoint accepts optional JSON
 `{"strategy":"tokens","chunk_size":512,"overlap":64}`; bodyless
 POSTs keep the original character defaults. This integration adds no database
 migration and does not delete old versions or automatically reindex documents.
+
+
+## SP-17: structure-aware chunking (in review)
+
+The Knowledge Bases screen gains **three additional**, opt-in chunking methods:
+**Recursive** (prefers paragraphs, then sentences, lines and spaces),
+**Markdown headings** (respects section headings and ignores heading-like
+text inside fenced code blocks), and **Sentences** (prefers natural punctuation
+boundaries and avoids common abbreviations). Existing **Characters** and
+**Model tokens** remain untouched and retain their original defaults.
+
+These new strategies use bounded *character* sizes and overlaps, not model
+tokens. They keep exact original source excerpts and character offsets;
+oversized units fall back to smaller separators and, only when necessary,
+fixed character windows. Overlap may be **less than requested** or omitted
+to avoid cutting through a sentence or crossing a Markdown heading.
+Source passages are never rewritten, and no language model is called to
+decide the boundaries. The methods improve splitting but do not guarantee
+semantic understanding or perfect sentence detection in all languages.
+
+Existing Processing and Reprocessing buttons, chunk inspector, historical
+versions, dashboard and quality graph stay intact. Only an explicit action
+(with confirmation for non-default settings) triggers re-indexing and may
+incur embedding API charges. No database schema change or automatic
+reprocessing is introduced.
 
 ## Inspect real chunks (SP-11)
 
@@ -199,7 +224,7 @@ remains server-side.
 | Capability | Implementation | Where |
 | --- | --- | --- |
 | Knowledge bases and documents | FastAPI CRUD subset: create/list knowledge bases; upload/list documents; text, Markdown and text-extractable PDF parsing | [Documents](backend/src/spurel/documents/) |
-| Chunk inspection | Fixed-size **character** windows with overlap, persisted offsets and UUIDs; read-only version history | [Chunking](backend/src/spurel/infrastructure/chunking/fixed.py) |
+| Chunk inspection | Character and model-token chunking (SP-16); SP-17 adds opt-in structural boundaries; persisted offsets/UUIDs and read-only version history retained | [Chunking](backend/src/spurel/infrastructure/chunking/fixed.py) |
 | Embeddings | OpenAI embedding adapter; persisted pgvector embeddings keyed by provider/model/dimensions | [Embeddings](backend/src/spurel/embeddings/) |
 | Retrieval | Exact pgvector cosine search; PostgreSQL full-text keyword scoring (`ts_rank_cd`, **not BM25**); hybrid Reciprocal Rank Fusion | [Retrieval](backend/src/spurel/retrieval/) |
 | Inspectable retrieval | Saved retrieval traces, trace comparisons and graded retrieval metrics | [Retrieval API](backend/src/spurel/retrieval/api.py) |
@@ -222,7 +247,7 @@ local access**, not per-user authorization, RBAC, or permission-aware multi-tena
 
 ## Not implemented yet
 
-The following are roadmap items, **not current capabilities**: token-aware/structured chunking, OCR or scanned-PDF support, BM25, HNSW/ANN indexing, metadata retrieval filters, cross-encoder reranking, citation/claim verification, additional hosted/local model adapters, multi-source connectors, experiment export, durable background ingestion and production-grade multi-user authorization.
+The following are roadmap items, **not current capabilities on main**: structured chunking (SP-17 under review), OCR or scanned-PDF support, BM25, HNSW/ANN indexing, metadata retrieval filters, cross-encoder reranking, citation/claim verification, additional hosted/local model adapters, multi-source connectors, experiment export, durable background ingestion and production-grade multi-user authorization.
 
 For task scope and order, see the [maintained roadmap](docs/roadmap.md).
 
@@ -278,7 +303,7 @@ The workbench already makes source candidates, chunk boundaries, saved retrieval
 
 ## Roadmap and contributing
 
-The [roadmap](docs/roadmap.md) tracks **SP-01–SP-28** by phase. SP-09–SP-15 are merged, including live evaluations (PR #74) and RAG answers (PR #75). The Overview follow-up is a separate frontend improvement and does not implement backend token-aware chunking (SP-16).
+The [roadmap](docs/roadmap.md) tracks **SP-01–SP-28** by phase. SP-09–SP-15 are merged, including live evaluations (PR #74) and RAG answers (PR #75). The Overview follow-up and SP-16 token-aware chunking are merged. SP-17 adds optional structure-aware chunking in its own review branch.
 
 Spurel is being built in public. For substantial changes, open an issue first and follow the existing architecture and tests. Good contribution areas include retrieval strategies, parsers, evaluation methods, reliable ingestion, UI, and documentation.
 

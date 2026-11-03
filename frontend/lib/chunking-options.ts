@@ -1,5 +1,5 @@
 /** Exact SP-16 document processing options; legacy no-body POST remains valid. */
-export type ChunkStrategy = "characters" | "tokens";
+export type ChunkStrategy = "characters" | "tokens" | "recursive" | "markdown" | "sentences";
 
 export interface ChunkingOptions {
   strategy: ChunkStrategy;
@@ -19,6 +19,13 @@ export const TOKEN_CHUNKING: ChunkingOptions = {
   overlap: 64,
 };
 
+/** All structured strategies use character bounds and retain the existing safe defaults. */
+export const STRUCTURED_CHUNKING: ChunkingOptions = {
+  strategy: "recursive",
+  chunk_size: 1000,
+  overlap: 200,
+};
+
 export function parseChunkingOptions(value: unknown): ChunkingOptions | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   const record = value as Record<string, unknown>;
@@ -27,7 +34,14 @@ export function parseChunkingOptions(value: unknown): ChunkingOptions | null {
     !Object.keys(record).every((key) => ["strategy", "chunk_size", "overlap"].includes(key))
   )
     return null;
-  if (record.strategy !== "characters" && record.strategy !== "tokens") return null;
+  if (
+    record.strategy !== "characters" &&
+    record.strategy !== "tokens" &&
+    record.strategy !== "recursive" &&
+    record.strategy !== "markdown" &&
+    record.strategy !== "sentences"
+  )
+    return null;
   const max = record.strategy === "tokens" ? 2000 : 20000;
   if (
     typeof record.chunk_size !== "number" ||

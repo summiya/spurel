@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   DEFAULT_CHUNKING,
   TOKEN_CHUNKING,
+  STRUCTURED_CHUNKING,
   isLegacyChunking,
   parseChunkingOptions,
 } from "./chunking-options";
@@ -18,6 +19,17 @@ describe("SP-16 explicit document chunking controls", () => {
     expect(
       parseChunkingOptions({ strategy: "tokens", chunk_size: 2000, overlap: 0 }),
     ).not.toBeNull();
+  });
+
+  it("accepts recursive, heading-aware Markdown and sentence-aware modes additively", () => {
+    expect(parseChunkingOptions(STRUCTURED_CHUNKING)).toEqual(STRUCTURED_CHUNKING);
+    for (const strategy of ["recursive", "markdown", "sentences"]) {
+      const options = { strategy, chunk_size: 400, overlap: 40 };
+      expect(parseChunkingOptions(options)).toEqual(options);
+      expect(isLegacyChunking(options as typeof STRUCTURED_CHUNKING)).toBe(false);
+    }
+    expect(parseChunkingOptions(DEFAULT_CHUNKING)).toEqual(DEFAULT_CHUNKING);
+    expect(parseChunkingOptions(TOKEN_CHUNKING)).toEqual(TOKEN_CHUNKING);
   });
 
   it("rejects unknown strategies, malformed bodies, overlap violations and unsafe limits", () => {

@@ -39,7 +39,7 @@ replaces illustrative Overview values with bounded, real data.
 | SP-14 | High | ✅ Merged | Operator-protected evaluation datasets, relevance judgments, audits, persisted benchmark runs, comparisons, baselines and quality gates. [PR #74](https://github.com/summiya/spurel/pull/74) |
 | SP-15 | Medium | ✅ Merged | Operator-protected live RAG answers, explicit paid-call confirmation, real source excerpts/labels, saved trace links and no-context handling. [PR #75](https://github.com/summiya/spurel/pull/75) |
 
-**Frontend follow-ups (separate from SP-16):** Live Overview reads real knowledge bases, loaded documents/index status, persisted traces and evaluation runs via existing authenticated endpoints. The original quality chart is restored using real saved Recall@K/Precision@K measurements (7/30 days, exact retrieval configuration and case-count grouping, explicit pagination). No global totals, invented curves, p95 latency or pipeline-health statistics are fabricated. The fixed character-based chunker remains unchanged; SP-16 is not implemented.
+**Frontend follow-ups:** Live Overview reads real knowledge bases, loaded documents/index status, persisted traces and evaluation runs via existing authenticated endpoints. The original quality chart is restored using real saved Recall@K/Precision@K measurements (7/30 days, exact retrieval configuration and case-count grouping, explicit pagination). No global totals, invented curves, p95 latency or pipeline-health statistics are fabricated. The original character-based chunker remains the default; SP-16 is merged and SP-17 adds optional structured strategies.
 
 **Frontend security requirement:** Do not place `SPUREL_API_TOKEN` in `NEXT_PUBLIC_*`, browser storage, or client JavaScript. The shared bearer token is not a replacement for user authentication or tenant authorization.
 
@@ -49,15 +49,15 @@ replaces illustrative Overview values with bounded, real data.
 
 | Task | Priority | Status | Scope / acceptance target |
 | --- | --- | --- | --- |
-| SP-16 | High | ◐ In review | Opt-in tokenizer-aware processing with exact model-token size/overlap, preservation of legacy character processing and versions, token counts in Chunk Inspector and protected frontend settings. Feature branch `feat/sp16-token-aware-chunking`; awaiting CI/review. |
-| SP-17 | High | ☐ Planned | Recursive, heading/Markdown-aware and sentence-aware chunking strategies |
+| SP-16 | High | ✅ Merged | Opt-in model-token chunk sizing and overlap, preserved legacy character mode and versions, token counts in Chunk Inspector and frontend controls. [PR #78](https://github.com/summiya/spurel/pull/78) |
+| SP-17 | High | ◐ In review | Opt-in recursive, fenced-code-aware Markdown-heading and sentence-based character-bounded chunking; safe fallback, validated overlap, frontend options and tests. Branch `feat/sp17-structured-chunking`; PR review required. |
 | SP-18 | High | ☐ Planned | PDF page references, structured extraction and an explicitly configured OCR fallback |
 | SP-19 | High | ☐ Planned | Consistent knowledge-base metadata filters across retrieval modes, with tests |
 | SP-20 | High | ☐ Planned | pgvector HNSW indexing, recall/latency benchmarks, indexing trade-offs |
 | SP-21 | High | ☐ Planned | Pluggable cross-encoder reranking with candidate/rerank/final ranks |
 | SP-22 | Medium | ☐ Planned | Per-stage timing and retrieval observability in API traces and workbench |
 
-**Current `main` baseline:** fixed-size **character** chunks, unencrypted text-extractable PDFs, exact pgvector cosine ranking, PostgreSQL **full-text `ts_rank_cd`** keyword ranking, and RRF. There is **no BM25 implementation** even though PostgreSQL keyword search already exists.
+**Current `main` baseline:** optional character or model-token chunking, unencrypted text-extractable PDFs, exact pgvector cosine ranking, PostgreSQL **full-text `ts_rank_cd`** keyword ranking, and RRF. There is **no BM25 implementation** even though PostgreSQL keyword search already exists.
 
 ## Phase 4 — Quality, extensibility and release
 
@@ -79,7 +79,7 @@ These are cross-cutting technical debts, **not completed roadmap tasks**:
 1. **Authentication:** One shared API bearer token, no per-user sessions, RBAC or actual tenant authorization. Local work is bound to loopback, not exposed as a public service.
 2. **Evaluation race:** Stale judgment checks occur before and after retrieval but run persistence is a separate transaction; a narrow activation window remains. Version pinning or atomic snapshot/persist is future hardening.
 3. **Ingestion execution:** Processing still runs in an HTTP request. Lease renewal occurs between embedding batches, so a single provider call longer than the lease can be reclaimed; stale workers are fenced at promotion.
-4. **Parsing:** No OCR/scanned PDFs; encrypted PDFs are unsupported; fixed-size chunking counts characters, not model tokens.
+4. **Parsing:** No OCR/scanned PDFs; encrypted PDFs are unsupported. Character and token windows are available, while SP-17 adds optional structure-aware boundaries under review.
 5. **Retrieval:** Exact pgvector search only; Postgres keyword scoring is not BM25; no HNSW, filters or reranking.
 6. **Frontend:** Live source, chunk, retrieval, trace comparison, evaluation and RAG use a single-operator local session; the Overview frontend follow-up is in review. Counts reflect loaded pages for one selected knowledge base. The session is not production identity, RBAC or multi-tenant authorization.
 7. **Dependency reproducibility:** Frontend does not yet commit a `package-lock.json`; `npm install` is used, and Docker image tags are not digest-pinned.
