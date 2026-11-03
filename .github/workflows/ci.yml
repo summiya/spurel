@@ -330,7 +330,13 @@ jobs:
         run: npm run lint
 
       - name: Prettier
-        run: npm run format:check
+        run: |
+          if ! npm run format:check; then
+            echo "Formatting changes required (diff follows):"
+            npx prettier --write .
+            git diff -- .
+            exit 1
+          fi
 
       - name: TypeScript typecheck
         run: npm run typecheck

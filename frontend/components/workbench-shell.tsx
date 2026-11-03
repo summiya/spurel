@@ -59,18 +59,16 @@ export function WorkbenchShell({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const saved = window.localStorage.getItem("spurel-theme");
-    if (saved === "dark" || saved === "light") setTheme(saved);
+    if (saved !== "dark" && saved !== "light") return;
+    // Restore browser preference after hydration without changing server markup.
+    const frame = window.requestAnimationFrame(() => setTheme(saved));
+    return () => window.cancelAnimationFrame(frame);
   }, []);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
     window.localStorage.setItem("spurel-theme", theme);
   }, [theme]);
-
-  useEffect(() => {
-    setMobileOpen(false);
-    setPaletteOpen(false);
-  }, [pathname]);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -117,6 +115,7 @@ export function WorkbenchShell({ children }: { children: ReactNode }) {
                     <Link
                       key={item.href}
                       href={item.href}
+                      onClick={() => setMobileOpen(false)}
                       aria-current={pathname === item.href ? "page" : undefined}
                       className={"nav-link " + (pathname === item.href ? "active" : "")}
                     >
