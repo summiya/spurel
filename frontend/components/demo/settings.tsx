@@ -109,8 +109,9 @@ export function SettingsPage() {
             <span className="status-badge success">Live · SP-10–15</span>
           </div>
           <p className="muted-panel-note">
-            SP-10–SP-15 connect the live workbench to authenticated FastAPI endpoints. Overview
-            now summarizes real loaded source, trace and benchmark records. Never put your API token in NEXT_PUBLIC_* settings.
+            SP-10–SP-15 connect the live workbench to authenticated FastAPI endpoints. Overview now
+            summarizes real loaded source, trace and benchmark records. Never put your API token in
+            NEXT_PUBLIC_* settings.
           </p>
         </Panel>
       </div>

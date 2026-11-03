@@ -35,7 +35,9 @@ export function LiveOverviewPage() {
 
   const documents = useWorkspacePages<LiveDocument>(root ? root + "/documents" : null);
   const traces = useWorkspacePages<RetrievalTraceSummary>(root ? root + "/retrieval/traces" : null);
-  const datasets = useWorkspacePages<EvaluationDataset>(root ? root + "/evaluation-datasets" : null);
+  const datasets = useWorkspacePages<EvaluationDataset>(
+    root ? root + "/evaluation-datasets" : null,
+  );
 
   const [preferredDatasetId, setPreferredDatasetId] = useState("");
   const dataset =
@@ -48,7 +50,12 @@ export function LiveOverviewPage() {
   const latestRun = runs.items[0] ?? null;
   const baseQuery = base ? "?kb=" + base.id : "";
 
-  const liveCounts: Array<{ label: string; value: string; description: string; icon: "database" | "file" | "layers" | "clock" }> = [
+  const liveCounts: Array<{
+    label: string;
+    value: string;
+    description: string;
+    icon: "database" | "file" | "layers" | "clock";
+  }> = [
     {
       label: "Knowledge bases",
       value: bases.loading ? "…" : bases.error ? "N/A" : String(bases.items.length),
@@ -58,7 +65,9 @@ export function LiveOverviewPage() {
     {
       label: "Documents",
       value: documents.loading ? "…" : documents.error ? "N/A" : String(documents.items.length),
-      description: documents.hasMore ? "Loaded in selected knowledge base · more available" : "Loaded in selected knowledge base",
+      description: documents.hasMore
+        ? "Loaded in selected knowledge base · more available"
+        : "Loaded in selected knowledge base",
       icon: "file",
     },
     {
@@ -70,7 +79,9 @@ export function LiveOverviewPage() {
     {
       label: "Saved retrieval traces",
       value: traces.loading ? "…" : traces.error ? "N/A" : String(traces.items.length),
-      description: traces.hasMore ? "Loaded history · more available" : "Loaded history for selected knowledge base",
+      description: traces.hasMore
+        ? "Loaded history · more available"
+        : "Loaded history for selected knowledge base",
       icon: "clock",
     },
   ];
@@ -98,7 +109,9 @@ export function LiveOverviewPage() {
         <div className="hero-content">
           <p className="eyebrow">RETRIEVAL, DECODED</p>
           <h2>Stop guessing why RAG works.</h2>
-          <p>Go from real sources to ranked retrieval evidence, saved traces and measured quality.</p>
+          <p>
+            Go from real sources to ranked retrieval evidence, saved traces and measured quality.
+          </p>
           <Link href={"/retrieval" + baseQuery} className="button ghost compact">
             Explore retrieval lab <Icon name="arrow-right" size={15} />
           </Link>
@@ -112,7 +125,10 @@ export function LiveOverviewPage() {
         </div>
       </section>
 
-      <Panel title="Knowledge-base workspace" hint="All metrics below use real records and explicitly loaded pages">
+      <Panel
+        title="Knowledge-base workspace"
+        hint="All metrics below use real records and explicitly loaded pages"
+      >
         {bases.loading ? (
           <LoadingState label="Loading live knowledge bases" />
         ) : bases.error ? (
@@ -128,13 +144,17 @@ export function LiveOverviewPage() {
             title="No knowledge bases yet"
             description="Create a collection and index documents to populate your live dashboard."
             action={
-              <Link className="button primary" href="/knowledge-bases">Create a knowledge base</Link>
+              <Link className="button primary" href="/knowledge-bases">
+                Create a knowledge base
+              </Link>
             }
           />
         ) : (
           <div className="overview-selector">
             <div>
-              <label className="field-label" htmlFor="overview-kb">Knowledge base</label>
+              <label className="field-label" htmlFor="overview-kb">
+                Knowledge base
+              </label>
               <select
                 id="overview-kb"
                 className="select-control"
@@ -145,17 +165,23 @@ export function LiveOverviewPage() {
                 }}
               >
                 {bases.items.map((item) => (
-                  <option key={item.id} value={item.id}>{item.name}</option>
+                  <option key={item.id} value={item.id}>
+                    {item.name}
+                  </option>
                 ))}
               </select>
             </div>
-            <button className="button ghost compact" type="button" onClick={() => {
-              bases.refresh();
-              documents.refresh();
-              traces.refresh();
-              datasets.refresh();
-              runs.refresh();
-            }}>
+            <button
+              className="button ghost compact"
+              type="button"
+              onClick={() => {
+                bases.refresh();
+                documents.refresh();
+                traces.refresh();
+                datasets.refresh();
+                runs.refresh();
+              }}
+            >
               <Icon name="refresh" size={15} /> Refresh live data
             </button>
             <Link className="button ghost compact" href={"/knowledge-bases"}>
@@ -164,8 +190,12 @@ export function LiveOverviewPage() {
           </div>
         )}
         {bases.hasMore ? (
-          <button type="button" className="button ghost compact" disabled={bases.loadingMore}
-            onClick={() => void bases.loadMore()}>
+          <button
+            type="button"
+            className="button ghost compact"
+            disabled={bases.loadingMore}
+            onClick={() => void bases.loadMore()}
+          >
             {bases.loadingMore ? "Loading…" : "Load more knowledge bases"}
           </button>
         ) : null}
@@ -190,59 +220,116 @@ export function LiveOverviewPage() {
             ))}
           </div>
           <div className="dashboard-grid">
-            <Panel title="Document index readiness"
+            <Panel
+              title="Document index readiness"
               hint="Active indexing state of loaded documents; not a synthetic pipeline-health score"
-              action={<Link className="button ghost compact" href={"/chunks" + baseQuery}>
-                Inspect chunks <Icon name="arrow-right" size={14} />
-              </Link>}>
+              action={
+                <Link className="button ghost compact" href={"/chunks" + baseQuery}>
+                  Inspect chunks <Icon name="arrow-right" size={14} />
+                </Link>
+              }
+            >
               {documents.loading ? <LoadingState label="Loading documents" /> : null}
-              {documents.error ? <ErrorState description={documents.error} onRetry={documents.refresh} /> : null}
+              {documents.error ? (
+                <ErrorState description={documents.error} onRetry={documents.refresh} />
+              ) : null}
               {!documents.loading && !documents.error && !documents.items.length ? (
-                <EmptyState icon="file" title="No documents uploaded"
+                <EmptyState
+                  icon="file"
+                  title="No documents uploaded"
                   description="Upload and index a document to make it searchable."
-                  action={<Link className="button ghost compact" href="/knowledge-bases">Upload document</Link>}
+                  action={
+                    <Link className="button ghost compact" href="/knowledge-bases">
+                      Upload document
+                    </Link>
+                  }
                 />
               ) : null}
               <div className="overview-doc-list">
                 {documents.items.slice(0, 6).map((document) => (
-                  <Link key={document.id} href={`/chunks?kb=${base.id}&doc=${document.id}`}
-                    className="overview-doc-entry">
-                    <span className="recent-icon"><Icon name="file" size={17} /></span>
-                    <span className="recent-body"><strong>{document.filename}</strong>
-                      <small>{dateLabel(document.created_at)}</small></span>
-                    <span className={"status-badge " + (document.active_chunk_version > 0 ? "success" : "")}>
-                      {document.active_chunk_version > 0 ? "Indexed · v" + document.active_chunk_version : "Not indexed"}
+                  <Link
+                    key={document.id}
+                    href={`/chunks?kb=${base.id}&doc=${document.id}`}
+                    className="overview-doc-entry"
+                  >
+                    <span className="recent-icon">
+                      <Icon name="file" size={17} />
+                    </span>
+                    <span className="recent-body">
+                      <strong>{document.filename}</strong>
+                      <small>{dateLabel(document.created_at)}</small>
+                    </span>
+                    <span
+                      className={
+                        "status-badge " + (document.active_chunk_version > 0 ? "success" : "")
+                      }
+                    >
+                      {document.active_chunk_version > 0
+                        ? "Indexed · v" + document.active_chunk_version
+                        : "Not indexed"}
                     </span>
                   </Link>
                 ))}
               </div>
-              {documents.hasMore ? <button type="button" className="button ghost compact" onClick={() => void documents.loadMore()}
-                disabled={documents.loadingMore}>{documents.loadingMore ? "Loading…" : "Load more documents"}</button> : null}
-              {documents.items.length > 6 ? <p className="text-hint">Showing the first six loaded documents here; manage the full list in Knowledge Bases.</p> : null}
+              {documents.hasMore ? (
+                <button
+                  type="button"
+                  className="button ghost compact"
+                  onClick={() => void documents.loadMore()}
+                  disabled={documents.loadingMore}
+                >
+                  {documents.loadingMore ? "Loading…" : "Load more documents"}
+                </button>
+              ) : null}
+              {documents.items.length > 6 ? (
+                <p className="text-hint">
+                  Showing the first six loaded documents here; manage the full list in Knowledge
+                  Bases.
+                </p>
+              ) : null}
             </Panel>
 
-            <Panel title="Latest benchmark quality"
+            <Panel
+              title="Latest benchmark quality"
               hint="Measured against persisted relevance labels, for one selected dataset"
-              action={<Link className="button ghost compact" href="/evaluations">
-                Open evaluations <Icon name="arrow-right" size={14} />
-              </Link>}>
+              action={
+                <Link className="button ghost compact" href="/evaluations">
+                  Open evaluations <Icon name="arrow-right" size={14} />
+                </Link>
+              }
+            >
               {datasets.loading ? <LoadingState label="Loading evaluation datasets" /> : null}
-              {datasets.error ? <ErrorState description={datasets.error} onRetry={datasets.refresh} /> : null}
+              {datasets.error ? (
+                <ErrorState description={datasets.error} onRetry={datasets.refresh} />
+              ) : null}
               {datasets.items.length ? (
                 <>
-                  <label className="field-label" htmlFor="overview-dataset">Evaluation dataset</label>
-                  <select id="overview-dataset" className="select-control overview-dataset"
+                  <label className="field-label" htmlFor="overview-dataset">
+                    Evaluation dataset
+                  </label>
+                  <select
+                    id="overview-dataset"
+                    className="select-control overview-dataset"
                     value={dataset?.id ?? ""}
-                    onChange={(event) => setPreferredDatasetId(event.target.value)}>
-                    {datasets.items.map((item) => <option key={item.id} value={item.id}>
-                      {item.name} · {item.case_count} cases
-                    </option>)}
+                    onChange={(event) => setPreferredDatasetId(event.target.value)}
+                  >
+                    {datasets.items.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.name} · {item.case_count} cases
+                      </option>
+                    ))}
                   </select>
                 </>
               ) : !datasets.loading && !datasets.error ? (
-                <EmptyState icon="chart" title="No evaluation datasets"
+                <EmptyState
+                  icon="chart"
+                  title="No evaluation datasets"
                   description="Create graded retrieval labels and run a benchmark to measure quality."
-                  action={<Link className="button ghost compact" href="/evaluations">Start evaluation</Link>}
+                  action={
+                    <Link className="button ghost compact" href="/evaluations">
+                      Start evaluation
+                    </Link>
+                  }
                 />
               ) : null}
               {runs.loading ? <LoadingState label="Loading benchmark history" /> : null}
@@ -250,7 +337,9 @@ export function LiveOverviewPage() {
               {latestRun ? (
                 <div className="overview-quality">
                   <div className="overview-quality-meta">
-                    <span className="status-badge">{latestRun.mode} · K={latestRun.top_k}</span>
+                    <span className="status-badge">
+                      {latestRun.mode} · K={latestRun.top_k}
+                    </span>
                     <span className="text-hint">{dateLabel(latestRun.created_at)}</span>
                   </div>
                   {[
@@ -262,65 +351,112 @@ export function LiveOverviewPage() {
                     ["Mean duration", milliseconds(latestRun.mean_duration_ms)],
                   ].map(([name, value]) => (
                     <div className="pipeline-detail" key={name}>
-                      <span>{name}</span><strong>{value}</strong>
+                      <span>{name}</span>
+                      <strong>{value}</strong>
                     </div>
                   ))}
-                  <p className="text-hint">Latest loaded run only. No invented baseline, trends or p95 latency.</p>
+                  <p className="text-hint">
+                    Latest loaded run only. No invented baseline, trends or p95 latency.
+                  </p>
                 </div>
               ) : dataset && !runs.loading && !runs.error ? (
-                <EmptyState icon="chart" title="No benchmark runs"
+                <EmptyState
+                  icon="chart"
+                  title="No benchmark runs"
                   description="Run a Keyword, Vector or Hybrid evaluation to produce measured quality."
-                  action={<Link href="/evaluations" className="button ghost compact">Run benchmark</Link>}
+                  action={
+                    <Link href="/evaluations" className="button ghost compact">
+                      Run benchmark
+                    </Link>
+                  }
                 />
               ) : null}
-              {datasets.hasMore ? <button className="button ghost compact" type="button"
-                disabled={datasets.loadingMore} onClick={() => void datasets.loadMore()}>
-                {datasets.loadingMore ? "Loading…" : "Load more datasets"}</button> : null}
+              {datasets.hasMore ? (
+                <button
+                  className="button ghost compact"
+                  type="button"
+                  disabled={datasets.loadingMore}
+                  onClick={() => void datasets.loadMore()}
+                >
+                  {datasets.loadingMore ? "Loading…" : "Load more datasets"}
+                </button>
+              ) : null}
             </Panel>
           </div>
 
           <div className="dashboard-grid">
-            <Panel title="Recent saved retrievals"
+            <Panel
+              title="Recent saved retrievals"
               hint="Newest first, scoped to selected knowledge base"
-              action={<Link href={"/traces" + baseQuery} className="button ghost compact">
-                Trace history <Icon name="arrow-right" size={14} />
-              </Link>}>
+              action={
+                <Link href={"/traces" + baseQuery} className="button ghost compact">
+                  Trace history <Icon name="arrow-right" size={14} />
+                </Link>
+              }
+            >
               {traces.loading ? <LoadingState label="Loading saved traces" /> : null}
-              {traces.error ? <ErrorState description={traces.error} onRetry={traces.refresh} /> : null}
+              {traces.error ? (
+                <ErrorState description={traces.error} onRetry={traces.refresh} />
+              ) : null}
               {!traces.loading && !traces.error && !traces.items.length ? (
-                <EmptyState icon="search" title="No retrieval traces"
+                <EmptyState
+                  icon="search"
+                  title="No retrieval traces"
                   description="Run a Keyword retrieval in the Retrieval Lab to save your first trace."
-                  action={<Link href={"/retrieval" + baseQuery} className="button ghost compact">Run retrieval</Link>}
+                  action={
+                    <Link href={"/retrieval" + baseQuery} className="button ghost compact">
+                      Run retrieval
+                    </Link>
+                  }
                 />
               ) : null}
               <div className="recent-list">
                 {traces.items.slice(0, 5).map((trace) => (
-                  <Link key={trace.id} href={`/traces?kb=${base.id}&trace=${trace.id}`}
-                    className="recent-item">
-                    <span className="recent-icon"><Icon name="search" size={17} /></span>
+                  <Link
+                    key={trace.id}
+                    href={`/traces?kb=${base.id}&trace=${trace.id}`}
+                    className="recent-item"
+                  >
+                    <span className="recent-icon">
+                      <Icon name="search" size={17} />
+                    </span>
                     <span className="recent-body">
                       <strong>{trace.query}</strong>
-                      <small>{trace.mode} · {trace.result_count} saved results · {dateLabel(trace.created_at)}</small>
+                      <small>
+                        {trace.mode} · {trace.result_count} saved results ·{" "}
+                        {dateLabel(trace.created_at)}
+                      </small>
                     </span>
                     <strong className="recent-score">{milliseconds(trace.duration_ms)}</strong>
                   </Link>
                 ))}
               </div>
-              {traces.hasMore ? <button type="button" className="button ghost compact"
-                disabled={traces.loadingMore} onClick={() => void traces.loadMore()}>
-                {traces.loadingMore ? "Loading…" : "Load more saved traces"}
-              </button> : null}
+              {traces.hasMore ? (
+                <button
+                  type="button"
+                  className="button ghost compact"
+                  disabled={traces.loadingMore}
+                  onClick={() => void traces.loadMore()}
+                >
+                  {traces.loadingMore ? "Loading…" : "Load more saved traces"}
+                </button>
+              ) : null}
             </Panel>
-            <Panel title="Jump into your workflow" hint="Direct links into the live backend-backed tools">
+            <Panel
+              title="Jump into your workflow"
+              hint="Direct links into the live backend-backed tools"
+            >
               <div className="quick-list">
-                {([
-                  ["/knowledge-bases", "database", "Manage knowledge bases"],
-                  ["/chunks" + baseQuery, "layers", "Inspect active chunks"],
-                  ["/retrieval" + baseQuery, "search", "Run retrieval"],
-                  ["/traces" + baseQuery, "clock", "Compare traces"],
-                  ["/evaluations", "chart", "Evaluate retrieval quality"],
-                  ["/rag" + baseQuery, "sparkles", "Generate a RAG answer"],
-                ] as const).map(([href, icon, label]) => (
+                {(
+                  [
+                    ["/knowledge-bases", "database", "Manage knowledge bases"],
+                    ["/chunks" + baseQuery, "layers", "Inspect active chunks"],
+                    ["/retrieval" + baseQuery, "search", "Run retrieval"],
+                    ["/traces" + baseQuery, "clock", "Compare traces"],
+                    ["/evaluations", "chart", "Evaluate retrieval quality"],
+                    ["/rag" + baseQuery, "sparkles", "Generate a RAG answer"],
+                  ] as const
+                ).map(([href, icon, label]) => (
                   <Link href={href} key={href} className="quick-item">
                     <Icon name={icon} size={17} />
                     <span>{label}</span>

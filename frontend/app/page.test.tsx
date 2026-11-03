@@ -27,51 +27,107 @@ function fakeFetch(input: RequestInfo | URL): Promise<Response> {
   const url = String(input);
   if (url === "/api/workspace/knowledge-bases?offset=0") {
     if (unauthorized) return Promise.resolve(json({ error: "Operator sign-in required." }, 401));
-    return Promise.resolve(json(page(emptyWorkspace ? [] : [
-      { id: kbA, name: "Employee policies", created_at: "2026-11-03T10:00:00Z" },
-      { id: kbB, name: "Product notes", created_at: "2026-11-03T11:00:00Z" },
-    ])));
+    return Promise.resolve(
+      json(
+        page(
+          emptyWorkspace
+            ? []
+            : [
+                { id: kbA, name: "Employee policies", created_at: "2026-11-03T10:00:00Z" },
+                { id: kbB, name: "Product notes", created_at: "2026-11-03T11:00:00Z" },
+              ],
+        ),
+      ),
+    );
   }
   if (url === `/api/workspace/knowledge-bases/${kbA}/documents?offset=0`) {
-    return Promise.resolve(json(page([
-      { id: docA, knowledge_base_id: kbA, filename: "operations-policy.md", active_chunk_version: 2, created_at: "2026-11-03T12:00:00Z" },
-      { id: docB, knowledge_base_id: kbA, filename: "draft-handbook.md", active_chunk_version: 0, created_at: "2026-11-03T13:00:00Z" },
-    ])));
+    return Promise.resolve(
+      json(
+        page([
+          {
+            id: docA,
+            knowledge_base_id: kbA,
+            filename: "operations-policy.md",
+            active_chunk_version: 2,
+            created_at: "2026-11-03T12:00:00Z",
+          },
+          {
+            id: docB,
+            knowledge_base_id: kbA,
+            filename: "draft-handbook.md",
+            active_chunk_version: 0,
+            created_at: "2026-11-03T13:00:00Z",
+          },
+        ]),
+      ),
+    );
   }
   if (url === `/api/workspace/knowledge-bases/${kbB}/documents?offset=0`) {
-    return Promise.resolve(json(page([
-      { id: docB, knowledge_base_id: kbB, filename: "product-guide.txt", active_chunk_version: 1, created_at: "2026-11-03T14:00:00Z" },
-    ])));
+    return Promise.resolve(
+      json(
+        page([
+          {
+            id: docB,
+            knowledge_base_id: kbB,
+            filename: "product-guide.txt",
+            active_chunk_version: 1,
+            created_at: "2026-11-03T14:00:00Z",
+          },
+        ]),
+      ),
+    );
   }
   if (url === `/api/workspace/knowledge-bases/${kbA}/retrieval/traces?offset=0`) {
-    return Promise.resolve(json(page([
-      { id: trace, query: "real retention policy", mode: "keyword", top_k: 10, duration_ms: 18.4, result_count: 2, created_at: "2026-11-03T15:00:00Z" },
-    ])));
+    return Promise.resolve(
+      json(
+        page([
+          {
+            id: trace,
+            query: "real retention policy",
+            mode: "keyword",
+            top_k: 10,
+            duration_ms: 18.4,
+            result_count: 2,
+            created_at: "2026-11-03T15:00:00Z",
+          },
+        ]),
+      ),
+    );
   }
   if (url === `/api/workspace/knowledge-bases/${kbB}/retrieval/traces?offset=0`) {
     return Promise.resolve(json(page([])));
   }
   if (url === `/api/workspace/knowledge-bases/${kbA}/evaluation-datasets?offset=0`) {
-    return Promise.resolve(json(page([{ id: dataset, name: "Policy QA", knowledge_base_id: kbA, case_count: 3 }])));
+    return Promise.resolve(
+      json(page([{ id: dataset, name: "Policy QA", knowledge_base_id: kbA, case_count: 3 }])),
+    );
   }
   if (url === `/api/workspace/knowledge-bases/${kbB}/evaluation-datasets?offset=0`) {
     return Promise.resolve(json(page([])));
   }
-  if (url === `/api/workspace/knowledge-bases/${kbA}/evaluation-datasets/${dataset}/runs?offset=0`) {
-    return Promise.resolve(json(page([{
-      run_id: "b71a0d37-637d-4f55-9749-40d6d1c2b953",
-      dataset_id: dataset,
-      mode: "keyword",
-      top_k: 10,
-      case_count: 3,
-      mean_recall_at_k: 0.8,
-      mean_precision_at_k: 0.5,
-      mrr_at_k: 0.7,
-      mean_ndcg_at_k: 0.9,
-      mean_judgment_coverage_at_k: 1,
-      mean_duration_ms: 16,
-      created_at: "2026-11-03T16:00:00Z",
-    }])));
+  if (
+    url === `/api/workspace/knowledge-bases/${kbA}/evaluation-datasets/${dataset}/runs?offset=0`
+  ) {
+    return Promise.resolve(
+      json(
+        page([
+          {
+            run_id: "b71a0d37-637d-4f55-9749-40d6d1c2b953",
+            dataset_id: dataset,
+            mode: "keyword",
+            top_k: 10,
+            case_count: 3,
+            mean_recall_at_k: 0.8,
+            mean_precision_at_k: 0.5,
+            mrr_at_k: 0.7,
+            mean_ndcg_at_k: 0.9,
+            mean_judgment_coverage_at_k: 1,
+            mean_duration_ms: 16,
+            created_at: "2026-11-03T16:00:00Z",
+          },
+        ]),
+      ),
+    );
   }
   return Promise.resolve(json({ error: "Unexpected request: " + url }, 500));
 }
@@ -87,8 +143,12 @@ describe("Spurel live Overview", () => {
   it("shows real scoped documents, saved retrievals and benchmark metrics without implicit model calls", async () => {
     render(<Home />);
     await screen.findByText("operations-policy.md");
-    expect(screen.getByRole("heading", { name: "Every retrieval decision. Visible." })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Stop guessing why RAG works." })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Every retrieval decision. Visible." }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Stop guessing why RAG works." }),
+    ).toBeInTheDocument();
     expect(screen.getByText("Live FastAPI / PostgreSQL")).toBeInTheDocument();
     expect(screen.getByText("real retention policy")).toBeInTheDocument();
     expect(screen.getByText("80.0%")).toBeInTheDocument();
@@ -101,11 +161,14 @@ describe("Spurel live Overview", () => {
       `/traces?kb=${kbA}&trace=${trace}`,
     );
     expect(screen.getByRole("link", { name: /Explore retrieval lab/i })).toHaveAttribute(
-      "href", `/retrieval?kb=${kbA}`,
+      "href",
+      `/retrieval?kb=${kbA}`,
     );
     expect(screen.queryByText("91.8%")).not.toBeInTheDocument();
     expect(screen.queryByText("18.4k")).not.toBeInTheDocument();
-    expect(vi.mocked(fetch).mock.calls.every(([, init]) => !init?.method || init.method === "GET")).toBe(true);
+    expect(
+      vi.mocked(fetch).mock.calls.every(([, init]) => !init?.method || init.method === "GET"),
+    ).toBe(true);
   });
 
   it("switches knowledge-base scope without mixing history or evaluation results", async () => {
@@ -120,7 +183,8 @@ describe("Spurel live Overview", () => {
     expect(screen.queryByText("real retention policy")).not.toBeInTheDocument();
     expect(screen.queryByText("80.0%")).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Generate a RAG answer/ })).toHaveAttribute(
-      "href", `/rag?kb=${kbB}`,
+      "href",
+      `/rag?kb=${kbB}`,
     );
   });
 
@@ -136,7 +200,8 @@ describe("Spurel live Overview", () => {
     unauthorized = true;
     render(<Home />);
     expect(await screen.findByRole("link", { name: /Sign in as local operator/ })).toHaveAttribute(
-      "href", "/operator/login",
+      "href",
+      "/operator/login",
     );
     expect(screen.getByRole("alert")).toHaveTextContent(/session has expired/i);
     await waitFor(() => expect(vi.mocked(fetch).mock.calls).toHaveLength(1));
