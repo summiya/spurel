@@ -123,7 +123,7 @@ function fakeFetch(input: RequestInfo | URL): Promise<Response> {
             mean_ndcg_at_k: 0.9,
             mean_judgment_coverage_at_k: 1,
             mean_duration_ms: 16,
-            created_at: "2026-11-03T16:00:00Z",
+            created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
           },
         ]),
       ),
@@ -152,6 +152,8 @@ describe("Spurel live Overview", () => {
     expect(screen.getByText("Live FastAPI / PostgreSQL")).toBeInTheDocument();
     expect(screen.getByText("real retention policy")).toBeInTheDocument();
     expect(await screen.findByText("80.0%")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Retrieval quality over time" })).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: /Measured recall and precision over the last 7 days from 1 saved benchmark/i })).toBeInTheDocument();
     expect(screen.getByText("18.4 ms")).toBeInTheDocument();
     const indexedCard = screen.getByText("Indexed documents").closest(".metric-card");
     expect(indexedCard).not.toBeNull();
@@ -180,6 +182,7 @@ describe("Spurel live Overview", () => {
     await screen.findByText("product-guide.txt");
     expect(screen.getByText("No retrieval traces")).toBeInTheDocument();
     expect(screen.getByText("No evaluation datasets")).toBeInTheDocument();
+    expect(screen.getByText("No evaluation dataset")).toBeInTheDocument();
     expect(screen.queryByText("real retention policy")).not.toBeInTheDocument();
     expect(screen.queryByText("80.0%")).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Generate a RAG answer/ })).toHaveAttribute(

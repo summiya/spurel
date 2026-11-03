@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 
 import { Icon } from "@/components/icons";
+import { RetrievalQualityChart } from "@/components/live/retrieval-quality-chart";
 import {
   EmptyState,
   ErrorState,
@@ -220,6 +221,16 @@ export function LiveOverviewPage() {
             ))}
           </div>
           <div className="dashboard-grid">
+            <RetrievalQualityChart
+              datasetName={dataset?.name ?? null}
+              runs={runs.items}
+              loading={runs.loading}
+              error={runs.error}
+              hasMore={runs.hasMore}
+              loadingMore={runs.loadingMore}
+              refresh={runs.refresh}
+              loadMore={() => void runs.loadMore()}
+            />
             <Panel
               title="Document index readiness"
               hint="Active indexing state of loaded documents; not a synthetic pipeline-health score"
@@ -289,6 +300,9 @@ export function LiveOverviewPage() {
               ) : null}
             </Panel>
 
+          </div>
+
+          <div className="dashboard-grid">
             <Panel
               title="Latest benchmark quality"
               hint="Measured against persisted relevance labels, for one selected dataset"
@@ -382,9 +396,6 @@ export function LiveOverviewPage() {
                 </button>
               ) : null}
             </Panel>
-          </div>
-
-          <div className="dashboard-grid">
             <Panel
               title="Recent saved retrievals"
               hint="Newest first, scoped to selected knowledge base"
@@ -442,6 +453,9 @@ export function LiveOverviewPage() {
                 </button>
               ) : null}
             </Panel>
+          </div>
+
+          <div className="dashboard-grid overview-quick-grid">
             <Panel
               title="Jump into your workflow"
               hint="Direct links into the live backend-backed tools"
