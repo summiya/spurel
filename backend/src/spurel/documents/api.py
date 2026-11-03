@@ -254,6 +254,8 @@ async def list_document_versions(
                 chunk_count=item.chunk_count,
                 created_at=item.created_at,
                 is_active=item.is_active,
+                status=item.status,
+                attempt_count=item.attempt_count,
             )
             for item in versions
         ],

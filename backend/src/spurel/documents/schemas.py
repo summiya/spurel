@@ -78,6 +78,8 @@ class DocumentChunkVersionResponse(BaseModel):
     chunk_count: int = Field(ge=1)
     created_at: datetime
     is_active: bool
+    status: Literal["processing", "ready", "failed"] = "ready"
+    attempt_count: int = Field(default=0, ge=0)
 
 
 class DocumentChunkVersionListResponse(BaseModel):
