@@ -124,7 +124,7 @@ describe("live chunk inspector", () => {
 
   it("loads real stored chunks, exact offsets, embedding counts and version status", async () => {
     render(<LiveChunkInspectorPage />);
-    expect(await screen.findAllByText(/Current live excerpt/)).toBeInTheDocument();
+    expect((await screen.findAllByText(/Current live excerpt/)).length).toBeGreaterThan(0);
     expect(screen.getByText(/Source offsets 120–170/)).toBeInTheDocument();
     expect(screen.getByText(/2 embeddings/)).toBeInTheDocument();
     expect(screen.getByText(/No embeddings/)).toBeInTheDocument();
@@ -139,7 +139,7 @@ describe("live chunk inspector", () => {
     fireEvent.change(screen.getByRole("combobox", { name: "Chunk set to inspect" }), {
       target: { value: "v:1" },
     });
-    expect(await screen.findAllByText(/Old source excerpt/)).toBeInTheDocument();
+    expect((await screen.findAllByText(/Old source excerpt/)).length).toBeGreaterThan(0);
     expect(screen.getByText(/Historical version 1 is read-only/)).toBeInTheDocument();
     expect(screen.getByText(/Source offsets 80–118/)).toBeInTheDocument();
     expect(screen.queryAllByText(/Current live excerpt/)).toHaveLength(0);
