@@ -36,7 +36,7 @@ export async function workspaceFetch<T>(path: string, init: RequestInit = {}): P
 
 export function isPage<T>(value: unknown): value is Page<T> {
   return (
-    Boolean(value) &&
+    value !== null &&
     typeof value === "object" &&
     "items" in value &&
     Array.isArray(value.items) &&
