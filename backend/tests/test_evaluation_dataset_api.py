@@ -189,9 +189,7 @@ def test_list_cases_returns_summaries_without_loading_judgments() -> None:
     )
     client = _client(service)
 
-    response = client.get(
-        f"/knowledge-bases/{uuid4()}/evaluation-datasets/{dataset_id}/cases"
-    )
+    response = client.get(f"/knowledge-bases/{uuid4()}/evaluation-datasets/{dataset_id}/cases")
 
     assert response.status_code == 200
     body = response.json()
@@ -228,14 +226,10 @@ def test_dataset_persistence_errors_are_hidden() -> None:
     service.error = EvaluationDatasetPersistenceError("database secret detail")
     client = _client(service)
 
-    response = client.get(
-        f"/knowledge-bases/{uuid4()}/evaluation-datasets"
-    )
+    response = client.get(f"/knowledge-bases/{uuid4()}/evaluation-datasets")
 
     assert response.status_code == 503
-    assert response.json() == {
-        "detail": "evaluation dataset service temporarily unavailable"
-    }
+    assert response.json() == {"detail": "evaluation dataset service temporarily unavailable"}
     assert "database secret detail" not in response.text
 
 
@@ -248,7 +242,6 @@ def test_dataset_list_bounds_page_size() -> None:
     )
 
     assert response.status_code == 422
-
 
 
 def test_create_case_rejects_labels_outside_active_knowledge_base() -> None:

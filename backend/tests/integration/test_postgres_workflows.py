@@ -620,17 +620,13 @@ async def _version_round_trip(postgres_url: str, tmp_path: Path) -> None:
             executor=DatasetEvaluationExecutionService(
                 repository=judgment_repository,
                 retriever=KeywordDatasetRetriever(
-                    KeywordRetrievalService(
-                        SqlAlchemyKeywordRetrievalRepository(database.sessions)
-                    )
+                    KeywordRetrievalService(SqlAlchemyKeywordRetrievalRepository(database.sessions))
                 ),
                 mode=DatasetEvaluationMode.KEYWORD,
             ),
             runs=runs,
         )
-        original_run = await benchmark.run(
-            knowledge_base_id=kb_id, dataset_id=dataset.id, top_k=1
-        )
+        original_run = await benchmark.run(knowledge_base_id=kb_id, dataset_id=dataset.id, top_k=1)
         initial_audit = await evaluations.audit_judgments(
             knowledge_base_id=kb_id, dataset_id=dataset.id
         )
@@ -664,9 +660,7 @@ async def _version_round_trip(postgres_url: str, tmp_path: Path) -> None:
         )
         assert current is not None and current.active_chunk_version == 2
 
-        audit = await evaluations.audit_judgments(
-            knowledge_base_id=kb_id, dataset_id=dataset.id
-        )
+        audit = await evaluations.audit_judgments(knowledge_base_id=kb_id, dataset_id=dataset.id)
         assert not audit.is_usable
         assert audit.invalid_count == 1
         assert audit.inactive_version_count == 1
@@ -729,9 +723,7 @@ async def _version_round_trip(postgres_url: str, tmp_path: Path) -> None:
         app = create_app()
         app.dependency_overrides[get_document_version_service] = lambda: versions
         app.dependency_overrides[get_evaluation_dataset_service] = lambda: evaluations
-        app.dependency_overrides[get_keyword_dataset_evaluation_service] = (
-            lambda: benchmark
-        )
+        app.dependency_overrides[get_keyword_dataset_evaluation_service] = lambda: benchmark
         headers = {"Authorization": f"Bearer {_TEST_TOKEN}"}
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             base = f"/knowledge-bases/{kb_id}/documents/{doc_id}"
@@ -743,9 +735,7 @@ async def _version_round_trip(postgres_url: str, tmp_path: Path) -> None:
             assert result.json()["items"][0]["id"] == str(original_id)
 
             evaluation_path = f"/knowledge-bases/{kb_id}/evaluation-datasets/{dataset.id}"
-            report = await client.get(
-                f"{evaluation_path}/judgment-audit", headers=headers
-            )
+            report = await client.get(f"{evaluation_path}/judgment-audit", headers=headers)
             assert report.status_code == 200, report.text
             assert report.json()["invalid_count"] == 1
             assert report.json()["issues"][0]["chunk_id"] == str(original_id)
@@ -1091,7 +1081,6 @@ async def _initial_index_failure_and_retry(postgres_url: str, tmp_path: Path) ->
         )[0].attempt_count == 2
 
 
-
 def test_new_labels_reject_missing_foreign_and_deleted_chunk_references(
     postgres_url: str, tmp_path: Path
 ) -> None:
@@ -1121,9 +1110,7 @@ async def _judgment_scope_and_missing_round_trip(postgres_url: str, tmp_path: Pa
 
         chunk_repo = SqlAlchemyDocumentChunkRepository(database.sessions)
         owned_chunk = (
-            await chunk_repo.list_stored_by_document(
-                document_id=owned_document, limit=10, offset=0
-            )
+            await chunk_repo.list_stored_by_document(document_id=owned_document, limit=10, offset=0)
         )[0].id
         foreign_chunk = (
             await chunk_repo.list_stored_by_document(
@@ -1143,13 +1130,9 @@ async def _judgment_scope_and_missing_round_trip(postgres_url: str, tmp_path: Pa
                     knowledge_base_id=own_kb,
                     dataset_id=dataset.id,
                     query="refund",
-                    judgments=(
-                        RelevanceJudgment(chunk_id=invalid_chunk_id, relevance=3),
-                    ),
+                    judgments=(RelevanceJudgment(chunk_id=invalid_chunk_id, relevance=3),),
                 )
-        assert not await datasets.list_cases(
-            knowledge_base_id=own_kb, dataset_id=dataset.id
-        )
+        assert not await datasets.list_cases(knowledge_base_id=own_kb, dataset_id=dataset.id)
 
         case = await datasets.add_case(
             knowledge_base_id=own_kb,
@@ -1157,9 +1140,7 @@ async def _judgment_scope_and_missing_round_trip(postgres_url: str, tmp_path: Pa
             query="refund",
             judgments=(RelevanceJudgment(chunk_id=owned_chunk, relevance=3),),
         )
-        before = await datasets.audit_judgments(
-            knowledge_base_id=own_kb, dataset_id=dataset.id
-        )
+        before = await datasets.audit_judgments(knowledge_base_id=own_kb, dataset_id=dataset.id)
         assert before.is_usable and before.judgment_count == 1
 
         # A source may be deleted without cascading historical relevance labels.
@@ -1168,9 +1149,7 @@ async def _judgment_scope_and_missing_round_trip(postgres_url: str, tmp_path: Pa
                 await session.execute(
                     delete(DocumentRecord).where(DocumentRecord.id == owned_document)
                 )
-        after = await datasets.audit_judgments(
-            knowledge_base_id=own_kb, dataset_id=dataset.id
-        )
+        after = await datasets.audit_judgments(knowledge_base_id=own_kb, dataset_id=dataset.id)
         assert after.invalid_count == 1
         assert after.missing_or_out_of_scope_count == 1
         assert after.issues[0].reason is EvaluationJudgmentIssueReason.MISSING_OR_OUT_OF_SCOPE
@@ -1186,9 +1165,7 @@ async def _judgment_scope_and_missing_round_trip(postgres_url: str, tmp_path: Pa
             executor=DatasetEvaluationExecutionService(
                 repository=SqlAlchemyEvaluationDatasetRepository(database.sessions),
                 retriever=KeywordDatasetRetriever(
-                    KeywordRetrievalService(
-                        SqlAlchemyKeywordRetrievalRepository(database.sessions)
-                    )
+                    KeywordRetrievalService(SqlAlchemyKeywordRetrievalRepository(database.sessions))
                 ),
                 mode=DatasetEvaluationMode.KEYWORD,
             ),
@@ -1196,6 +1173,4 @@ async def _judgment_scope_and_missing_round_trip(postgres_url: str, tmp_path: Pa
         )
         with pytest.raises(EvaluationJudgmentStaleError):
             await runner.run(knowledge_base_id=own_kb, dataset_id=dataset.id, top_k=1)
-        assert not await runs.list_by_dataset(
-            knowledge_base_id=own_kb, dataset_id=dataset.id
-        )
+        assert not await runs.list_by_dataset(knowledge_base_id=own_kb, dataset_id=dataset.id)

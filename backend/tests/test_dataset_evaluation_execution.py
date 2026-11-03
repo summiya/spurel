@@ -78,9 +78,7 @@ class FakeKeywordRetriever:
                 end_offset=(index * 10) + 7,
                 keyword_score=1.0 - (index * 0.1),
             )
-            for index, chunk_id in enumerate(
-                self.results_by_query.get(query, ())[:limit]
-            )
+            for index, chunk_id in enumerate(self.results_by_query.get(query, ())[:limit])
         )
 
 
@@ -254,7 +252,6 @@ def test_vector_mode_requires_complete_embedding_configuration() -> None:
                 top_k=10,
             )
         )
-
 
 
 def test_dataset_execution_rechecks_labels_after_retrieval_before_returning_metrics() -> None:

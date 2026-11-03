@@ -49,9 +49,7 @@ class SqlAlchemyEvaluationDatasetRepository:
                 async with session.begin():
                     session.add(EvaluationDatasetRecord.from_domain(dataset))
         except SQLAlchemyError as exc:
-            raise EvaluationDatasetPersistenceError(
-                "failed to persist evaluation dataset"
-            ) from exc
+            raise EvaluationDatasetPersistenceError("failed to persist evaluation dataset") from exc
 
     async def list_datasets(
         self,
@@ -71,9 +69,7 @@ class SqlAlchemyEvaluationDatasetRepository:
 
         statement = (
             select(EvaluationDatasetRecord, case_count)
-            .where(
-                EvaluationDatasetRecord.knowledge_base_id == knowledge_base_id
-            )
+            .where(EvaluationDatasetRecord.knowledge_base_id == knowledge_base_id)
             .order_by(
                 EvaluationDatasetRecord.created_at.desc(),
                 EvaluationDatasetRecord.id.desc(),
@@ -86,9 +82,7 @@ class SqlAlchemyEvaluationDatasetRepository:
             async with self._session_factory() as session:
                 rows = (await session.execute(statement)).all()
         except SQLAlchemyError as exc:
-            raise EvaluationDatasetPersistenceError(
-                "failed to list evaluation datasets"
-            ) from exc
+            raise EvaluationDatasetPersistenceError("failed to list evaluation datasets") from exc
 
         return tuple(
             EvaluationDatasetSummary(
@@ -113,9 +107,7 @@ class SqlAlchemyEvaluationDatasetRepository:
         try:
             async with self._session_factory() as session:
                 async with session.begin():
-                    dataset_id = (
-                        await session.execute(dataset_statement)
-                    ).scalar_one_or_none()
+                    dataset_id = (await session.execute(dataset_statement)).scalar_one_or_none()
                     if dataset_id is None:
                         return False
 
@@ -161,9 +153,7 @@ class SqlAlchemyEvaluationDatasetRepository:
                         ]
                     )
         except SQLAlchemyError as exc:
-            raise EvaluationDatasetPersistenceError(
-                "failed to persist evaluation case"
-            ) from exc
+            raise EvaluationDatasetPersistenceError("failed to persist evaluation case") from exc
 
         return True
 
@@ -183,9 +173,7 @@ class SqlAlchemyEvaluationDatasetRepository:
 
         judgment_count = (
             select(func.count(EvaluationJudgmentRecord.id))
-            .where(
-                EvaluationJudgmentRecord.case_id == EvaluationCaseRecord.id
-            )
+            .where(EvaluationJudgmentRecord.case_id == EvaluationCaseRecord.id)
             .correlate(EvaluationCaseRecord)
             .scalar_subquery()
             .label("judgment_count")
@@ -218,17 +206,13 @@ class SqlAlchemyEvaluationDatasetRepository:
 
         try:
             async with self._session_factory() as session:
-                exists = (
-                    await session.execute(dataset_statement)
-                ).scalar_one_or_none()
+                exists = (await session.execute(dataset_statement)).scalar_one_or_none()
                 if exists is None:
                     return None
 
                 rows = (await session.execute(case_statement)).all()
         except SQLAlchemyError as exc:
-            raise EvaluationDatasetPersistenceError(
-                "failed to list evaluation cases"
-            ) from exc
+            raise EvaluationDatasetPersistenceError("failed to list evaluation cases") from exc
 
         return tuple(
             case_summary_from_row(
@@ -286,36 +270,24 @@ class SqlAlchemyEvaluationDatasetRepository:
 
         try:
             async with self._session_factory() as session:
-                exists = (
-                    await session.execute(dataset_statement)
-                ).scalar_one_or_none()
+                exists = (await session.execute(dataset_statement)).scalar_one_or_none()
                 if exists is None:
                     return None
 
-                case_count = int(
-                    (await session.execute(case_count_statement)).scalar_one()
-                )
+                case_count = int((await session.execute(case_count_statement)).scalar_one())
                 if case_count > max_cases:
                     raise EvaluationDatasetLoadLimitError(
                         "evaluation dataset exceeds synchronous case limit"
                     )
 
-                judgment_count = int(
-                    (
-                        await session.execute(judgment_count_statement)
-                    ).scalar_one()
-                )
+                judgment_count = int((await session.execute(judgment_count_statement)).scalar_one())
                 if judgment_count > max_total_judgments:
                     raise EvaluationDatasetLoadLimitError(
                         "evaluation dataset exceeds synchronous judgment limit"
                     )
 
-                case_records = (
-                    await session.execute(case_statement)
-                ).scalars().all()
-                judgment_records = (
-                    await session.execute(judgment_statement)
-                ).scalars().all()
+                case_records = (await session.execute(case_statement)).scalars().all()
+                judgment_records = (await session.execute(judgment_statement)).scalars().all()
 
                 integrity_rows = (
                     await session.execute(
@@ -337,9 +309,7 @@ class SqlAlchemyEvaluationDatasetRepository:
         except EvaluationDatasetLoadLimitError:
             raise
         except SQLAlchemyError as exc:
-            raise EvaluationDatasetPersistenceError(
-                "failed to load evaluation dataset"
-            ) from exc
+            raise EvaluationDatasetPersistenceError("failed to load evaluation dataset") from exc
 
         judgments_by_case: dict[UUID, list[EvaluationJudgmentRecord]] = {
             record.id: [] for record in case_records
@@ -400,9 +370,7 @@ class SqlAlchemyEvaluationDatasetRepository:
         except EvaluationDatasetLoadLimitError:
             raise
         except SQLAlchemyError as exc:
-            raise EvaluationDatasetPersistenceError(
-                "failed to audit evaluation judgments"
-            ) from exc
+            raise EvaluationDatasetPersistenceError("failed to audit evaluation judgments") from exc
 
         return _audit_from_rows(
             dataset_id=dataset_id,
@@ -439,21 +407,13 @@ class SqlAlchemyEvaluationDatasetRepository:
 
         try:
             async with self._session_factory() as session:
-                case_record = (
-                    await session.execute(case_statement)
-                ).scalar_one_or_none()
+                case_record = (await session.execute(case_statement)).scalar_one_or_none()
                 if case_record is None:
                     return None
 
-                judgment_records = list(
-                    (
-                        await session.execute(judgment_statement)
-                    ).scalars().all()
-                )
+                judgment_records = list((await session.execute(judgment_statement)).scalars().all())
         except SQLAlchemyError as exc:
-            raise EvaluationDatasetPersistenceError(
-                "failed to load evaluation case"
-            ) from exc
+            raise EvaluationDatasetPersistenceError("failed to load evaluation case") from exc
 
         return case_from_records(
             case_record=case_record,
@@ -500,8 +460,7 @@ def _audit_from_rows(
 
     for row in rows:
         source_in_scope = (
-            row.document_id is not None
-            and row.source_knowledge_base_id == knowledge_base_id
+            row.document_id is not None and row.source_knowledge_base_id == knowledge_base_id
         )
         if not source_in_scope:
             missing_count += 1
@@ -520,9 +479,7 @@ def _audit_from_rows(
                     reason=reason,
                     document_id=row.document_id if source_in_scope else None,
                     chunk_version=row.chunk_version if source_in_scope else None,
-                    active_chunk_version=(
-                        row.active_chunk_version if source_in_scope else None
-                    ),
+                    active_chunk_version=(row.active_chunk_version if source_in_scope else None),
                 )
             )
 

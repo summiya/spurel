@@ -114,17 +114,11 @@ def _client(
     application = create_app()
     application.dependency_overrides[require_api_token] = lambda: None
     if vector is not None:
-        application.dependency_overrides[
-            get_vector_dataset_evaluation_service
-        ] = lambda: vector
+        application.dependency_overrides[get_vector_dataset_evaluation_service] = lambda: vector
     if keyword is not None:
-        application.dependency_overrides[
-            get_keyword_dataset_evaluation_service
-        ] = lambda: keyword
+        application.dependency_overrides[get_keyword_dataset_evaluation_service] = lambda: keyword
     if hybrid is not None:
-        application.dependency_overrides[
-            get_hybrid_dataset_evaluation_service
-        ] = lambda: hybrid
+        application.dependency_overrides[get_hybrid_dataset_evaluation_service] = lambda: hybrid
     return TestClient(application)
 
 
@@ -227,9 +221,7 @@ def test_dataset_evaluation_hides_synchronous_size_limit_details() -> None:
     )
 
     assert response.status_code == 422
-    assert response.json() == {
-        "detail": "dataset exceeds synchronous evaluation limits"
-    }
+    assert response.json() == {"detail": "dataset exceeds synchronous evaluation limits"}
     assert "50,001 labels found" not in response.text
 
 
@@ -244,9 +236,7 @@ def test_dataset_evaluation_hides_run_persistence_failure() -> None:
     )
 
     assert response.status_code == 503
-    assert response.json() == {
-        "detail": "dataset evaluation temporarily unavailable"
-    }
+    assert response.json() == {"detail": "dataset evaluation temporarily unavailable"}
     assert "database secret detail" not in response.text
 
 
@@ -272,7 +262,6 @@ def test_vector_dataset_evaluation_returns_embedding_configuration() -> None:
     assert body["mode"] == "vector"
     assert body["embedding_model"] == "model"
     assert body["embedding_dimensions"] == 1536
-
 
 
 @pytest.mark.parametrize("mode", ["vector", "keyword", "hybrid"])

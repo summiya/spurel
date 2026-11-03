@@ -864,12 +864,8 @@ async def evaluate_evaluation_quality_gate(
         max_mean_recall_drop=payload.thresholds.max_mean_recall_drop,
         max_mrr_drop=payload.thresholds.max_mrr_drop,
         max_mean_ndcg_drop=payload.thresholds.max_mean_ndcg_drop,
-        max_mean_judgment_coverage_drop=(
-            payload.thresholds.max_mean_judgment_coverage_drop
-        ),
-        max_mean_duration_increase_ms=(
-            payload.thresholds.max_mean_duration_increase_ms
-        ),
+        max_mean_judgment_coverage_drop=(payload.thresholds.max_mean_judgment_coverage_drop),
+        max_mean_duration_increase_ms=(payload.thresholds.max_mean_duration_increase_ms),
     )
 
     try:
@@ -922,7 +918,6 @@ async def evaluate_evaluation_quality_gate(
             for check in result.checks
         ],
     )
-
 
 
 @router.put(
@@ -1014,10 +1009,7 @@ async def list_evaluation_baseline_history(
         ) from exc
 
     return EvaluationBaselinePromotionListResponse(
-        items=[
-            _baseline_promotion_response(promotion)
-            for promotion in promotions
-        ],
+        items=[_baseline_promotion_response(promotion) for promotion in promotions],
         limit=limit,
         offset=offset,
     )
@@ -1088,6 +1080,7 @@ def _baseline_response(
         embedding_dimensions=configuration.embedding_dimensions,
         promoted_at=baseline.promoted_at,
     )
+
 
 def _baseline_promotion_response(
     promotion: EvaluationBaselinePromotion,

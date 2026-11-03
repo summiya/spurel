@@ -80,9 +80,7 @@ class EvaluationDatasetService:
             case=case,
         )
         if not added:
-            raise EvaluationDatasetNotFoundError(
-                "evaluation dataset was not found"
-            )
+            raise EvaluationDatasetNotFoundError("evaluation dataset was not found")
         return case
 
     async def list_cases(
@@ -102,9 +100,7 @@ class EvaluationDatasetService:
             offset=offset,
         )
         if cases is None:
-            raise EvaluationDatasetNotFoundError(
-                "evaluation dataset was not found"
-            )
+            raise EvaluationDatasetNotFoundError("evaluation dataset was not found")
         return cases
 
     async def audit_judgments(
@@ -138,9 +134,7 @@ class EvaluationDatasetService:
             case_id=case_id,
         )
         if case is None:
-            raise EvaluationDatasetNotFoundError(
-                "evaluation case was not found"
-            )
+            raise EvaluationDatasetNotFoundError("evaluation case was not found")
         return case
 
 
@@ -156,6 +150,4 @@ def _validate_page(*, limit: int, offset: int) -> None:
         )
 
     if isinstance(offset, bool) or not isinstance(offset, int) or offset < 0:
-        raise EvaluationDatasetQueryError(
-            "evaluation dataset page offset is invalid"
-        )
+        raise EvaluationDatasetQueryError("evaluation dataset page offset is invalid")
