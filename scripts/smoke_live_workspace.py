@@ -1,4 +1,4 @@
-"""CI-only operator/session test with real sources, chunk reads and keyword retrieval."""
+"""CI-only smoke of protected source, retrieval and saved trace workflows."""
 
 import http.cookiejar
 import json
@@ -171,6 +171,56 @@ def run(root: Path) -> None:
     assert trace["embedding_provider"] is None
     assert _request(opener, base, f"{retrieval_root}/traces/invalid-id")[0] == 400
 
+    # SP-13: read actual newest-first persisted trace history and compare
+    # two real saved keyword traces without any provider requests.
+    keyword_payload_b = json.dumps({"query": "A different retention question", "top_k": 10}).encode(
+        "utf-8"
+    )
+    second_status, second_retrieval = _request(
+        opener, base, keyword_endpoint, method="POST", data=keyword_payload_b,
+        content_type="application/json", origin=base,
+    )
+    assert second_status == 200, (second_status, second_retrieval)
+    second_trace_id = str(UUID(second_retrieval["trace_id"]))
+    assert second_trace_id != trace_id
+
+    history_endpoint = f"{retrieval_root}/traces"
+    hist_status, history = _request(opener, base, history_endpoint)
+    assert hist_status == 200, (hist_status, history)
+    stored_ids = [entry["id"] for entry in history["items"]]
+    assert trace_id in stored_ids and second_trace_id in stored_ids
+    assert history["items"][0]["id"] == second_trace_id
+    assert _request(opener, base, history_endpoint + "?offset=-1")[0] == 400
+    assert _request(opener, base, f"{endpoint}/invalid-id/retrieval/traces")[0] == 400
+
+    comparison_endpoint = f"{retrieval_root}/trace-comparisons"
+    comparison_payload = json.dumps({
+        "first_trace_id": trace_id,
+        "second_trace_id": second_trace_id,
+    }).encode("utf-8")
+    assert _request(
+        opener, base, comparison_endpoint, method="POST", data=comparison_payload,
+        content_type="application/json", origin="http://untrusted.example",
+    )[0] == 403
+    assert _request(
+        opener, base, comparison_endpoint, method="POST",
+        data=json.dumps({"first_trace_id": trace_id, "second_trace_id": trace_id}).encode("utf-8"),
+        content_type="application/json", origin=base,
+    )[0] == 422
+
+    comparison_status, comparison = _request(
+        opener, base, comparison_endpoint, method="POST", data=comparison_payload,
+        content_type="application/json", origin=base,
+    )
+    assert comparison_status == 200, (comparison_status, comparison)
+    assert comparison["first"]["trace_id"] == trace_id
+    assert comparison["second"]["trace_id"] == second_trace_id
+    assert comparison["same_query"] is False
+    assert comparison["overlap_count"] == comparison["union_count"] == 0
+    assert comparison["overlap_ratio"] is None
+    assert comparison["results"] == []
+    assert isinstance(comparison["duration_delta_ms"], (float, int))
+
     status, _ = _request(opener, base, "/api/operator/logout", method="POST", data=b"", origin=base)
     assert status == 200
     assert _request(opener, base, endpoint)[0] == 401
@@ -179,9 +229,12 @@ def run(root: Path) -> None:
     assert _request(opener, base, trace_path)[0] == 401
     assert _request(opener, base, keyword_endpoint, method="POST", data=keyword_payload,
                     content_type="application/json", origin=base)[0] == 401
+    assert _request(opener, base, history_endpoint)[0] == 401
+    assert _request(opener, base, comparison_endpoint, method="POST", data=comparison_payload,
+                    content_type="application/json", origin=base)[0] == 401
     print(
-        "SP-12 operator auth, real sources, chunks, keyword retrieval and "
-        "persisted trace access: PASS"
+        "SP-13 operator auth, real source/chunk/retrieval workflows, persisted "
+        "trace history, read-only comparison, validation and CSRF: PASS"
     )
 
 

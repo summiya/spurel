@@ -2,7 +2,7 @@
 
 [← README](../README.md) · [Development](development.md) · [Architecture](architecture.md)
 
-**Stage:** pre-alpha. The backend API and development infrastructure are functional; the frontend includes real source/chunk inspection with several advanced debugging views still in demo mode. This roadmap tracks the original **SP-01–SP-28** implementation plan, not a claim of a released product.
+**Stage:** pre-alpha. The backend API and development infrastructure are functional; the frontend includes live source, chunk, retrieval and saved-trace views with evaluation and answer screens still in demo mode. This roadmap tracks the original **SP-01–SP-28** implementation plan, not a claim of a released product.
 
 **Status convention:** ✅ Merged = implemented in `main`; ◐ In review = open PR, not yet available on `main`; ☐ Planned = not implemented.
 
@@ -26,17 +26,17 @@ These tasks were prioritized first because the rest of the workbench depends on 
 ## Phase 2 — Functional frontend
 
 SP-09 adds the interactive shell; SP-10 connects real knowledge bases and
-documents; SP-11 adds the live Chunk Inspector, and SP-12 adds live retrieval.
-Trace history/comparison, evaluation and RAG answers remain planned for
-SP-13–SP-15.
+documents; SP-11 adds the live Chunk Inspector, SP-12 adds live retrieval,
+and SP-13 adds saved-trace history and comparison. Evaluation and RAG answers
+remain planned for SP-14–SP-15.
 
 | Task | Priority | Status | Scope / acceptance target |
 | --- | --- | --- | --- |
 | SP-09 | Critical | ✅ Merged | Responsive workbench, keyboard command palette, theme and demo-only initial screens. [PR #69](https://github.com/summiya/spurel/pull/69) |
 | SP-10 | High | ✅ Merged | Local operator session and server-only FastAPI calls; live KB/document create/list/upload/index and pagination. [PR #70](https://github.com/summiya/spurel/pull/70) |
 | SP-11 | High | ✅ Merged | Operator-protected live Chunk Inspector, active/historical versions, persisted text/offsets and embedding state. [PR #71](https://github.com/summiya/spurel/pull/71) |
-| SP-12 | High | ◐ In review | Live Keyword/Vector/Hybrid queries, exact scores, query configuration, ranked evidence and saved trace detail; no implicit model calls |
-| SP-13 | High | ☐ Planned | Trace Comparison UI: compare saved retrieval traces and explain candidate/ranking differences |
+| SP-12 | High | ✅ Merged | Live Keyword/Vector/Hybrid retrieval, raw scores and saved trace detail; no implicit model calls. [PR #72](https://github.com/summiya/spurel/pull/72) |
+| SP-13 | High | ◐ In review | Live, operator-protected trace history and saved-trace comparison, overlap, ranks, scores, duration deltas and query/mode caveats |
 | SP-14 | High | ☐ Planned | Evaluation Dashboard: label datasets, inspect judgment audits, run benchmarks, compare runs and quality gates |
 | SP-15 | Medium | ☐ Planned | RAG Answer UI: queries, answer, source excerpts/labels, trace link and missing-context handling |
 
@@ -80,7 +80,7 @@ These are cross-cutting technical debts, **not completed roadmap tasks**:
 3. **Ingestion execution:** Processing still runs in an HTTP request. Lease renewal occurs between embedding batches, so a single provider call longer than the lease can be reclaimed; stale workers are fenced at promotion.
 4. **Parsing:** No OCR/scanned PDFs; encrypted PDFs are unsupported; fixed-size chunking counts characters, not model tokens.
 5. **Retrieval:** Exact pgvector search only; Postgres keyword scoring is not BM25; no HNSW, filters or reranking.
-6. **Frontend:** Live source, chunk and retrieval inspection use a single-operator local session, while trace history/comparison, evaluation and RAG screens remain fixtures. The session is not production identity, RBAC or multi-tenant authorization.
+6. **Frontend:** Live source, chunk, retrieval and trace history/comparison use a single-operator local session, while evaluation and RAG screens remain fixtures. The session is not production identity, RBAC or multi-tenant authorization.
 7. **Dependency reproducibility:** Frontend does not yet commit a `package-lock.json`; `npm install` is used, and Docker image tags are not digest-pinned.
 8. **Deployment:** Compose is intended for localhost development, with example database credentials and hot reload. The project has no hardened production deployment profile.
 
