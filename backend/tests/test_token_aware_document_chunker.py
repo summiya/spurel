@@ -74,7 +74,7 @@ def test_token_chunker_rejects_invalid_settings(size: int, overlap: int) -> None
 
 def test_token_chunker_fails_closed_on_unsupported_model() -> None:
     with pytest.raises(DocumentChunkingConfigError, match="supported tokenizer"):
-        TokenAwareDocumentChunker(model="unknown-spurel-embedding-model", chunk_size=24)
+        TokenAwareDocumentChunker(model="unknown-spurel-embedding-model", chunk_size=24, overlap=4)
 
 
 @pytest.mark.parametrize("value", ["", "   \n  "])

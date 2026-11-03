@@ -70,8 +70,8 @@ class DocumentProcessingOptionsRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     strategy: ChunkStrategy = ChunkStrategy.CHARACTERS
-    chunk_size: int = Field(default=1_000, ge=1, le=MAX_CHUNK_SIZE_CHARACTERS)
-    overlap: int = Field(default=200, ge=0, le=MAX_CHUNK_SIZE_CHARACTERS - 1)
+    chunk_size: int = Field(default=1_000, strict=True, ge=1, le=MAX_CHUNK_SIZE_CHARACTERS)
+    overlap: int = Field(default=200, strict=True, ge=0, le=MAX_CHUNK_SIZE_CHARACTERS - 1)
 
     @model_validator(mode="after")
     def validate_chunking_bounds(self) -> "DocumentProcessingOptionsRequest":
