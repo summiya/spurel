@@ -209,9 +209,45 @@ idempotently; old historical snapshots and evaluation judgments are retained.
 The long-running process is still synchronous per HTTP request; persistent
 background work and stronger multi-tenant authorization are separate tasks.
 
-**SP-06 remains:** Evaluation relevance judgments for *older* chunks survive,
-but live evaluation must detect or explicitly handle stale evidence when a
-new version becomes active.
+### Evaluation judgment consistency (SP-06)
+
+Historical relevance judgments deliberately keep their original chunk UUIDs,
+even when reprocessing publishes a newer version or a document is removed.
+Those labels remain available in saved cases and **historical evaluation runs
+are never rewritten**.
+
+For **new** evaluation cases, every judged `chunk_id` must belong to an
+**active chunk within the selected knowledge base**. Unknown IDs, deleted
+chunks, inactive versions and other knowledge bases are rejected with
+**HTTP 409 Conflict**. The original case is not created on failure.
+
+Before vector, keyword or hybrid dataset evaluation, Spurel checks **all**
+persisted labels against the current active chunk versions. If any label is
+stale or missing, the entire evaluation fails with **HTTP 409** before
+retrieval begins; no misleading benchmark run or baseline promotion is
+recorded. The labels are checked again after retrieval, so a document
+activation during a long-running benchmark does not silently produce a
+new persisted run.
+
+To inspect a dataset without modifying it, call:
+
+```text
+GET /knowledge-bases/{knowledge_base_id}/evaluation-datasets/{dataset_id}/judgment-audit
+```
+
+The result includes `is_usable`, total labels, invalid/inactive/missing
+counts, and up to **100** affected `case_id` and `chunk_id` pairs.
+For inactive in-scope chunks, it also includes their source document ID,
+old chunk version and current active version. Missing or out-of-scope
+references are not resolved to foreign document IDs. Audits use the
+existing synchronous limits (100 cases and 50,000 labels).
+
+**Remediation:** inspect the version history and current chunks, create
+a new evaluation dataset with judgments against the active chunk IDs,
+then run the benchmark on that new dataset. Keeping prior datasets and
+runs immutable preserves historical experiment evidence and prevents
+comparisons from treating changed labels as equivalent.
+
 
 ## ✨ What is Spurel?
 

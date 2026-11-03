@@ -7,11 +7,20 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from spurel.documents.chunk_persistence import DocumentChunkRecord
+from spurel.documents.persistence import DocumentRecord
+
 from spurel.evaluation_datasets.domain import (
     EvaluationCase,
     EvaluationCaseSummary,
     EvaluationDataset,
     EvaluationDatasetSummary,
+)
+from spurel.evaluation_datasets.judgment_integrity import (
+    MAX_JUDGMENT_AUDIT_ISSUES,
+    EvaluationJudgmentAudit,
+    EvaluationJudgmentIssue,
+    EvaluationJudgmentIssueReason,
 )
 from spurel.evaluation_datasets.persistence import (
     EvaluationCaseRecord,
@@ -23,6 +32,8 @@ from spurel.evaluation_datasets.persistence import (
 from spurel.evaluation_datasets.ports import (
     EvaluationDatasetLoadLimitError,
     EvaluationDatasetPersistenceError,
+    EvaluationJudgmentInvalidError,
+    EvaluationJudgmentStaleError,
 )
 
 
@@ -108,6 +119,30 @@ class SqlAlchemyEvaluationDatasetRepository:
                     ).scalar_one_or_none()
                     if dataset_id is None:
                         return False
+
+                    # Lock the referenced document rows for the duration of
+                    # this insert: a concurrent version promotion cannot turn
+                    # newly stored judgments stale before commit.
+                    judged_ids = {judgment.chunk_id for judgment in case.judgments}
+                    live_statement = (
+                        select(DocumentChunkRecord.id)
+                        .join(
+                            DocumentRecord,
+                            DocumentRecord.id == DocumentChunkRecord.document_id,
+                        )
+                        .where(
+                            DocumentChunkRecord.id.in_(judged_ids),
+                            DocumentRecord.knowledge_base_id == knowledge_base_id,
+                            DocumentChunkRecord.chunk_version
+                            == DocumentRecord.active_chunk_version,
+                        )
+                        .with_for_update(read=True, of=DocumentRecord)
+                    )
+                    live_ids = set((await session.scalars(live_statement)).all())
+                    if live_ids != judged_ids:
+                        raise EvaluationJudgmentInvalidError(
+                            "judgments must reference active chunks in this knowledge base"
+                        )
 
                     session.add(
                         EvaluationCaseRecord(
@@ -282,6 +317,24 @@ class SqlAlchemyEvaluationDatasetRepository:
                 judgment_records = (
                     await session.execute(judgment_statement)
                 ).scalars().all()
+
+                integrity_rows = (
+                    await session.execute(
+                        _judgment_status_statement(dataset_id=dataset_id).limit(
+                            max_total_judgments + 1
+                        )
+                    )
+                ).all()
+                audit = _audit_from_rows(
+                    dataset_id=dataset_id,
+                    knowledge_base_id=knowledge_base_id,
+                    case_count=case_count,
+                    rows=integrity_rows,
+                )
+                if not audit.is_usable:
+                    raise EvaluationJudgmentStaleError(
+                        "evaluation dataset contains inactive or invalid chunk judgments"
+                    )
         except EvaluationDatasetLoadLimitError:
             raise
         except SQLAlchemyError as exc:
@@ -301,6 +354,62 @@ class SqlAlchemyEvaluationDatasetRepository:
                 judgment_records=judgments_by_case[record.id],
             )
             for record in case_records
+        )
+
+    async def audit_judgments(
+        self,
+        *,
+        knowledge_base_id: UUID,
+        dataset_id: UUID,
+        max_cases: int,
+        max_total_judgments: int,
+    ) -> EvaluationJudgmentAudit | None:
+        """Classify historical label references against the current active index.
+
+        Inspect missing and inactive labels without changing any saved
+        judgments or historical evaluation run snapshots.
+        """
+        dataset_statement = select(EvaluationDatasetRecord.id).where(
+            EvaluationDatasetRecord.id == dataset_id,
+            EvaluationDatasetRecord.knowledge_base_id == knowledge_base_id,
+        )
+        case_count_statement = select(func.count(EvaluationCaseRecord.id)).where(
+            EvaluationCaseRecord.dataset_id == dataset_id
+        )
+        try:
+            async with self._session_factory() as session:
+                if await session.scalar(dataset_statement) is None:
+                    return None
+
+                case_count = int((await session.execute(case_count_statement)).scalar_one())
+                if case_count > max_cases:
+                    raise EvaluationDatasetLoadLimitError(
+                        "evaluation dataset exceeds synchronous case limit"
+                    )
+
+                rows = (
+                    await session.execute(
+                        _judgment_status_statement(dataset_id=dataset_id).limit(
+                            max_total_judgments + 1
+                        )
+                    )
+                ).all()
+                if len(rows) > max_total_judgments:
+                    raise EvaluationDatasetLoadLimitError(
+                        "evaluation dataset exceeds synchronous judgment limit"
+                    )
+        except EvaluationDatasetLoadLimitError:
+            raise
+        except SQLAlchemyError as exc:
+            raise EvaluationDatasetPersistenceError(
+                "failed to audit evaluation judgments"
+            ) from exc
+
+        return _audit_from_rows(
+            dataset_id=dataset_id,
+            knowledge_base_id=knowledge_base_id,
+            case_count=case_count,
+            rows=rows,
         )
 
     async def get_case(
@@ -351,3 +460,78 @@ class SqlAlchemyEvaluationDatasetRepository:
             case_record=case_record,
             judgment_records=judgment_records,
         )
+
+
+def _judgment_status_statement(*, dataset_id: UUID):
+    """Read a bounded dataset's label provenance using real chunk versions."""
+    return (
+        select(
+            EvaluationJudgmentRecord.case_id,
+            EvaluationJudgmentRecord.chunk_id,
+            DocumentChunkRecord.document_id.label("document_id"),
+            DocumentChunkRecord.chunk_version,
+            DocumentRecord.knowledge_base_id.label("source_knowledge_base_id"),
+            DocumentRecord.active_chunk_version,
+        )
+        .join(
+            EvaluationCaseRecord,
+            EvaluationCaseRecord.id == EvaluationJudgmentRecord.case_id,
+        )
+        .outerjoin(
+            DocumentChunkRecord,
+            DocumentChunkRecord.id == EvaluationJudgmentRecord.chunk_id,
+        )
+        .outerjoin(DocumentRecord, DocumentRecord.id == DocumentChunkRecord.document_id)
+        .where(EvaluationCaseRecord.dataset_id == dataset_id)
+        .order_by(EvaluationJudgmentRecord.case_id, EvaluationJudgmentRecord.chunk_id)
+    )
+
+
+def _audit_from_rows(
+    *,
+    dataset_id: UUID,
+    knowledge_base_id: UUID,
+    case_count: int,
+    rows,
+) -> EvaluationJudgmentAudit:
+    """Classify every judgment; retain only a bounded sample of problems."""
+    inactive_count = 0
+    missing_count = 0
+    issues: list[EvaluationJudgmentIssue] = []
+
+    for row in rows:
+        source_in_scope = (
+            row.document_id is not None
+            and row.source_knowledge_base_id == knowledge_base_id
+        )
+        if not source_in_scope:
+            missing_count += 1
+            reason = EvaluationJudgmentIssueReason.MISSING_OR_OUT_OF_SCOPE
+        elif row.chunk_version != row.active_chunk_version:
+            inactive_count += 1
+            reason = EvaluationJudgmentIssueReason.INACTIVE_VERSION
+        else:
+            continue
+
+        if len(issues) < MAX_JUDGMENT_AUDIT_ISSUES:
+            issues.append(
+                EvaluationJudgmentIssue(
+                    case_id=row.case_id,
+                    chunk_id=row.chunk_id,
+                    reason=reason,
+                    document_id=row.document_id if source_in_scope else None,
+                    chunk_version=row.chunk_version if source_in_scope else None,
+                    active_chunk_version=(
+                        row.active_chunk_version if source_in_scope else None
+                    ),
+                )
+            )
+
+    return EvaluationJudgmentAudit(
+        dataset_id=dataset_id,
+        case_count=case_count,
+        judgment_count=len(rows),
+        inactive_version_count=inactive_count,
+        missing_or_out_of_scope_count=missing_count,
+        issues=tuple(issues),
+    )

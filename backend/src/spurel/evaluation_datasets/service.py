@@ -9,10 +9,13 @@ from spurel.evaluation_datasets.domain import (
     EvaluationDataset,
     EvaluationDatasetSummary,
 )
+from spurel.evaluation_datasets.judgment_integrity import EvaluationJudgmentAudit
 from spurel.evaluation_datasets.ports import EvaluationDatasetRepository
 from spurel.retrieval.evaluation import RelevanceJudgment
 
 MAX_EVALUATION_DATASET_PAGE_SIZE = 100
+MAX_EVALUATION_AUDIT_CASES = 100
+MAX_EVALUATION_AUDIT_JUDGMENTS = 50_000
 
 
 class EvaluationDatasetQueryError(ValueError):
@@ -103,6 +106,23 @@ class EvaluationDatasetService:
                 "evaluation dataset was not found"
             )
         return cases
+
+    async def audit_judgments(
+        self,
+        *,
+        knowledge_base_id: UUID,
+        dataset_id: UUID,
+    ) -> EvaluationJudgmentAudit:
+        """Inspect invalid labels without mutating historical benchmark evidence."""
+        audit = await self._repository.audit_judgments(
+            knowledge_base_id=knowledge_base_id,
+            dataset_id=dataset_id,
+            max_cases=MAX_EVALUATION_AUDIT_CASES,
+            max_total_judgments=MAX_EVALUATION_AUDIT_JUDGMENTS,
+        )
+        if audit is None:
+            raise EvaluationDatasetNotFoundError("evaluation dataset was not found")
+        return audit
 
     async def get_case(
         self,

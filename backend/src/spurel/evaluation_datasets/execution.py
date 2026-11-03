@@ -8,7 +8,10 @@ from typing import Protocol
 from uuid import UUID
 
 from spurel.evaluation_datasets.domain import EvaluationCase
-from spurel.evaluation_datasets.ports import EvaluationDatasetLoadLimitError
+from spurel.evaluation_datasets.ports import (
+    EvaluationDatasetLoadLimitError,
+    EvaluationJudgmentStaleError,
+)
 from spurel.evaluation_datasets.service import EvaluationDatasetNotFoundError
 from spurel.retrieval.domain import VectorRetrievalMatch
 from spurel.retrieval.evaluation import (
@@ -296,6 +299,19 @@ class DatasetEvaluationExecutionService:
                 )
             )
 
+        # Active document versions can change during long LLM-backed retrieval.
+        # Re-check labels and case content before returning metrics for persistence.
+        final_cases = await self._repository.load_cases_for_evaluation(
+            knowledge_base_id=knowledge_base_id,
+            dataset_id=dataset_id,
+            max_cases=MAX_DATASET_EVALUATION_CASES,
+            max_total_judgments=MAX_DATASET_EVALUATION_JUDGMENTS,
+        )
+        if final_cases is None or _case_snapshot(final_cases) != _case_snapshot(cases):
+            raise EvaluationJudgmentStaleError(
+                "dataset labels or case definitions changed during evaluation"
+            )
+
         return _aggregate(
             dataset_id=dataset_id,
             mode=self._mode,
@@ -341,6 +357,13 @@ class DatasetEvaluationExecutionService:
             duration_ms=duration_ms,
             metrics=metrics,
         )
+
+
+def _case_snapshot(
+    cases: Sequence[EvaluationCase],
+) -> tuple[tuple[UUID, str, tuple], ...]:
+    """Compare case IDs, queries and full graded labels without timestamps."""
+    return tuple((case.id, case.query, case.judgments) for case in cases)
 
 
 def _validate_configuration(

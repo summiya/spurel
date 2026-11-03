@@ -1,5 +1,6 @@
 from uuid import UUID, uuid4
 
+import pytest
 from fastapi.testclient import TestClient
 
 from spurel.evaluation_datasets.dependencies import (
@@ -13,6 +14,7 @@ from spurel.evaluation_datasets.execution import (
     DatasetEvaluationMode,
     DatasetEvaluationResult,
 )
+from spurel.evaluation_datasets.ports import EvaluationJudgmentStaleError
 from spurel.evaluation_datasets.run_domain import EvaluationRun
 from spurel.evaluation_datasets.run_ports import EvaluationRunPersistenceError
 from spurel.evaluation_datasets.service import EvaluationDatasetNotFoundError
@@ -270,3 +272,25 @@ def test_vector_dataset_evaluation_returns_embedding_configuration() -> None:
     assert body["mode"] == "vector"
     assert body["embedding_model"] == "model"
     assert body["embedding_dimensions"] == 1536
+
+
+
+@pytest.mark.parametrize("mode", ["vector", "keyword", "hybrid"])
+def test_all_live_evaluation_modes_reject_stale_judgments(mode: str) -> None:
+    """A stale dataset returns 409 rather than persisting misleading metrics."""
+    service = FakeDatasetEvaluationService()
+    service.error = EvaluationJudgmentStaleError("private chunk ids")
+    client = _client(vector=service, keyword=service, hybrid=service)
+    payload = {"top_k": 10}
+    if mode == "hybrid":
+        payload["candidate_k"] = 20
+        payload["rrf_k"] = 60
+
+    response = client.post(
+        f"/knowledge-bases/{uuid4()}/evaluation-datasets/{uuid4()}/evaluate/{mode}",
+        json=payload,
+    )
+
+    assert response.status_code == 409
+    assert "judgment audit" in response.json()["detail"]
+    assert "private chunk ids" not in response.text

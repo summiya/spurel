@@ -10,6 +10,7 @@ from spurel.evaluation_datasets.domain import (
     MAX_EVALUATION_QUERY_LENGTH,
 )
 from spurel.evaluation_datasets.execution import DatasetEvaluationMode
+from spurel.evaluation_datasets.judgment_integrity import EvaluationJudgmentIssueReason
 from spurel.evaluation_datasets.quality_gate import (
     EvaluationQualityGateMetric,
     EvaluationQualityGateRegressionKind,
@@ -100,6 +101,31 @@ class EvaluationCaseListResponse(BaseModel):
     items: list[EvaluationCaseSummaryResponse]
     limit: int
     offset: int
+
+
+class EvaluationJudgmentIssueResponse(BaseModel):
+    """A stale label in a scoped dataset, with safe historical provenance."""
+
+    case_id: UUID
+    chunk_id: UUID
+    reason: EvaluationJudgmentIssueReason
+    document_id: UUID | None
+    chunk_version: int | None
+    active_chunk_version: int | None
+
+
+class EvaluationJudgmentAuditResponse(BaseModel):
+    """Bounded diagnostic snapshot of historical label consistency."""
+
+    dataset_id: UUID
+    case_count: int = Field(ge=0)
+    judgment_count: int = Field(ge=0)
+    is_usable: bool
+    invalid_count: int = Field(ge=0)
+    inactive_version_count: int = Field(ge=0)
+    missing_or_out_of_scope_count: int = Field(ge=0)
+    issues_truncated: bool
+    issues: list[EvaluationJudgmentIssueResponse] = Field(max_length=100)
 
 
 class DatasetEvaluationRequest(BaseModel):

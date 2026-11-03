@@ -13,7 +13,10 @@ from spurel.evaluation_datasets.execution import (
     DatasetEvaluationQueryError,
     KeywordDatasetRetriever,
 )
-from spurel.evaluation_datasets.ports import EvaluationDatasetLoadLimitError
+from spurel.evaluation_datasets.ports import (
+    EvaluationDatasetLoadLimitError,
+    EvaluationJudgmentStaleError,
+)
 from spurel.evaluation_datasets.service import EvaluationDatasetNotFoundError
 from spurel.retrieval.evaluation import RelevanceJudgment
 from spurel.retrieval.keyword_domain import KeywordRetrievalMatch
@@ -24,6 +27,8 @@ class FakeDatasetRepository:
         self.cases = cases
         self.fail_limit = False
         self.last_call: dict[str, object] | None = None
+        self.read_count = 0
+        self.cases_after_first_read: Sequence[EvaluationCase] | None = None
 
     async def load_cases_for_evaluation(
         self,
@@ -41,6 +46,9 @@ class FakeDatasetRepository:
         }
         if self.fail_limit:
             raise EvaluationDatasetLoadLimitError("too large")
+        self.read_count += 1
+        if self.read_count > 1 and self.cases_after_first_read is not None:
+            return self.cases_after_first_read
         return self.cases
 
 
@@ -246,3 +254,44 @@ def test_vector_mode_requires_complete_embedding_configuration() -> None:
                 top_k=10,
             )
         )
+
+
+
+def test_dataset_execution_rechecks_labels_after_retrieval_before_returning_metrics() -> None:
+    """A reprocessing/relabelling race must not produce a persisted benchmark."""
+    dataset_id = uuid4()
+    knowledge_base_id = uuid4()
+    original = uuid4()
+    query_case = _case(
+        dataset_id=dataset_id,
+        query="refund policy",
+        judgments=(RelevanceJudgment(chunk_id=original, relevance=3),),
+    )
+    repository = FakeDatasetRepository((query_case,))
+    repository.cases_after_first_read = (
+        EvaluationCase(
+            id=query_case.id,
+            dataset_id=query_case.dataset_id,
+            query=query_case.query,
+            judgments=(RelevanceJudgment(chunk_id=uuid4(), relevance=3),),
+            created_at=query_case.created_at,
+        ),
+    )
+    keyword = FakeKeywordRetriever({"refund policy": (original,)})
+    executor = DatasetEvaluationExecutionService(
+        repository=repository,
+        retriever=KeywordDatasetRetriever(keyword),
+        mode=DatasetEvaluationMode.KEYWORD,
+    )
+
+    with pytest.raises(EvaluationJudgmentStaleError):
+        asyncio.run(
+            executor.run(
+                knowledge_base_id=knowledge_base_id,
+                dataset_id=dataset_id,
+                top_k=1,
+            )
+        )
+
+    assert repository.read_count == 2
+    assert len(keyword.calls) == 1

@@ -4,6 +4,7 @@ from collections.abc import Sequence
 from typing import Protocol
 from uuid import UUID
 
+from spurel.evaluation_datasets.judgment_integrity import EvaluationJudgmentAudit
 from spurel.evaluation_datasets.domain import (
     EvaluationCase,
     EvaluationCaseSummary,
@@ -18,6 +19,14 @@ class EvaluationDatasetPersistenceError(RuntimeError):
 
 class EvaluationDatasetLoadLimitError(RuntimeError):
     """Raised when a synchronous dataset evaluation would load too much data."""
+
+
+class EvaluationJudgmentInvalidError(ValueError):
+    """Raised when a new judgment points outside the current active index."""
+
+
+class EvaluationJudgmentStaleError(RuntimeError):
+    """Raised when an existing label no longer references an active chunk."""
 
 
 class EvaluationDatasetRepository(Protocol):
@@ -66,6 +75,17 @@ class EvaluationDatasetRepository(Protocol):
         max_total_judgments: int,
     ) -> Sequence[EvaluationCase] | None:
         """Load a bounded complete case set for synchronous evaluation."""
+        ...
+
+    async def audit_judgments(
+        self,
+        *,
+        knowledge_base_id: UUID,
+        dataset_id: UUID,
+        max_cases: int,
+        max_total_judgments: int,
+    ) -> EvaluationJudgmentAudit | None:
+        """Report invalid historical labels, or None for an unscoped dataset."""
         ...
 
     async def get_case(
