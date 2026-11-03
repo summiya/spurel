@@ -4,8 +4,7 @@
 
 Spurel has working backend APIs and an interactive Next.js frontend. SP-10–SP-14 connect
 Knowledge Bases, Documents, live chunk history, retrieval, saved-trace comparison and
-evaluation workflows. The SP-15 branch adds operator-authenticated RAG answers
-using the existing FastAPI service. Overview metrics remain illustrative.
+evaluation workflows. SP-15 adds operator-authenticated RAG answers using the existing FastAPI service. A frontend follow-up now displays scoped read-only records on the Overview.
 
 ## System boundary
 
@@ -158,6 +157,6 @@ development workflow**, not scalable user identity or tenant authorization.
 
 ## What is planned, not implemented
 
-The frontend has live source, chunk, retrieval, trace-comparison and evaluation inspection; SP-15 adds provider-backed RAG answers for review. Overview values remain illustrative. The following are **not built**: recursive/semantic/token-aware chunking, scanned-PDF OCR, BM25, pgvector ANN/HNSW, metadata filters, rerankers, independent citation/claim verification, non-OpenAI providers, data-source connectors, Redis-backed background jobs, experiment export and production auth/monitoring.
+The frontend has live source, chunk, retrieval, trace-comparison, evaluation and provider-backed RAG answer inspection. A frontend follow-up summarizes real Overview data without new backend APIs. The following are **not built**: recursive/semantic/token-aware chunking, scanned-PDF OCR, BM25, pgvector ANN/HNSW, metadata filters, rerankers, independent citation/claim verification, non-OpenAI providers, data-source connectors, Redis-backed background jobs, experiment export and production auth/monitoring.
 
 For the exact implementation order and deliverables, use [SP-01–SP-28 roadmap](roadmap.md).

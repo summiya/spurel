@@ -98,7 +98,7 @@ export function SettingsPage() {
           </div>
           <div className="pipeline-detail">
             <span>UI data source</span>
-            <span className="status-badge">Live tools + preview overview</span>
+            <span className="status-badge">Live source, evaluation and overview data</span>
           </div>
           <div className="pipeline-detail">
             <span>Shared API bearer token</span>
@@ -110,7 +110,7 @@ export function SettingsPage() {
           </div>
           <p className="muted-panel-note">
             SP-10–SP-15 connect the live workbench to authenticated FastAPI endpoints. Overview
-            metrics are still illustrative. Never put your API token in NEXT_PUBLIC_* settings.
+            now summarizes real loaded source, trace and benchmark records. Never put your API token in NEXT_PUBLIC_* settings.
           </p>
         </Panel>
       </div>

@@ -2,7 +2,7 @@
 
 [← README](../README.md) · [Architecture](architecture.md) · [Roadmap](roadmap.md) · [Benchmark gates](quality-gate-ci.md)
 
-This guide covers Spurel's **working pre-alpha backend** and Next.js frontend, including live source, chunk, retrieval, trace-comparison and evaluation views plus the SP-15 live RAG answer frontend (in review). The Docker Compose configuration is for **localhost development, not production**.
+This guide covers Spurel's **working pre-alpha backend** and Next.js frontend, including live source, chunk, retrieval, trace-comparison, evaluation and RAG answer views. The Overview frontend follow-up adds read-only summaries using those existing endpoints. The Docker Compose configuration is for **localhost development, not production**.
 
 ## Requirements and startup
 
@@ -75,8 +75,7 @@ via a generic proxy. Signing out clears the cookie. This simple single-operator
 access is **not a production login or multi-tenant authorization system**.
 
 The SP-15 branch connects the RAG answer page to real FastAPI generation.
-The overview still shows illustrative metrics; do not confuse those examples
-with persisted source, retrieval or evaluation records.
+The Overview frontend follow-up uses real, loaded source/retrieval/evaluation records. It does not claim global totals, unmeasured pipeline health or uncomputed trends.
 
 ## Live Retrieval Lab (SP-12)
 
@@ -152,7 +151,7 @@ a labeled case, audit, run Keyword twice, inspect both persisted runs, compare, 
 check a quality gate. Do not claim successful live verification until this flow
 has been tested in a running Spurel stack.
 
-## SP-15: live RAG answers (in review)
+## SP-15: live RAG answers (merged)
 
 The operator-authenticated `/rag` page uses a dedicated, allowlisted
 same-origin Next.js POST endpoint that forwards validated requests only to
@@ -181,6 +180,18 @@ test the Next.js API route **without submitting a valid paid RAG request**.
 The frontend has mocked integration tests for successful answers, no context,
 validation, provider errors and explicit consent. Live provider verification
 requires an explicitly authorized local manual test.
+
+## Live Overview dashboard (frontend follow-up)
+
+The landing route `/` no longer displays fictional counts or charts. It reads
+the existing operator-protected knowledge-base, document, retrieval-trace,
+evaluation-dataset and benchmark-run **GET** endpoints. Unauthenticated
+visitors receive a sign-in prompt and no protected data. Select a knowledge
+base to see loaded document/index readiness, newest saved traces and measured
+benchmark quality from one selected evaluation dataset. No model call is
+initiated and no global totals, p95 or other unmeasured statistics are invented.
+The overview is intentionally separate from SP-16's unbuilt backend token-aware
+chunking.
 
 ## Environment and secrets
 
