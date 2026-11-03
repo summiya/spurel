@@ -26,10 +26,7 @@ function PreviewText({ children }: { children: string }) {
   return <pre className="live-chunk-preview">{children}</pre>;
 }
 
-export function LiveChunkInspectorPage({
-  initialKnowledgeBaseId,
-  initialDocumentId,
-}: Props) {
+export function LiveChunkInspectorPage({ initialKnowledgeBaseId, initialDocumentId }: Props) {
   const notify = useDemoToast();
   const [preferredKnowledgeBase, setPreferredKnowledgeBase] = useState(
     initialKnowledgeBaseId ?? "",
@@ -51,15 +48,16 @@ export function LiveChunkInspectorPage({
   const document =
     documents.items.find((item) => item.id === preferredDocument) ?? documents.items[0] ?? null;
 
-  const docPrefix = knowledgeBase && document
-    ? `/api/workspace/knowledge-bases/${knowledgeBase.id}/documents/${document.id}`
-    : null;
+  const docPrefix =
+    knowledgeBase && document
+      ? `/api/workspace/knowledge-bases/${knowledgeBase.id}/documents/${document.id}`
+      : null;
   const versions = useWorkspacePages<ChunkVersion>(docPrefix ? `${docPrefix}/versions` : null);
 
   const selectedVersion =
     versionChoice === "active"
       ? null
-      : versions.items.find((item) => `v:${item.version}` === versionChoice) ?? null;
+      : (versions.items.find((item) => `v:${item.version}` === versionChoice) ?? null);
   const chunksPath = docPrefix
     ? selectedVersion
       ? `${docPrefix}/chunks?version=${selectedVersion.version}`
@@ -135,13 +133,15 @@ export function LiveChunkInspectorPage({
 
       <div className="inline-notice">
         <Icon name="shield" size={17} />
-        Read-only inspection of your real Spurel database. Historical chunks are not
-        visible to normal retrieval; the active index is shown separately.
+        Read-only inspection of your real Spurel database. Historical chunks are not visible to
+        normal retrieval; the active index is shown separately.
       </div>
 
       <div className="live-inspector-grid">
         <Panel title="Source library" hint="Choose a knowledge base and a saved document">
-          <label htmlFor="inspector-base" className="field-label">Knowledge base</label>
+          <label htmlFor="inspector-base" className="field-label">
+            Knowledge base
+          </label>
           {bases.loading ? (
             <LoadingState label="Loading knowledge bases" />
           ) : bases.error ? (
@@ -151,7 +151,11 @@ export function LiveChunkInspectorPage({
               icon="database"
               title="No knowledge bases"
               description="Create a knowledge base and upload a document to inspect real chunks."
-              action={<Link href="/knowledge-bases" className="button primary">Create a collection</Link>}
+              action={
+                <Link href="/knowledge-bases" className="button primary">
+                  Create a collection
+                </Link>
+              }
             />
           ) : (
             <>
@@ -162,23 +166,35 @@ export function LiveChunkInspectorPage({
                 onChange={(event) => selectBase(event.target.value)}
               >
                 {bases.items.map((item) => (
-                  <option key={item.id} value={item.id}>{item.name}</option>
+                  <option key={item.id} value={item.id}>
+                    {item.name}
+                  </option>
                 ))}
               </select>
               {bases.hasMore ? (
-                <button type="button" className="button ghost compact live-load-more"
-                  disabled={bases.loadingMore} onClick={() => void bases.loadMore()}>
+                <button
+                  type="button"
+                  className="button ghost compact live-load-more"
+                  disabled={bases.loadingMore}
+                  onClick={() => void bases.loadMore()}
+                >
                   {bases.loadingMore ? "Loading…" : "Load more knowledge bases"}
                 </button>
               ) : null}
               <div className="live-inspector-section-heading">
                 <strong>Documents</strong>
-                <button type="button" className="button ghost compact"
-                  disabled={documents.loading} onClick={documents.refresh}>
+                <button
+                  type="button"
+                  className="button ghost compact"
+                  disabled={documents.loading}
+                  onClick={documents.refresh}
+                >
                   <Icon name="refresh" size={14} /> Refresh
                 </button>
               </div>
-              <label htmlFor="inspector-doc-search" className="sr-only">Filter loaded documents</label>
+              <label htmlFor="inspector-doc-search" className="sr-only">
+                Filter loaded documents
+              </label>
               <input
                 id="inspector-doc-search"
                 className="input-control"
@@ -196,7 +212,11 @@ export function LiveChunkInspectorPage({
                   icon="file"
                   title="No documents"
                   description="Upload a PDF, Markdown or text file in Knowledge Bases first."
-                  action={<Link href="/knowledge-bases" className="button ghost">Upload documents</Link>}
+                  action={
+                    <Link href="/knowledge-bases" className="button ghost">
+                      Upload documents
+                    </Link>
+                  }
                 />
               ) : (
                 <>
@@ -226,8 +246,12 @@ export function LiveChunkInspectorPage({
                     </div>
                   )}
                   {documents.hasMore ? (
-                    <button type="button" className="button ghost compact live-load-more"
-                      disabled={documents.loadingMore} onClick={() => void documents.loadMore()}>
+                    <button
+                      type="button"
+                      className="button ghost compact live-load-more"
+                      disabled={documents.loadingMore}
+                      onClick={() => void documents.loadMore()}
+                    >
                       {documents.loadingMore ? "Loading…" : "Load more documents"}
                     </button>
                   ) : null}
@@ -243,19 +267,37 @@ export function LiveChunkInspectorPage({
               <Panel
                 title={document.filename}
                 hint="Versioned source inspection — no changes are made to stored documents"
-                action={<span className={"status-badge " + (activeVersion ? "success" : "warn")}>
-                  {activeVersion ? `Active v${activeVersion}` : "Not indexed"}
-                </span>}
+                action={
+                  <span className={"status-badge " + (activeVersion ? "success" : "warn")}>
+                    {activeVersion ? `Active v${activeVersion}` : "Not indexed"}
+                  </span>
+                }
               >
                 <div className="live-chunk-facts">
-                  <span><strong>{activeVersion || "None"}</strong><small>Active version</small></span>
-                  <span><strong>{versions.items.length}</strong><small>Loaded versions</small></span>
-                  <span><strong>{chunks.items.length}</strong><small>Loaded chunks</small></span>
-                  <span><strong>{loadedEmbedded}/{chunks.items.length}</strong><small>With embeddings</small></span>
+                  <span>
+                    <strong>{activeVersion || "None"}</strong>
+                    <small>Active version</small>
+                  </span>
+                  <span>
+                    <strong>{versions.items.length}</strong>
+                    <small>Loaded versions</small>
+                  </span>
+                  <span>
+                    <strong>{chunks.items.length}</strong>
+                    <small>Loaded chunks</small>
+                  </span>
+                  <span>
+                    <strong>
+                      {loadedEmbedded}/{chunks.items.length}
+                    </strong>
+                    <small>With embeddings</small>
+                  </span>
                 </div>
                 <div className="live-version-controls">
                   <div>
-                    <label className="field-label" htmlFor="inspector-version">Chunk set to inspect</label>
+                    <label className="field-label" htmlFor="inspector-version">
+                      Chunk set to inspect
+                    </label>
                     <select
                       id="inspector-version"
                       className="select-control"
@@ -263,7 +305,9 @@ export function LiveChunkInspectorPage({
                       onChange={(event) => chooseVersion(event.target.value)}
                     >
                       <option value="active">
-                        {activeVersion ? `Active version ${activeVersion} · live retrieval` : "Current active index · none"}
+                        {activeVersion
+                          ? `Active version ${activeVersion} · live retrieval`
+                          : "Current active index · none"}
                       </option>
                       {versions.items.map((item) => (
                         <option key={item.version} value={`v:${item.version}`}>
@@ -273,8 +317,12 @@ export function LiveChunkInspectorPage({
                       ))}
                     </select>
                   </div>
-                  <button type="button" className="button ghost compact"
-                    disabled={versions.loading} onClick={versions.refresh}>
+                  <button
+                    type="button"
+                    className="button ghost compact"
+                    disabled={versions.loading}
+                    onClick={versions.refresh}
+                  >
                     <Icon name="refresh" size={14} /> Refresh versions
                   </button>
                 </div>
@@ -283,35 +331,43 @@ export function LiveChunkInspectorPage({
                   <ErrorState description={versions.error} onRetry={versions.refresh} />
                 ) : null}
                 {versions.hasMore ? (
-                  <button type="button" className="button ghost compact live-load-more"
-                    disabled={versions.loadingMore} onClick={() => void versions.loadMore()}>
+                  <button
+                    type="button"
+                    className="button ghost compact live-load-more"
+                    disabled={versions.loadingMore}
+                    onClick={() => void versions.loadMore()}
+                  >
                     {versions.loadingMore ? "Loading…" : "Load older versions"}
                   </button>
                 ) : null}
                 {selectionIsHistorical ? (
                   <div className="inline-notice">
                     <Icon name="clock" size={16} />
-                    Historical version {selectedVersion?.version} is read-only. These chunks
-                    are not used for normal vector, keyword or hybrid retrieval.
+                    Historical version {selectedVersion?.version} is read-only. These chunks are not
+                    used for normal vector, keyword or hybrid retrieval.
                   </div>
                 ) : selectedVersion && selectedVersion.status !== "ready" ? (
                   <div className="inline-notice">
                     <Icon name="info" size={16} />
-                    Selected version is {selectedVersion.status}. The current active
-                    version remains separate until an index is published.
+                    Selected version is {selectedVersion.status}. The current active version remains
+                    separate until an index is published.
                   </div>
                 ) : null}
                 {activeVersion === 0 && !selectedVersion ? (
                   <div className="inline-notice">
                     <Icon name="info" size={16} />
-                    This document has not published an active chunk set. You can inspect
-                    any saved processing attempts above or process it from Knowledge Bases.
+                    This document has not published an active chunk set. You can inspect any saved
+                    processing attempts above or process it from Knowledge Bases.
                   </div>
                 ) : null}
                 <div className="live-inspector-section-heading">
                   <strong>Stored chunks</strong>
-                  <button type="button" className="button ghost compact"
-                    disabled={chunks.loading} onClick={chunks.refresh}>
+                  <button
+                    type="button"
+                    className="button ghost compact"
+                    disabled={chunks.loading}
+                    onClick={chunks.refresh}
+                  >
                     <Icon name="refresh" size={14} /> Refresh chunks
                   </button>
                 </div>
@@ -339,14 +395,25 @@ export function LiveChunkInspectorPage({
                     title="No chunks in this selection"
                     icon="layers"
                     description="Upload and process a document to create searchable chunks, or select a different saved version."
-                    action={<Link href="/knowledge-bases" className="button ghost compact">Open documents</Link>}
+                    action={
+                      <Link href="/knowledge-bases" className="button ghost compact">
+                        Open documents
+                      </Link>
+                    }
                   />
                 ) : visibleChunks.length === 0 ? (
                   <EmptyState
                     title="No loaded chunks match"
                     description="Clear the text filter or load another page of chunks."
-                    action={<button type="button" className="button ghost compact"
-                      onClick={() => setChunkFilter("")}>Clear filter</button>}
+                    action={
+                      <button
+                        type="button"
+                        className="button ghost compact"
+                        onClick={() => setChunkFilter("")}
+                      >
+                        Clear filter
+                      </button>
+                    }
                   />
                 ) : (
                   <div className="chunk-cards live-inspector-chunks">
@@ -359,9 +426,13 @@ export function LiveChunkInspectorPage({
                         onClick={() => setPreferredChunk(item.id)}
                       >
                         <div className="chunk-entry-head">
-                          <span className="result-rank">{String(item.index + 1).padStart(2, "0")}</span>
+                          <span className="result-rank">
+                            {String(item.index + 1).padStart(2, "0")}
+                          </span>
                           <strong>Chunk {item.index + 1}</strong>
-                          <span className={"status-badge " + (item.has_embeddings ? "success" : "warn")}>
+                          <span
+                            className={"status-badge " + (item.has_embeddings ? "success" : "warn")}
+                          >
                             {item.has_embeddings
                               ? `${item.embedding_count} embedding${item.embedding_count === 1 ? "" : "s"}`
                               : "No embeddings"}
@@ -376,15 +447,19 @@ export function LiveChunkInspectorPage({
                   </div>
                 )}
                 {chunks.hasMore ? (
-                  <button type="button" className="button ghost live-load-more"
-                    disabled={chunks.loadingMore} onClick={() => void chunks.loadMore()}>
+                  <button
+                    type="button"
+                    className="button ghost live-load-more"
+                    disabled={chunks.loadingMore}
+                    onClick={() => void chunks.loadMore()}
+                  >
                     {chunks.loadingMore ? "Loading…" : "Load more chunks"}
                   </button>
                 ) : null}
                 <p className="muted-panel-note">
-                  {chunks.items.length} chunk{chunks.items.length === 1 ? "" : "s"} loaded;
-                  {" "}{loadedEmbedded} have embeddings and {loadedWithoutEmbeddings} do not.
-                  Counts reflect loaded pages, not the entire index.
+                  {chunks.items.length} chunk{chunks.items.length === 1 ? "" : "s"} loaded;{" "}
+                  {loadedEmbedded} have embeddings and {loadedWithoutEmbeddings} do not. Counts
+                  reflect loaded pages, not the entire index.
                 </p>
               </Panel>
               {selectedChunk ? (
@@ -392,20 +467,35 @@ export function LiveChunkInspectorPage({
                   title={`Source excerpt · Chunk ${selectedChunk.index + 1}`}
                   hint="Full persisted text and exact source offsets"
                   action={
-                    <button type="button" className="button ghost compact"
-                      onClick={() => void copyChunk(selectedChunk.text)}>
+                    <button
+                      type="button"
+                      className="button ghost compact"
+                      onClick={() => void copyChunk(selectedChunk.text)}
+                    >
                       <Icon name="copy" size={14} /> Copy exact text
                     </button>
                   }
                 >
                   <PreviewText>{selectedChunk.text}</PreviewText>
                   <div className="live-chunk-details">
-                    <span>Chunk ID <strong>{selectedChunk.id}</strong></span>
-                    <span>Document ID <strong>{selectedChunk.document_id}</strong></span>
-                    <span>Source start <strong>{selectedChunk.start_offset}</strong></span>
-                    <span>Source end <strong>{selectedChunk.end_offset}</strong></span>
-                    <span>Excerpt characters <strong>{selectedChunk.text.length}</strong></span>
-                    <span>Embedding records <strong>{selectedChunk.embedding_count}</strong></span>
+                    <span>
+                      Chunk ID <strong>{selectedChunk.id}</strong>
+                    </span>
+                    <span>
+                      Document ID <strong>{selectedChunk.document_id}</strong>
+                    </span>
+                    <span>
+                      Source start <strong>{selectedChunk.start_offset}</strong>
+                    </span>
+                    <span>
+                      Source end <strong>{selectedChunk.end_offset}</strong>
+                    </span>
+                    <span>
+                      Excerpt characters <strong>{selectedChunk.text.length}</strong>
+                    </span>
+                    <span>
+                      Embedding records <strong>{selectedChunk.embedding_count}</strong>
+                    </span>
                   </div>
                 </Panel>
               ) : null}

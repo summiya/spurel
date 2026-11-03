@@ -469,7 +469,8 @@ export function LiveKnowledgeBasesPage() {
             </button>
           ) : null}
           <p className="muted-panel-note">
-            Processing requires <code>OPENAI_API_KEY</code> in your server environment. Inspect the active index and older versions in the Chunk Inspector.
+            Processing requires <code>OPENAI_API_KEY</code> in your server environment. Inspect the
+            active index and older versions in the Chunk Inspector.
           </p>
         </Panel>
       ) : null}

@@ -11,9 +11,7 @@ const kb1 = "d98d2800-9df4-4f98-a397-0d0fd19ee032";
 const doc1 = "d73b06d7-a20e-4ddf-9859-242d69d4372f";
 const doc2 = "171e74ab-2229-4f2a-a6e8-85c8f4f2a1fb";
 
-const bases = [
-  { id: kb1, name: "Engineering docs", created_at: "2026-11-03T10:00:00Z" },
-];
+const bases = [{ id: kb1, name: "Engineering docs", created_at: "2026-11-03T10:00:00Z" }];
 
 const docs = [
   {

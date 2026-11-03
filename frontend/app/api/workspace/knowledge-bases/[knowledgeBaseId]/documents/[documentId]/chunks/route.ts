@@ -1,7 +1,12 @@
 import { type NextRequest, NextResponse } from "next/server";
 
 import { parseChunkVersion } from "@/lib/chunk-inspection-types";
-import { backendRequest, pageOffset, safeBackendError, validUUID } from "@/lib/server/backend-client";
+import {
+  backendRequest,
+  pageOffset,
+  safeBackendError,
+  validUUID,
+} from "@/lib/server/backend-client";
 import { authFailure, noStore } from "@/lib/server/operator-session";
 
 type Context = { params: Promise<{ knowledgeBaseId: string; documentId: string }> };
@@ -18,13 +23,16 @@ export async function GET(request: NextRequest, context: Context) {
   const offset = pageOffset(request.nextUrl.searchParams.get("offset"));
   const version = parseChunkVersion(request.nextUrl.searchParams.get("version"));
   if (offset === null || version === undefined) {
-    return noStore(NextResponse.json({ error: "Invalid version or page offset." }, { status: 400 }));
+    return noStore(
+      NextResponse.json({ error: "Invalid version or page offset." }, { status: 400 }),
+    );
   }
 
   const base = `/knowledge-bases/${knowledgeBaseId}/documents/${documentId}`;
-  const path = version === null
-    ? `${base}/chunks?limit=50&offset=${offset}`
-    : `${base}/versions/${version}/chunks?limit=50&offset=${offset}`;
+  const path =
+    version === null
+      ? `${base}/chunks?limit=50&offset=${offset}`
+      : `${base}/versions/${version}/chunks?limit=50&offset=${offset}`;
 
   try {
     const result = await backendRequest(path);

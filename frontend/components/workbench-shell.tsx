@@ -179,7 +179,9 @@ export function WorkbenchShell({ children }: { children: ReactNode }) {
                 </button>
                 <span className="top-demo-pill">
                   <span />{" "}
-                  {pathname === "/knowledge-bases" || pathname === "/chunks" || pathname === "/operator/login"
+                  {pathname === "/knowledge-bases" ||
+                  pathname === "/chunks" ||
+                  pathname === "/operator/login"
                     ? "LIVE WORKSPACE"
                     : "INTERACTIVE DEMO"}
                 </span>

@@ -44,9 +44,12 @@ export function useWorkspacePages<T>(path: string | null) {
       setState(initialPage<T>(path));
       if (path === null) return;
       try {
-        const page = await workspaceFetch<Page<T>>(`${path}${path.includes("?") ? "&" : "?"}offset=0`, {
-          signal: controller.signal,
-        });
+        const page = await workspaceFetch<Page<T>>(
+          `${path}${path.includes("?") ? "&" : "?"}offset=0`,
+          {
+            signal: controller.signal,
+          },
+        );
         if (!isPage<T>(page)) throw new Error("Unexpected API page response.");
         if (cancelled || id !== requestId.current) return;
         setState({
@@ -86,7 +89,9 @@ export function useWorkspacePages<T>(path: string | null) {
       current.key === path ? { ...current, loadingMore: true, error: "" } : current,
     );
     try {
-      const page = await workspaceFetch<Page<T>>(`${path}${path.includes("?") ? "&" : "?"}offset=${offset}`);
+      const page = await workspaceFetch<Page<T>>(
+        `${path}${path.includes("?") ? "&" : "?"}offset=${offset}`,
+      );
       if (!isPage<T>(page)) throw new Error("Unexpected API page response.");
       if (id !== requestId.current) return;
       setState((current) => {
