@@ -105,14 +105,22 @@ export function LiveKnowledgeBasesPage() {
   }, []);
 
   useEffect(() => {
-    void loadBases(0, true);
+    let cancelled = false;
+    void Promise.resolve().then(() => {
+      if (!cancelled) return loadBases(0, true);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [loadBases]);
 
   useEffect(() => {
-    if (selectedId) {
-      void loadDocuments(selectedId, 0, true);
-    }
+    let cancelled = false;
+    void Promise.resolve().then(() => {
+      if (!cancelled && selectedId) return loadDocuments(selectedId, 0, true);
+    });
     return () => {
+      cancelled = true;
       requestSequence.current += 1;
     };
   }, [selectedId, loadDocuments]);

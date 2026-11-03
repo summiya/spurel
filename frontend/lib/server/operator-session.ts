@@ -42,9 +42,17 @@ export function authorizedRequest(request: NextRequest): boolean {
 
 export function sameOrigin(request: NextRequest): boolean {
   const origin = request.headers.get("origin");
-  if (!origin) return false;
+  const host = request.headers.get("host");
+  if (!origin || !host) return false;
   try {
-    return new URL(origin).origin === request.nextUrl.origin;
+    const parsed = new URL(origin);
+    // Next.js may canonicalize request.nextUrl.origin to localhost internally,
+    // even when a client used 127.0.0.1. Compare the actual Host header instead.
+    return (
+      (parsed.protocol === "http:" || parsed.protocol === "https:") &&
+      parsed.host.toLowerCase() === host.toLowerCase() &&
+      parsed.protocol === request.nextUrl.protocol
+    );
   } catch {
     return false;
   }

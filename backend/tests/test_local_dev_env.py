@@ -54,7 +54,11 @@ def test_bootstrap_does_not_overwrite_existing_secrets(tmp_path: Path) -> None:
     updated = target.read_text(encoding="utf-8")
     assert updated.startswith(original)
     for field in ("SPUREL_FRONTEND_OPERATOR_PASSWORD", "SPUREL_FRONTEND_SESSION_SECRET"):
-        values = [line.split("=", 1)[1] for line in updated.splitlines() if line.startswith(field + "=")]
+        values = [
+            line.split("=", 1)[1]
+            for line in updated.splitlines()
+            if line.startswith(field + "=")
+        ]
         assert len(values) == 1 and len(values[0]) >= 32
     initialize_env(tmp_path)
     assert target.read_text(encoding="utf-8") == updated

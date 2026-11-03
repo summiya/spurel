@@ -76,7 +76,7 @@ export function OperatorLogin() {
       <div className="inline-notice">
         <Icon name="info" size={17} />
         From your Spurel root directory, view your local password with
-        <code>grep '^SPUREL_FRONTEND_OPERATOR_PASSWORD=' .env</code>.
+        <code>{"grep '^SPUREL_FRONTEND_OPERATOR_PASSWORD=' .env"}</code>.
         Keep it private. Your backend API token never enters the browser.
       </div>
       <p className="text-hint">A signed, HTTP-only operator session expires after eight hours.</p>

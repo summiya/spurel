@@ -61,10 +61,11 @@ def run(root: Path) -> None:
     }
 
     invalid = json.dumps({"password": "invalid"}).encode("utf-8")
-    assert _request(
+    denied_status, _ = _request(
         opener, base, "/api/operator/login", method="POST", data=invalid,
         content_type="application/json", origin=base,
-    )[0] == 401
+    )
+    assert denied_status == 401, f"Invalid password expected HTTP 401; got {denied_status}"
 
     credentials = json.dumps({"password": password}).encode("utf-8")
     assert _request(
