@@ -20,8 +20,6 @@ from spurel.documents.chunking import (
 )
 
 
-
-
 @lru_cache(maxsize=16)
 def tokenizer_for_model(model: str) -> tiktoken.Encoding:
     """Resolve a known model encoding without any embedding API request."""

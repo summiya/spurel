@@ -5,11 +5,11 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from spurel.documents.chunk_pipeline import DocumentChunkPipelineResult
 from spurel.documents.chunk_options import ChunkStrategy, DocumentChunkOptions
-from spurel.infrastructure.chunking.fixed import FixedSizeDocumentChunker
+from spurel.documents.chunk_pipeline import DocumentChunkPipelineResult
 from spurel.documents.processing import DocumentProcessingService
 from spurel.embeddings.pipeline import DocumentEmbeddingPipelineResult
+from spurel.infrastructure.chunking.fixed import FixedSizeDocumentChunker
 
 
 @dataclass

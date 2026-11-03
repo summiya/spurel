@@ -37,7 +37,6 @@ from spurel.documents.ingestion_service import (
 from spurel.documents.parsing import DocumentParseError
 from spurel.documents.ports import DocumentPersistenceError
 from spurel.documents.processing import DocumentProcessingService
-from spurel.documents.token_inspection import measured_tokens
 from spurel.documents.processing_dependencies import (
     get_document_processing_service,
 )
@@ -54,6 +53,7 @@ from spurel.documents.schemas import (
     VersionedChunkInspectionListResponse,
 )
 from spurel.documents.service import DocumentService
+from spurel.documents.token_inspection import measured_tokens
 from spurel.documents.upload_service import (
     DocumentUploadError,
     DocumentUploadService,
@@ -363,7 +363,7 @@ async def process_document(
     knowledge_base_id: UUID,
     document_id: UUID,
     service: DocumentProcessingServiceDependency,
-    payload: DocumentProcessingOptionsRequest | None = Body(default=None),
+    payload: Annotated[DocumentProcessingOptionsRequest | None, Body()] = None,
 ) -> DocumentProcessingResponse:
     """Parse, chunk, embed, and index one persisted document."""
     try:

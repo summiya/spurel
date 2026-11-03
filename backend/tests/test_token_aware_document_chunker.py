@@ -12,10 +12,10 @@ from spurel.documents.chunking import (
     DocumentChunkingError,
     DocumentChunkLimitError,
 )
+from spurel.documents.token_inspection import measured_tokens
 from spurel.infrastructure.chunking.factory import build_document_chunker
 from spurel.infrastructure.chunking.fixed import FixedSizeDocumentChunker
 from spurel.infrastructure.chunking.token_aware import TokenAwareDocumentChunker
-from spurel.documents.token_inspection import measured_tokens
 
 MODEL = "text-embedding-3-small"
 
@@ -83,7 +83,9 @@ def test_token_chunker_rejects_empty_text(value: str) -> None:
         TokenAwareDocumentChunker(model=MODEL).chunk(text=value)
 
 
-def test_token_chunk_count_guard_stops_pathological_overlap(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_token_chunk_count_guard_stops_pathological_overlap(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     import spurel.infrastructure.chunking.token_aware as chunk_module
 
     monkeypatch.setattr(chunk_module, "MAX_CHUNKS_PER_DOCUMENT", 3)

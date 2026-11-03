@@ -2,9 +2,9 @@ from uuid import UUID, uuid4
 
 from fastapi.testclient import TestClient
 
+from spurel.documents.chunk_options import ChunkStrategy, DocumentChunkOptions
 from spurel.documents.ingestion_service import DocumentNotFoundError
 from spurel.documents.parsing import DocumentTextContentError
-from spurel.documents.chunk_options import ChunkStrategy, DocumentChunkOptions
 from spurel.documents.processing import DocumentProcessingResult
 from spurel.documents.processing_dependencies import (
     get_document_processing_service,

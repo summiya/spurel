@@ -8,12 +8,12 @@ from spurel.documents.chunk_models import StagedDocumentChunkSet
 from spurel.documents.chunk_pipeline import DocumentChunkPipeline
 from spurel.documents.chunk_service import DocumentChunkService
 from spurel.documents.chunking import DocumentChunk, DocumentChunker
-from spurel.infrastructure.chunking.fixed import FixedSizeDocumentChunker
 from spurel.documents.domain import Document, DocumentMediaType
 from spurel.documents.ingestion_service import DocumentIngestionService
 from spurel.documents.parsing import DocumentParser, ParsedDocument
 from spurel.documents.ports import DocumentRepository
 from spurel.documents.storage import DocumentBlobStorage, document_object_key
+from spurel.infrastructure.chunking.fixed import FixedSizeDocumentChunker
 
 
 class FakeDocumentRepository(DocumentRepository):

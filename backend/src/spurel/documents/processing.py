@@ -4,8 +4,8 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from uuid import UUID
 
-from spurel.documents.chunk_pipeline import DocumentChunkPipeline
 from spurel.documents.chunk_options import DocumentChunkOptions
+from spurel.documents.chunk_pipeline import DocumentChunkPipeline
 from spurel.documents.chunking import DocumentChunker, DocumentChunkingConfigError
 from spurel.embeddings.pipeline import DocumentEmbeddingPipeline
 

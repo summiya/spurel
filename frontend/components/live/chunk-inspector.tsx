@@ -515,7 +515,7 @@ export function LiveChunkInspectorPage({ initialKnowledgeBaseId, initialDocument
                   <p className="text-hint">
                     Token counts are calculated for the currently configured embedding-model
                     tokenizer, including historical chunks. If the model changes, an older
-                    version's displayed count is recalculated, not its original tokenizer metadata.
+                    version&apos;s displayed count is recalculated, not its original tokenizer metadata.
                   </p>
                 </Panel>
               ) : null}

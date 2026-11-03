@@ -6,13 +6,13 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from spurel.documents.domain import DocumentMediaType
 from spurel.documents.chunk_options import (
     MAX_CHUNK_SIZE_TOKENS,
     ChunkStrategy,
     DocumentChunkOptions,
 )
 from spurel.documents.chunking import MAX_CHUNK_SIZE_CHARACTERS
+from spurel.documents.domain import DocumentMediaType
 
 
 class DocumentResponse(BaseModel):
