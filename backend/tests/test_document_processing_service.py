@@ -1,4 +1,5 @@
 import asyncio
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from uuid import UUID, uuid4
 
@@ -14,9 +15,32 @@ class FakeChunkPipeline:
     result: DocumentChunkPipelineResult
     error: Exception | None = None
     calls: list[tuple[UUID, UUID]] | None = None
+    events: list[str] | None = None
 
     def __post_init__(self) -> None:
         self.calls = []
+        self.events = []
+
+    async def renew_version(self, *, document_id: UUID, version: int, attempt_id: UUID) -> None:
+        assert self.events is not None
+        self.events.append("renew")
+
+    async def promote_version(
+        self,
+        *,
+        document_id: UUID,
+        version: int,
+        attempt_id: UUID,
+        provider: str,
+        model: str,
+        dimensions: int,
+    ) -> None:
+        assert self.events is not None
+        self.events.append("promote")
+
+    async def fail_version(self, *, document_id: UUID, version: int, attempt_id: UUID) -> None:
+        assert self.events is not None
+        self.events.append("fail")
 
     async def run(
         self,
@@ -35,7 +59,7 @@ class FakeChunkPipeline:
 class FakeEmbeddingPipeline:
     result: DocumentEmbeddingPipelineResult
     error: Exception | None = None
-    calls: list[UUID] | None = None
+    calls: list[tuple[UUID, int | None]] | None = None
 
     def __post_init__(self) -> None:
         self.calls = []
@@ -44,9 +68,13 @@ class FakeEmbeddingPipeline:
         self,
         *,
         document_id: UUID,
+        chunk_version: int | None = None,
+        before_batch: Callable[[], Awaitable[None]] | None = None,
     ) -> DocumentEmbeddingPipelineResult:
         assert self.calls is not None
-        self.calls.append(document_id)
+        self.calls.append((document_id, chunk_version))
+        if before_batch is not None:
+            await before_batch()
         if self.error is not None:
             raise self.error
         return self.result
@@ -84,7 +112,7 @@ def test_processing_runs_chunking_before_embedding() -> None:
     )
 
     assert chunk_pipeline.calls == [(knowledge_base_id, document_id)]
-    assert embedding_pipeline.calls == [document_id]
+    assert embedding_pipeline.calls == [(document_id, 1)]
     assert result.document_id == document_id
     assert result.knowledge_base_id == knowledge_base_id
     assert result.chunk_count == 4
@@ -128,3 +156,75 @@ def test_processing_does_not_embed_when_chunking_fails() -> None:
         )
 
     assert embedding_pipeline.calls == []
+
+
+def test_staged_processing_promotes_only_after_embedding() -> None:
+    knowledge_base_id = uuid4()
+    document_id = uuid4()
+    attempt_id = uuid4()
+    chunk_pipeline = FakeChunkPipeline(
+        result=DocumentChunkPipelineResult(
+            document_id=document_id,
+            knowledge_base_id=knowledge_base_id,
+            chunk_count=2,
+            version=2,
+            attempt_id=attempt_id,
+            reused_active=False,
+        )
+    )
+    embedding_pipeline = FakeEmbeddingPipeline(
+        result=DocumentEmbeddingPipelineResult(
+            document_id=document_id,
+            provider="fake",
+            model="fixture",
+            dimensions=3,
+            embedded_chunk_count=2,
+        )
+    )
+    service = DocumentProcessingService(
+        chunk_pipeline=chunk_pipeline,  # type: ignore[arg-type]
+        embedding_pipeline=embedding_pipeline,  # type: ignore[arg-type]
+    )
+
+    result = asyncio.run(
+        service.process(knowledge_base_id=knowledge_base_id, document_id=document_id)
+    )
+
+    assert result.chunk_version == 2
+    assert result.reused_active_version is False
+    assert embedding_pipeline.calls == [(document_id, 2)]
+    assert chunk_pipeline.events == ["renew", "promote"]
+
+
+def test_staged_processing_records_failure_without_promotion() -> None:
+    knowledge_base_id = uuid4()
+    document_id = uuid4()
+    chunk_pipeline = FakeChunkPipeline(
+        result=DocumentChunkPipelineResult(
+            document_id=document_id,
+            knowledge_base_id=knowledge_base_id,
+            chunk_count=3,
+            version=5,
+            attempt_id=uuid4(),
+            reused_active=False,
+        )
+    )
+    embedding_pipeline = FakeEmbeddingPipeline(
+        result=DocumentEmbeddingPipelineResult(
+            document_id=document_id,
+            provider="fake",
+            model="fixture",
+            dimensions=3,
+            embedded_chunk_count=3,
+        ),
+        error=RuntimeError("provider down"),
+    )
+    service = DocumentProcessingService(
+        chunk_pipeline=chunk_pipeline,  # type: ignore[arg-type]
+        embedding_pipeline=embedding_pipeline,  # type: ignore[arg-type]
+    )
+    with pytest.raises(RuntimeError, match="provider down"):
+        asyncio.run(service.process(knowledge_base_id=knowledge_base_id, document_id=document_id))
+
+    assert embedding_pipeline.calls == [(document_id, 5)]
+    assert chunk_pipeline.events == ["renew", "fail"]

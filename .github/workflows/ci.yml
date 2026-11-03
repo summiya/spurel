@@ -222,7 +222,11 @@ jobs:
                                          chunk.chunk_version,
                                          chunk.id,
                                          embedding.chunk_id,
-                                         version.chunk_count
+                                         version.chunk_count,
+                                         version.status,
+                                         version.attempt_id,
+                                         version.lease_expires_at,
+                                         version.attempt_count
                                   FROM documents AS document
                                   JOIN document_chunks AS chunk ON chunk.document_id = document.id
                                   JOIN chunk_embeddings AS embedding ON embedding.chunk_id = chunk.id
@@ -238,6 +242,10 @@ jobs:
                       assert str(legacy.id) == "00000000-0000-0000-0000-000000000033"
                       assert str(legacy.chunk_id) == str(legacy.id)
                       assert legacy.chunk_count == 1
+                      assert legacy.status == "ready"
+                      assert legacy.attempt_id is None
+                      assert legacy.lease_expires_at is None
+                      assert legacy.attempt_count == 0
 
                       distance = await connection.scalar(
                           text("SELECT '[1,0,0]'::vector <=> '[1,0,0]'::vector")

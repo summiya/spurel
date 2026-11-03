@@ -26,12 +26,9 @@ class FakeStoredChunkReader:
         document_id: UUID,
         limit: int,
         offset: int,
+        chunk_version: int | None = None,
     ) -> Sequence[StoredDocumentChunk]:
-        matches = [
-            stored
-            for stored in self.chunks
-            if stored.document_id == document_id
-        ]
+        matches = [stored for stored in self.chunks if stored.document_id == document_id]
         return tuple(matches[offset : offset + limit])
 
 
@@ -51,10 +48,7 @@ class FakeEmbeddingProvider:
         model = self.override_model or self.model
 
         return EmbeddingBatch.create(
-            vectors=[
-                [float(index + 1)] * dimensions
-                for index, _ in enumerate(texts)
-            ],
+            vectors=[[float(index + 1)] * dimensions for index, _ in enumerate(texts)],
             input_count=len(texts),
             model=model,
             dimensions=dimensions,
@@ -88,11 +82,7 @@ class FakeChunkEmbeddingRepository:
         limit: int,
         offset: int,
     ) -> Sequence[ChunkEmbedding]:
-        matches = [
-            embedding
-            for embedding in self.items.values()
-            if embedding.chunk_id == chunk_id
-        ]
+        matches = [embedding for embedding in self.items.values() if embedding.chunk_id == chunk_id]
         return tuple(matches[offset : offset + limit])
 
 
@@ -140,9 +130,7 @@ def test_pipeline_pages_chunks_through_provider_and_persists_vectors() -> None:
     assert result.model == "test-model"
     assert result.dimensions == 2
     assert len(repository.items) == 5
-    assert {
-        key[0] for key in repository.items
-    } == {stored.id for stored in chunks}
+    assert {key[0] for key in repository.items} == {stored.id for stored in chunks}
 
 
 def test_pipeline_is_idempotent_for_same_embedding_space() -> None:
@@ -165,9 +153,7 @@ def test_pipeline_rejects_document_without_chunks() -> None:
     pipeline = DocumentEmbeddingPipeline(
         chunk_reader=FakeStoredChunkReader(()),
         provider=FakeEmbeddingProvider(),
-        embedding_service=ChunkEmbeddingService(
-            FakeChunkEmbeddingRepository()
-        ),
+        embedding_service=ChunkEmbeddingService(FakeChunkEmbeddingRepository()),
     )
 
     with pytest.raises(DocumentEmbeddingNoChunksError):

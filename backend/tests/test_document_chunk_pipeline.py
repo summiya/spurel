@@ -4,6 +4,7 @@ from uuid import UUID, uuid4
 
 import pytest
 
+from spurel.documents.chunk_models import StagedDocumentChunkSet
 from spurel.documents.chunk_pipeline import DocumentChunkPipeline
 from spurel.documents.chunk_service import DocumentChunkService
 from spurel.documents.chunking import DocumentChunk, DocumentChunker
@@ -27,10 +28,7 @@ class FakeDocumentRepository(DocumentRepository):
         knowledge_base_id: UUID,
         document_id: UUID,
     ) -> Document | None:
-        if (
-            self.document.knowledge_base_id == knowledge_base_id
-            and self.document.id == document_id
-        ):
+        if self.document.knowledge_base_id == knowledge_base_id and self.document.id == document_id:
             return self.document
         return None
 
@@ -82,8 +80,9 @@ class FakeChunkRepository:
         *,
         document_id: UUID,
         chunks: Sequence[DocumentChunk],
-    ) -> None:
+    ) -> StagedDocumentChunkSet:
         self.items[document_id] = tuple(chunks)
+        return StagedDocumentChunkSet(version=1, attempt_id=None, reused_active=True)
 
     async def list_by_document(
         self,
@@ -121,9 +120,7 @@ def _build_pipeline(
     chunk_repository: FakeChunkRepository,
     chunker: DocumentChunker,
 ) -> DocumentChunkPipeline:
-    parsers: Mapping[DocumentMediaType, DocumentParser] = {
-        DocumentMediaType.TEXT: FakeParser()
-    }
+    parsers: Mapping[DocumentMediaType, DocumentParser] = {DocumentMediaType.TEXT: FakeParser()}
     ingestion_service = DocumentIngestionService(
         repository=FakeDocumentRepository(document),
         storage=FakeBlobStorage(

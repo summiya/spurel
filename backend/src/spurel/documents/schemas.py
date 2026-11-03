@@ -67,6 +67,8 @@ class DocumentProcessingResponse(BaseModel):
     embedding_provider: str
     embedding_model: str
     embedding_dimensions: int
+    chunk_version: int = Field(default=1, ge=1)
+    reused_active_version: bool = False
 
 
 class DocumentChunkVersionResponse(BaseModel):
@@ -76,6 +78,8 @@ class DocumentChunkVersionResponse(BaseModel):
     chunk_count: int = Field(ge=1)
     created_at: datetime
     is_active: bool
+    status: Literal["processing", "ready", "failed"] = "ready"
+    attempt_count: int = Field(default=0, ge=0)
 
 
 class DocumentChunkVersionListResponse(BaseModel):

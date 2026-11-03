@@ -4,6 +4,7 @@ from uuid import UUID, uuid4
 
 import pytest
 
+from spurel.documents.chunk_models import StagedDocumentChunkSet
 from spurel.documents.chunk_ports import DocumentChunkRepository
 from spurel.documents.chunk_service import (
     DocumentChunkService,
@@ -21,8 +22,9 @@ class FakeDocumentChunkRepository(DocumentChunkRepository):
         *,
         document_id: UUID,
         chunks: Sequence[DocumentChunk],
-    ) -> None:
+    ) -> StagedDocumentChunkSet:
         self.items[document_id] = tuple(chunks)
+        return StagedDocumentChunkSet(version=1, attempt_id=None, reused_active=True)
 
     async def list_by_document(
         self,

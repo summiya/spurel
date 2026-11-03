@@ -18,6 +18,8 @@ class DocumentProcessingResult:
     embedding_provider: str
     embedding_model: str
     embedding_dimensions: int
+    chunk_version: int = 1
+    reused_active_version: bool = False
 
 
 class DocumentProcessingService:
@@ -44,9 +46,40 @@ class DocumentProcessingService:
             document_id=document_id,
         )
 
-        embedding_result = await self._embedding_pipeline.run(
-            document_id=chunk_result.document_id,
-        )
+        try:
+            embedding_result = await self._embedding_pipeline.run(
+                document_id=chunk_result.document_id,
+                chunk_version=chunk_result.version,
+                before_batch=(
+                    (
+                        lambda: self._chunk_pipeline.renew_version(
+                            document_id=chunk_result.document_id,
+                            version=chunk_result.version,
+                            attempt_id=chunk_result.attempt_id,
+                        )
+                    )
+                    if chunk_result.attempt_id is not None
+                    else None
+                ),
+            )
+
+            if chunk_result.attempt_id is not None:
+                await self._chunk_pipeline.promote_version(
+                    document_id=chunk_result.document_id,
+                    version=chunk_result.version,
+                    attempt_id=chunk_result.attempt_id,
+                    provider=embedding_result.provider,
+                    model=embedding_result.model,
+                    dimensions=embedding_result.dimensions,
+                )
+        except Exception:
+            if chunk_result.attempt_id is not None:
+                await self._chunk_pipeline.fail_version(
+                    document_id=chunk_result.document_id,
+                    version=chunk_result.version,
+                    attempt_id=chunk_result.attempt_id,
+                )
+            raise
 
         return DocumentProcessingResult(
             document_id=chunk_result.document_id,
@@ -56,4 +89,6 @@ class DocumentProcessingService:
             embedding_provider=embedding_result.provider,
             embedding_model=embedding_result.model,
             embedding_dimensions=embedding_result.dimensions,
+            chunk_version=chunk_result.version,
+            reused_active_version=chunk_result.reused_active,
         )

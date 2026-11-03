@@ -153,12 +153,16 @@ This is versioning of the *derived chunks*, not replacement of the uploaded sour
 file; existing document uploads remain immutable.
 
 - Uploading a document begins with `active_chunk_version = 0` (not indexed yet).
-- Its first successful chunk persistence creates version `1`.
+- First processing **stages** version `1`, generates all its embeddings, then
+  atomically publishes it. Until then, `active_chunk_version = 0`.
 - Reprocessing with **identical chunk texts, indexes and offsets** reuses the
-  active version and all existing chunk UUIDs, preserving related embeddings
-  and evaluation judgments.
-- When the chunk set changes, a new numbered version is created. Old chunk
-  rows, embeddings, UUIDs and relevance labels are retained for historical use.
+  active version and existing UUIDs, preserving related embeddings and judgments.
+- Changed chunks get a new `processing` version without altering the old active
+  index. Only after all expected embeddings are stored is the new version published.
+- Failed embedding/indexing leaves the old active version searchable. Failed
+  versions retain partial embeddings and chunk IDs, and retrying the same chunk
+  set reclaims the failed version rather than creating duplicate versions.
+- Old version rows, embeddings, UUIDs and relevance labels remain available.
 - Vector/keyword/hybrid retrieval and the standard Chunk Inspector see **only
   the active version**, preventing duplicate or stale results.
 
@@ -169,9 +173,11 @@ GET /knowledge-bases/{knowledge_base_id}/documents/{document_id}/versions
 GET /knowledge-bases/{knowledge_base_id}/documents/{document_id}/versions/{version}/chunks
 ```
 
-The document list response exposes `active_chunk_version`. The historical
-inspection endpoint preserves chunk IDs and embedding availability for older
-versions. Knowledge-base scoping applies to both history endpoints.
+The document list response exposes `active_chunk_version`. The processing
+response returns `chunk_version` and `reused_active_version`. Version history
+reports `status` (`processing`, `failed`, `ready`) and `attempt_count`, and
+the historical inspector retains chunk IDs and embedding availability.
+Knowledge-base scoping applies to both history endpoints.
 
 **Upgrade:** The PostgreSQL migration CI job seeds a legacy document and embedding, then verifies they survive the schema change unchanged. Migration `0011_version_document_chunks` backfills existing
 documents with indexed chunks as version `1`, preserving **their original UUIDs,
@@ -180,10 +186,32 @@ unprocessed documents remain at version `0`. Rollback from a database with
 multiple versions **discards inactive historical chunk rows and their embeddings**;
 back up the database first.
 
-**SP-05 remains:** New chunk sets become active after chunk persistence, before
-embedding completes. Safe staging, failure recovery, and atomic activation after
-successful embedding are the next separate task. SP-06 will address stale
-evaluation judgments when relevance labels refer to older content.
+### Safe staged processing (SP-05)
+
+Processing uses **stage → embed → verify coverage → publish**. A staged version
+is never returned by normal retrieval; it is visible only through explicit
+read-only history inspection. Promotion checks that the persisted chunk count
+matches the version and that every chunk has an embedding in the requested
+provider/model/dimension space. The version pointer is updated in the same
+transaction as marking the new version `ready`.
+
+Only one processing attempt per document may own a non-expired **30-minute lease**.
+Active embedding workers renew it before each batch. Competing attempts receive
+HTTP **409 Conflict**. If a process terminates unexpectedly, its lease expires;
+a later request can reclaim the staged version (if its chunks match) or create
+the next version. An attempt UUID fences stale workers from publishing or
+overwriting the state of a reclaimed attempt. New `0012_stage_chunk_processing`
+migration marks existing versions `ready` without changing their chunk IDs.
+
+A failed provider call returns the existing generic 503 response. The previous
+active index is still searchable. Retried partial embeddings are upserted
+idempotently; old historical snapshots and evaluation judgments are retained.
+The long-running process is still synchronous per HTTP request; persistent
+background work and stronger multi-tenant authorization are separate tasks.
+
+**SP-06 remains:** Evaluation relevance judgments for *older* chunks survive,
+but live evaluation must detect or explicitly handle stale evidence when a
+new version becomes active.
 
 ## ✨ What is Spurel?
 

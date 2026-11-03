@@ -60,6 +60,8 @@ class SqlAlchemyDocumentVersionRepository:
                 chunk_count=version.chunk_count,
                 created_at=version.created_at,
                 is_active=version.version == active_version,
+                status=version.status,
+                attempt_count=version.attempt_count,
             )
             for version, active_version in rows
         )

@@ -4,12 +4,20 @@ from collections.abc import Sequence
 from typing import Protocol
 from uuid import UUID
 
-from spurel.documents.chunk_models import StoredDocumentChunk
+from spurel.documents.chunk_models import StagedDocumentChunkSet, StoredDocumentChunk
 from spurel.documents.chunking import DocumentChunk
 
 
 class DocumentChunkPersistenceError(RuntimeError):
     """Raised when document chunk persistence cannot complete."""
+
+
+class DocumentProcessingConflictError(RuntimeError):
+    """Raised when a live/reclaimed processing attempt cannot be continued."""
+
+
+class DocumentChunkVersionIncompleteError(RuntimeError):
+    """Raised when a staged version lacks complete matching embeddings."""
 
 
 class DocumentChunkRepository(Protocol):
@@ -20,8 +28,41 @@ class DocumentChunkRepository(Protocol):
         *,
         document_id: UUID,
         chunks: Sequence[DocumentChunk],
+    ) -> StagedDocumentChunkSet:
+        """Stage a new immutable chunk set without making it searchable."""
+        ...
+
+    async def promote_version(
+        self,
+        *,
+        document_id: UUID,
+        version: int,
+        attempt_id: UUID,
+        provider: str,
+        model: str,
+        dimensions: int,
     ) -> None:
-        """Atomically replace all chunks for one document."""
+        """Atomically activate only a complete embedded processing attempt."""
+        ...
+
+    async def fail_version(
+        self,
+        *,
+        document_id: UUID,
+        version: int,
+        attempt_id: UUID,
+    ) -> None:
+        """Mark a failed attempt without replacing any active document version."""
+        ...
+
+    async def renew_version(
+        self,
+        *,
+        document_id: UUID,
+        version: int,
+        attempt_id: UUID,
+    ) -> None:
+        """Refresh an active processing lease before the next embedding batch."""
         ...
 
     async def list_by_document(
@@ -44,6 +85,7 @@ class StoredDocumentChunkReader(Protocol):
         document_id: UUID,
         limit: int,
         offset: int,
+        chunk_version: int | None = None,
     ) -> Sequence[StoredDocumentChunk]:
-        """Return a bounded persisted chunk page ordered by chunk index."""
+        """Return active chunks, or an explicit staged version for embedding."""
         ...

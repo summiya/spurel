@@ -3,6 +3,7 @@
 from collections.abc import Sequence
 from uuid import UUID
 
+from spurel.documents.chunk_models import StagedDocumentChunkSet
 from spurel.documents.chunk_ports import DocumentChunkRepository
 from spurel.documents.chunking import (
     MAX_CHUNK_SIZE_CHARACTERS,
@@ -26,12 +27,56 @@ class DocumentChunkService:
         *,
         document_id: UUID,
         chunks: Sequence[DocumentChunk],
-    ) -> None:
-        """Validate and atomically replace one document's chunk set."""
+    ) -> StagedDocumentChunkSet:
+        """Validate and stage chunks, retaining the current active version."""
         _validate_chunk_set(chunks)
-        await self._repository.replace_for_document(
+        return await self._repository.replace_for_document(
             document_id=document_id,
             chunks=chunks,
+        )
+
+    async def promote_version(
+        self,
+        *,
+        document_id: UUID,
+        version: int,
+        attempt_id: UUID,
+        provider: str,
+        model: str,
+        dimensions: int,
+    ) -> None:
+        """Commit a fully embedded version behind the repository boundary."""
+        await self._repository.promote_version(
+            document_id=document_id,
+            version=version,
+            attempt_id=attempt_id,
+            provider=provider,
+            model=model,
+            dimensions=dimensions,
+        )
+
+    async def fail_version(
+        self,
+        *,
+        document_id: UUID,
+        version: int,
+        attempt_id: UUID,
+    ) -> None:
+        """Release the failed attempt while preserving old searchable chunks."""
+        await self._repository.fail_version(
+            document_id=document_id, version=version, attempt_id=attempt_id
+        )
+
+    async def renew_version(
+        self,
+        *,
+        document_id: UUID,
+        version: int,
+        attempt_id: UUID,
+    ) -> None:
+        """Keep ownership of the staging lease while embedding progresses."""
+        await self._repository.renew_version(
+            document_id=document_id, version=version, attempt_id=attempt_id
         )
 
     async def list_by_document(
