@@ -928,9 +928,7 @@ async def _staging_fencing_and_expiration(postgres_url: str, tmp_path: Path) -> 
         assert published.active_chunk_version == 1
         history = await DocumentVersionService(
             SqlAlchemyDocumentVersionRepository(database.sessions)
-        ).list_versions(
-            knowledge_base_id=kb_id, document_id=document_id, limit=10, offset=0
-        )
+        ).list_versions(knowledge_base_id=kb_id, document_id=document_id, limit=10, offset=0)
         assert history[0].status == "processing"
         assert history[0].attempt_count == 2
 
@@ -987,13 +985,11 @@ async def _initial_index_failure_and_retry(postgres_url: str, tmp_path: Path) ->
         assert not await repository.list_stored_by_document(
             document_id=document_id, limit=10, offset=0
         )
-        assert not await SqlAlchemyKeywordRetrievalRepository(
-            database.sessions
-        ).search(knowledge_base_id=kb_id, query="refund", limit=10)
-
-        versions = DocumentVersionService(
-            SqlAlchemyDocumentVersionRepository(database.sessions)
+        assert not await SqlAlchemyKeywordRetrievalRepository(database.sessions).search(
+            knowledge_base_id=kb_id, query="refund", limit=10
         )
+
+        versions = DocumentVersionService(SqlAlchemyDocumentVersionRepository(database.sessions))
         failed = await versions.list_versions(
             knowledge_base_id=kb_id, document_id=document_id, limit=10, offset=0
         )
@@ -1001,13 +997,15 @@ async def _initial_index_failure_and_retry(postgres_url: str, tmp_path: Path) ->
         assert failed[0].version == 1
         assert failed[0].status == "failed"
 
-        retry = await _processor(
-            database, storage, _DeterministicEmbeddings()
-        ).process(knowledge_base_id=kb_id, document_id=document_id)
-        assert retry.chunk_version == 1
-        assert (await documents.get_by_id(
+        retry = await _processor(database, storage, _DeterministicEmbeddings()).process(
             knowledge_base_id=kb_id, document_id=document_id
-        )).active_chunk_version == 1
-        assert (await versions.list_versions(
-            knowledge_base_id=kb_id, document_id=document_id, limit=10, offset=0
-        ))[0].attempt_count == 2
+        )
+        assert retry.chunk_version == 1
+        assert (
+            await documents.get_by_id(knowledge_base_id=kb_id, document_id=document_id)
+        ).active_chunk_version == 1
+        assert (
+            await versions.list_versions(
+                knowledge_base_id=kb_id, document_id=document_id, limit=10, offset=0
+            )
+        )[0].attempt_count == 2
