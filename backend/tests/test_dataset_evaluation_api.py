@@ -1,5 +1,6 @@
 from uuid import UUID, uuid4
 
+import pytest
 from fastapi.testclient import TestClient
 
 from spurel.evaluation_datasets.dependencies import (
@@ -13,6 +14,7 @@ from spurel.evaluation_datasets.execution import (
     DatasetEvaluationMode,
     DatasetEvaluationResult,
 )
+from spurel.evaluation_datasets.ports import EvaluationJudgmentStaleError
 from spurel.evaluation_datasets.run_domain import EvaluationRun
 from spurel.evaluation_datasets.run_ports import EvaluationRunPersistenceError
 from spurel.evaluation_datasets.service import EvaluationDatasetNotFoundError
@@ -112,17 +114,11 @@ def _client(
     application = create_app()
     application.dependency_overrides[require_api_token] = lambda: None
     if vector is not None:
-        application.dependency_overrides[
-            get_vector_dataset_evaluation_service
-        ] = lambda: vector
+        application.dependency_overrides[get_vector_dataset_evaluation_service] = lambda: vector
     if keyword is not None:
-        application.dependency_overrides[
-            get_keyword_dataset_evaluation_service
-        ] = lambda: keyword
+        application.dependency_overrides[get_keyword_dataset_evaluation_service] = lambda: keyword
     if hybrid is not None:
-        application.dependency_overrides[
-            get_hybrid_dataset_evaluation_service
-        ] = lambda: hybrid
+        application.dependency_overrides[get_hybrid_dataset_evaluation_service] = lambda: hybrid
     return TestClient(application)
 
 
@@ -225,9 +221,7 @@ def test_dataset_evaluation_hides_synchronous_size_limit_details() -> None:
     )
 
     assert response.status_code == 422
-    assert response.json() == {
-        "detail": "dataset exceeds synchronous evaluation limits"
-    }
+    assert response.json() == {"detail": "dataset exceeds synchronous evaluation limits"}
     assert "50,001 labels found" not in response.text
 
 
@@ -242,9 +236,7 @@ def test_dataset_evaluation_hides_run_persistence_failure() -> None:
     )
 
     assert response.status_code == 503
-    assert response.json() == {
-        "detail": "dataset evaluation temporarily unavailable"
-    }
+    assert response.json() == {"detail": "dataset evaluation temporarily unavailable"}
     assert "database secret detail" not in response.text
 
 
@@ -270,3 +262,24 @@ def test_vector_dataset_evaluation_returns_embedding_configuration() -> None:
     assert body["mode"] == "vector"
     assert body["embedding_model"] == "model"
     assert body["embedding_dimensions"] == 1536
+
+
+@pytest.mark.parametrize("mode", ["vector", "keyword", "hybrid"])
+def test_all_live_evaluation_modes_reject_stale_judgments(mode: str) -> None:
+    """A stale dataset returns 409 rather than persisting misleading metrics."""
+    service = FakeDatasetEvaluationService()
+    service.error = EvaluationJudgmentStaleError("private chunk ids")
+    client = _client(vector=service, keyword=service, hybrid=service)
+    payload = {"top_k": 10}
+    if mode == "hybrid":
+        payload["candidate_k"] = 20
+        payload["rrf_k"] = 60
+
+    response = client.post(
+        f"/knowledge-bases/{uuid4()}/evaluation-datasets/{uuid4()}/evaluate/{mode}",
+        json=payload,
+    )
+
+    assert response.status_code == 409
+    assert "judgment audit" in response.json()["detail"]
+    assert "private chunk ids" not in response.text

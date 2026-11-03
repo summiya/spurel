@@ -37,6 +37,7 @@ from spurel.documents.dependencies import (
 )
 from spurel.documents.domain import DocumentMediaType
 from spurel.documents.ingestion_service import DocumentIngestionService
+from spurel.documents.persistence import DocumentRecord
 from spurel.documents.processing import DocumentProcessingService
 from spurel.documents.processing_dependencies import get_document_processing_service
 from spurel.documents.sqlalchemy_chunk_inspector_repository import (
@@ -55,10 +56,21 @@ from spurel.embeddings.service import ChunkEmbeddingService
 from spurel.embeddings.sqlalchemy_repository import SqlAlchemyChunkEmbeddingRepository
 from spurel.evaluation_datasets.baseline_domain import EvaluationBaselineConfiguration
 from spurel.evaluation_datasets.baseline_service import EvaluationBaselineService
+from spurel.evaluation_datasets.dependencies import (
+    get_evaluation_dataset_service,
+    get_keyword_dataset_evaluation_service,
+)
 from spurel.evaluation_datasets.execution import (
     DatasetEvaluationExecutionService,
     DatasetEvaluationMode,
     KeywordDatasetRetriever,
+)
+from spurel.evaluation_datasets.judgment_integrity import (
+    EvaluationJudgmentIssueReason,
+)
+from spurel.evaluation_datasets.ports import (
+    EvaluationJudgmentInvalidError,
+    EvaluationJudgmentStaleError,
 )
 from spurel.evaluation_datasets.quality_gate import (
     EvaluationQualityGateService,
@@ -602,6 +614,25 @@ async def _version_round_trip(postgres_url: str, tmp_path: Path) -> None:
             judgments=(RelevanceJudgment(chunk_id=original_id, relevance=3),),
         )
 
+        judgment_repository = SqlAlchemyEvaluationDatasetRepository(database.sessions)
+        runs = EvaluationRunService(SqlAlchemyEvaluationRunRepository(database.sessions))
+        benchmark = PersistedDatasetEvaluationService(
+            executor=DatasetEvaluationExecutionService(
+                repository=judgment_repository,
+                retriever=KeywordDatasetRetriever(
+                    KeywordRetrievalService(SqlAlchemyKeywordRetrievalRepository(database.sessions))
+                ),
+                mode=DatasetEvaluationMode.KEYWORD,
+            ),
+            runs=runs,
+        )
+        original_run = await benchmark.run(knowledge_base_id=kb_id, dataset_id=dataset.id, top_k=1)
+        initial_audit = await evaluations.audit_judgments(
+            knowledge_base_id=kb_id, dataset_id=dataset.id
+        )
+        assert initial_audit.is_usable
+        assert initial_audit.invalid_count == 0
+
         # Processing the same data and chunk boundaries must not replace IDs.
         await processor.process(knowledge_base_id=kb_id, document_id=doc_id)
         same = await chunks_repo.list_stored_by_document(document_id=doc_id, limit=50, offset=0)
@@ -628,6 +659,28 @@ async def _version_round_trip(postgres_url: str, tmp_path: Path) -> None:
             knowledge_base_id=kb_id, document_id=doc_id
         )
         assert current is not None and current.active_chunk_version == 2
+
+        audit = await evaluations.audit_judgments(knowledge_base_id=kb_id, dataset_id=dataset.id)
+        assert not audit.is_usable
+        assert audit.invalid_count == 1
+        assert audit.inactive_version_count == 1
+        assert audit.issues[0].reason is EvaluationJudgmentIssueReason.INACTIVE_VERSION
+        assert audit.issues[0].chunk_id == original_id
+        assert audit.issues[0].document_id == doc_id
+        assert audit.issues[0].chunk_version == 1
+        assert audit.issues[0].active_chunk_version == 2
+
+        with pytest.raises(EvaluationJudgmentStaleError):
+            await benchmark.run(knowledge_base_id=kb_id, dataset_id=dataset.id, top_k=1)
+        historical_runs = await runs.list_by_dataset(
+            knowledge_base_id=kb_id, dataset_id=dataset.id, limit=10
+        )
+        assert [run.id for run in historical_runs] == [original_run.id]
+        historical_run = await runs.get_by_id(
+            knowledge_base_id=kb_id, dataset_id=dataset.id, run_id=original_run.id
+        )
+        assert historical_run.case_count == 1
+        assert historical_run.mean_recall_at_k == 1.0
 
         history = await versions.list_versions(
             knowledge_base_id=kb_id, document_id=doc_id, limit=50, offset=0
@@ -669,6 +722,8 @@ async def _version_round_trip(postgres_url: str, tmp_path: Path) -> None:
         # Public history is explicitly read-only and cannot cross KBs.
         app = create_app()
         app.dependency_overrides[get_document_version_service] = lambda: versions
+        app.dependency_overrides[get_evaluation_dataset_service] = lambda: evaluations
+        app.dependency_overrides[get_keyword_dataset_evaluation_service] = lambda: benchmark
         headers = {"Authorization": f"Bearer {_TEST_TOKEN}"}
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             base = f"/knowledge-bases/{kb_id}/documents/{doc_id}"
@@ -678,6 +733,21 @@ async def _version_round_trip(postgres_url: str, tmp_path: Path) -> None:
             result = await client.get(f"{base}/versions/1/chunks", headers=headers)
             assert result.status_code == 200
             assert result.json()["items"][0]["id"] == str(original_id)
+
+            evaluation_path = f"/knowledge-bases/{kb_id}/evaluation-datasets/{dataset.id}"
+            report = await client.get(f"{evaluation_path}/judgment-audit", headers=headers)
+            assert report.status_code == 200, report.text
+            assert report.json()["invalid_count"] == 1
+            assert report.json()["issues"][0]["chunk_id"] == str(original_id)
+
+            blocked = await client.post(
+                f"{evaluation_path}/evaluate/keyword",
+                headers=headers,
+                json={"top_k": 1},
+            )
+            assert blocked.status_code == 409, blocked.text
+            assert "judgment audit" in blocked.json()["detail"]
+
             assert (
                 await client.get(
                     f"/knowledge-bases/{other_kb_id}/documents/{doc_id}/versions",
@@ -1009,3 +1079,98 @@ async def _initial_index_failure_and_retry(postgres_url: str, tmp_path: Path) ->
                 knowledge_base_id=kb_id, document_id=document_id, limit=10, offset=0
             )
         )[0].attempt_count == 2
+
+
+def test_new_labels_reject_missing_foreign_and_deleted_chunk_references(
+    postgres_url: str, tmp_path: Path
+) -> None:
+    """New labels must be active and scoped; old labels survive document deletion."""
+    asyncio.run(_judgment_scope_and_missing_round_trip(postgres_url, tmp_path))
+
+
+async def _judgment_scope_and_missing_round_trip(postgres_url: str, tmp_path: Path) -> None:
+    async with _isolated_database(postgres_url) as database:
+        own_kb = await database.new_knowledge_base("Judgment owner")
+        foreign_kb = await database.new_knowledge_base("Foreign judgments")
+        storage = LocalDocumentBlobStorage(tmp_path / "judgment-evidence")
+        provider = _DeterministicEmbeddings()
+        owned_document = await _upload(
+            database, storage, own_kb, "Refund policy is available here."
+        )
+        foreign_document = await _upload(
+            database, storage, foreign_kb, "Another refund policy exists."
+        )
+        for kb_id, document_id in (
+            (own_kb, owned_document),
+            (foreign_kb, foreign_document),
+        ):
+            await _processor(database, storage, provider).process(
+                knowledge_base_id=kb_id, document_id=document_id
+            )
+
+        chunk_repo = SqlAlchemyDocumentChunkRepository(database.sessions)
+        owned_chunk = (
+            await chunk_repo.list_stored_by_document(document_id=owned_document, limit=10, offset=0)
+        )[0].id
+        foreign_chunk = (
+            await chunk_repo.list_stored_by_document(
+                document_id=foreign_document, limit=10, offset=0
+            )
+        )[0].id
+        datasets = EvaluationDatasetService(
+            SqlAlchemyEvaluationDatasetRepository(database.sessions)
+        )
+        dataset = await datasets.create_dataset(
+            knowledge_base_id=own_kb, name="Current-only judgments"
+        )
+
+        for invalid_chunk_id in (uuid4(), foreign_chunk):
+            with pytest.raises(EvaluationJudgmentInvalidError):
+                await datasets.add_case(
+                    knowledge_base_id=own_kb,
+                    dataset_id=dataset.id,
+                    query="refund",
+                    judgments=(RelevanceJudgment(chunk_id=invalid_chunk_id, relevance=3),),
+                )
+        assert not await datasets.list_cases(knowledge_base_id=own_kb, dataset_id=dataset.id)
+
+        case = await datasets.add_case(
+            knowledge_base_id=own_kb,
+            dataset_id=dataset.id,
+            query="refund",
+            judgments=(RelevanceJudgment(chunk_id=owned_chunk, relevance=3),),
+        )
+        before = await datasets.audit_judgments(knowledge_base_id=own_kb, dataset_id=dataset.id)
+        assert before.is_usable and before.judgment_count == 1
+
+        # A source may be deleted without cascading historical relevance labels.
+        async with database.sessions() as session:
+            async with session.begin():
+                await session.execute(
+                    delete(DocumentRecord).where(DocumentRecord.id == owned_document)
+                )
+        after = await datasets.audit_judgments(knowledge_base_id=own_kb, dataset_id=dataset.id)
+        assert after.invalid_count == 1
+        assert after.missing_or_out_of_scope_count == 1
+        assert after.issues[0].reason is EvaluationJudgmentIssueReason.MISSING_OR_OUT_OF_SCOPE
+        assert after.issues[0].document_id is None
+        assert (
+            await datasets.get_case(
+                knowledge_base_id=own_kb, dataset_id=dataset.id, case_id=case.id
+            )
+        ).judgments[0].chunk_id == owned_chunk
+
+        runs = EvaluationRunService(SqlAlchemyEvaluationRunRepository(database.sessions))
+        runner = PersistedDatasetEvaluationService(
+            executor=DatasetEvaluationExecutionService(
+                repository=SqlAlchemyEvaluationDatasetRepository(database.sessions),
+                retriever=KeywordDatasetRetriever(
+                    KeywordRetrievalService(SqlAlchemyKeywordRetrievalRepository(database.sessions))
+                ),
+                mode=DatasetEvaluationMode.KEYWORD,
+            ),
+            runs=runs,
+        )
+        with pytest.raises(EvaluationJudgmentStaleError):
+            await runner.run(knowledge_base_id=own_kb, dataset_id=dataset.id, top_k=1)
+        assert not await runs.list_by_dataset(knowledge_base_id=own_kb, dataset_id=dataset.id)

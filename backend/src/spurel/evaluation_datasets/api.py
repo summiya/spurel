@@ -37,7 +37,12 @@ from spurel.evaluation_datasets.execution import (
     DatasetEvaluationLimitError,
     DatasetEvaluationQueryError,
 )
-from spurel.evaluation_datasets.ports import EvaluationDatasetPersistenceError
+from spurel.evaluation_datasets.ports import (
+    EvaluationDatasetLoadLimitError,
+    EvaluationDatasetPersistenceError,
+    EvaluationJudgmentInvalidError,
+    EvaluationJudgmentStaleError,
+)
 from spurel.evaluation_datasets.quality_gate import (
     EvaluationQualityGateService,
     EvaluationQualityGateThresholdError,
@@ -71,6 +76,8 @@ from spurel.evaluation_datasets.schemas import (
     EvaluationCaseSummaryResponse,
     EvaluationDatasetListResponse,
     EvaluationDatasetResponse,
+    EvaluationJudgmentAuditResponse,
+    EvaluationJudgmentIssueResponse,
     EvaluationJudgmentResponse,
     EvaluationQualityGateCheckResponse,
     EvaluationQualityGateRequest,
@@ -256,6 +263,11 @@ async def create_evaluation_case(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="evaluation dataset was not found",
         ) from exc
+    except EvaluationJudgmentInvalidError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="judgments must reference active chunks in this knowledge base",
+        ) from exc
     except EvaluationDatasetPersistenceError as exc:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -359,6 +371,60 @@ def _case_response(case: EvaluationCase) -> EvaluationCaseResponse:
     )
 
 
+@router.get(
+    "/{dataset_id}/judgment-audit",
+    response_model=EvaluationJudgmentAuditResponse,
+)
+async def audit_evaluation_judgments(
+    knowledge_base_id: UUID,
+    dataset_id: UUID,
+    service: EvaluationDatasetServiceDependency,
+) -> EvaluationJudgmentAuditResponse:
+    """Explain stale historical labels before a live benchmark is attempted."""
+    try:
+        audit = await service.audit_judgments(
+            knowledge_base_id=knowledge_base_id,
+            dataset_id=dataset_id,
+        )
+    except EvaluationDatasetNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="evaluation dataset was not found",
+        ) from exc
+    except EvaluationDatasetLoadLimitError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="dataset exceeds synchronous evaluation limits",
+        ) from exc
+    except EvaluationDatasetPersistenceError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="evaluation judgment audit temporarily unavailable",
+        ) from exc
+
+    return EvaluationJudgmentAuditResponse(
+        dataset_id=audit.dataset_id,
+        case_count=audit.case_count,
+        judgment_count=audit.judgment_count,
+        is_usable=audit.is_usable,
+        invalid_count=audit.invalid_count,
+        inactive_version_count=audit.inactive_version_count,
+        missing_or_out_of_scope_count=audit.missing_or_out_of_scope_count,
+        issues_truncated=audit.issues_truncated,
+        issues=[
+            EvaluationJudgmentIssueResponse(
+                case_id=issue.case_id,
+                chunk_id=issue.chunk_id,
+                reason=issue.reason,
+                document_id=issue.document_id,
+                chunk_version=issue.chunk_version,
+                active_chunk_version=issue.active_chunk_version,
+            )
+            for issue in audit.issues
+        ],
+    )
+
+
 @router.post(
     "/{dataset_id}/evaluate/vector",
     response_model=DatasetEvaluationResponse,
@@ -390,6 +456,14 @@ async def evaluate_dataset_vector(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="evaluation dataset was not found",
+        ) from exc
+    except EvaluationJudgmentStaleError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                "evaluation dataset has inactive or invalid judgments; "
+                "review its judgment audit before running a benchmark"
+            ),
         ) from exc
     except (
         EvaluationDatasetPersistenceError,
@@ -440,6 +514,14 @@ async def evaluate_dataset_keyword(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="evaluation dataset was not found",
         ) from exc
+    except EvaluationJudgmentStaleError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                "evaluation dataset has inactive or invalid judgments; "
+                "review its judgment audit before running a benchmark"
+            ),
+        ) from exc
     except (
         EvaluationDatasetPersistenceError,
         EvaluationRunPersistenceError,
@@ -488,6 +570,14 @@ async def evaluate_dataset_hybrid(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="evaluation dataset was not found",
+        ) from exc
+    except EvaluationJudgmentStaleError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                "evaluation dataset has inactive or invalid judgments; "
+                "review its judgment audit before running a benchmark"
+            ),
         ) from exc
     except (
         EvaluationDatasetPersistenceError,
@@ -774,12 +864,8 @@ async def evaluate_evaluation_quality_gate(
         max_mean_recall_drop=payload.thresholds.max_mean_recall_drop,
         max_mrr_drop=payload.thresholds.max_mrr_drop,
         max_mean_ndcg_drop=payload.thresholds.max_mean_ndcg_drop,
-        max_mean_judgment_coverage_drop=(
-            payload.thresholds.max_mean_judgment_coverage_drop
-        ),
-        max_mean_duration_increase_ms=(
-            payload.thresholds.max_mean_duration_increase_ms
-        ),
+        max_mean_judgment_coverage_drop=(payload.thresholds.max_mean_judgment_coverage_drop),
+        max_mean_duration_increase_ms=(payload.thresholds.max_mean_duration_increase_ms),
     )
 
     try:
@@ -832,7 +918,6 @@ async def evaluate_evaluation_quality_gate(
             for check in result.checks
         ],
     )
-
 
 
 @router.put(
@@ -924,10 +1009,7 @@ async def list_evaluation_baseline_history(
         ) from exc
 
     return EvaluationBaselinePromotionListResponse(
-        items=[
-            _baseline_promotion_response(promotion)
-            for promotion in promotions
-        ],
+        items=[_baseline_promotion_response(promotion) for promotion in promotions],
         limit=limit,
         offset=offset,
     )
@@ -998,6 +1080,7 @@ def _baseline_response(
         embedding_dimensions=configuration.embedding_dimensions,
         promoted_at=baseline.promoted_at,
     )
+
 
 def _baseline_promotion_response(
     promotion: EvaluationBaselinePromotion,

@@ -8,7 +8,10 @@ from typing import Protocol
 from uuid import UUID
 
 from spurel.evaluation_datasets.domain import EvaluationCase
-from spurel.evaluation_datasets.ports import EvaluationDatasetLoadLimitError
+from spurel.evaluation_datasets.ports import (
+    EvaluationDatasetLoadLimitError,
+    EvaluationJudgmentStaleError,
+)
 from spurel.evaluation_datasets.service import EvaluationDatasetNotFoundError
 from spurel.retrieval.domain import VectorRetrievalMatch
 from spurel.retrieval.evaluation import (
@@ -276,13 +279,9 @@ class DatasetEvaluationExecutionService:
             ) from exc
 
         if cases is None:
-            raise EvaluationDatasetNotFoundError(
-                "evaluation dataset was not found"
-            )
+            raise EvaluationDatasetNotFoundError("evaluation dataset was not found")
         if not cases:
-            raise DatasetEvaluationQueryError(
-                "evaluation dataset must contain at least one case"
-            )
+            raise DatasetEvaluationQueryError("evaluation dataset must contain at least one case")
 
         case_results: list[DatasetEvaluationCaseResult] = []
         for case in cases:
@@ -294,6 +293,19 @@ class DatasetEvaluationExecutionService:
                     candidate_k=candidate_k,
                     rrf_k=rrf_k,
                 )
+            )
+
+        # Active document versions can change during long LLM-backed retrieval.
+        # Re-check labels and case content before returning metrics for persistence.
+        final_cases = await self._repository.load_cases_for_evaluation(
+            knowledge_base_id=knowledge_base_id,
+            dataset_id=dataset_id,
+            max_cases=MAX_DATASET_EVALUATION_CASES,
+            max_total_judgments=MAX_DATASET_EVALUATION_JUDGMENTS,
+        )
+        if final_cases is None or _case_snapshot(final_cases) != _case_snapshot(cases):
+            raise EvaluationJudgmentStaleError(
+                "dataset labels or case definitions changed during evaluation"
             )
 
         return _aggregate(
@@ -343,6 +355,13 @@ class DatasetEvaluationExecutionService:
         )
 
 
+def _case_snapshot(
+    cases: Sequence[EvaluationCase],
+) -> tuple[tuple[UUID, str, tuple], ...]:
+    """Compare case IDs, queries and full graded labels without timestamps."""
+    return tuple((case.id, case.query, case.judgments) for case in cases)
+
+
 def _validate_configuration(
     *,
     mode: DatasetEvaluationMode,
@@ -359,9 +378,7 @@ def _validate_configuration(
         or top_k < 1
         or top_k > MAX_DATASET_EVALUATION_TOP_K
     ):
-        raise DatasetEvaluationQueryError(
-            "dataset evaluation top_k is outside the supported range"
-        )
+        raise DatasetEvaluationQueryError("dataset evaluation top_k is outside the supported range")
 
     if mode is DatasetEvaluationMode.HYBRID:
         if (
@@ -370,18 +387,9 @@ def _validate_configuration(
             or candidate_k < top_k
             or candidate_k > MAX_DATASET_EVALUATION_TOP_K
         ):
-            raise DatasetEvaluationQueryError(
-                "hybrid dataset evaluation candidate_k is invalid"
-            )
-        if (
-            isinstance(rrf_k, bool)
-            or not isinstance(rrf_k, int)
-            or rrf_k < 1
-            or rrf_k > 1_000
-        ):
-            raise DatasetEvaluationQueryError(
-                "hybrid dataset evaluation rrf_k is invalid"
-            )
+            raise DatasetEvaluationQueryError("hybrid dataset evaluation candidate_k is invalid")
+        if isinstance(rrf_k, bool) or not isinstance(rrf_k, int) or rrf_k < 1 or rrf_k > 1_000:
+            raise DatasetEvaluationQueryError("hybrid dataset evaluation rrf_k is invalid")
     elif candidate_k is not None or rrf_k is not None:
         raise DatasetEvaluationQueryError(
             "non-hybrid dataset evaluation cannot contain hybrid configuration"
@@ -392,9 +400,7 @@ def _validate_configuration(
         embedding_model,
         embedding_dimensions,
     )
-    has_complete_embedding_space = all(
-        value is not None for value in embedding_values
-    )
+    has_complete_embedding_space = all(value is not None for value in embedding_values)
 
     if mode in {DatasetEvaluationMode.VECTOR, DatasetEvaluationMode.HYBRID}:
         if not has_complete_embedding_space:
@@ -440,9 +446,7 @@ def _aggregate(
         for case in cases
         if case.metrics.judgment_coverage_at_k is not None
     )
-    mean_rr = sum(
-        case.metrics.reciprocal_rank_at_k for case in cases
-    ) / case_count
+    mean_rr = sum(case.metrics.reciprocal_rank_at_k for case in cases) / case_count
 
     return DatasetEvaluationResult(
         dataset_id=dataset_id,
@@ -458,22 +462,11 @@ def _aggregate(
         mean_duration_ms=total_duration_ms / case_count,
         judgment_coverage_case_count=len(coverage_values),
         mean_judgment_coverage_at_k=(
-            sum(coverage_values) / len(coverage_values)
-            if coverage_values
-            else None
+            sum(coverage_values) / len(coverage_values) if coverage_values else None
         ),
-        mean_precision_at_k=sum(
-            case.metrics.precision_at_k for case in cases
-        )
-        / case_count,
-        mean_recall_at_k=sum(
-            case.metrics.recall_at_k for case in cases
-        )
-        / case_count,
+        mean_precision_at_k=sum(case.metrics.precision_at_k for case in cases) / case_count,
+        mean_recall_at_k=sum(case.metrics.recall_at_k for case in cases) / case_count,
         mrr_at_k=mean_rr,
-        mean_ndcg_at_k=sum(
-            case.metrics.ndcg_at_k for case in cases
-        )
-        / case_count,
+        mean_ndcg_at_k=sum(case.metrics.ndcg_at_k for case in cases) / case_count,
         cases=cases,
     )
