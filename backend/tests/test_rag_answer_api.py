@@ -20,6 +20,9 @@ class FakeRAGAnswerService:
             excerpt="source excerpt",
             start_offset=100,
             end_offset=114,
+            page_start=3,
+            page_end=3,
+            ocr_used=False,
         )
         self.result = RAGAnswer(
             trace_id=uuid4(),
@@ -92,6 +95,9 @@ def test_rag_answer_returns_grounded_result_with_source_manifest() -> None:
                 "excerpt": "source excerpt",
                 "start_offset": 100,
                 "end_offset": 114,
+                "page_start": 3,
+                "page_end": 3,
+                "ocr_used": False,
             }
         ],
     }

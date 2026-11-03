@@ -511,6 +511,13 @@ export function LiveKnowledgeBasesPage() {
               </p>
             ) : null}
           </div>
+          <div className="inline-notice">
+            <Icon name="file" size={17} />
+            PDF page references are saved when you successfully process a PDF.
+            Scanned-page OCR is disabled by default and must be explicitly enabled
+            in the backend environment. Layout-aware PDF extraction is also opt-in.
+            Existing documents and processing methods are preserved.
+          </div>
           {actionError ? (
             <div className="inline-notice live-error" role="alert">
               {actionError}

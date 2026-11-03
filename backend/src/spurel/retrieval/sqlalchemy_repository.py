@@ -44,6 +44,9 @@ class SqlAlchemyVectorRetrievalRepository:
                 DocumentChunkRecord.text,
                 DocumentChunkRecord.start_offset,
                 DocumentChunkRecord.end_offset,
+                DocumentChunkRecord.page_start,
+                DocumentChunkRecord.page_end,
+                DocumentChunkRecord.ocr_used,
                 distance,
             )
             .join(
@@ -83,6 +86,9 @@ class SqlAlchemyVectorRetrievalRepository:
                 start_offset=row.start_offset,
                 end_offset=row.end_offset,
                 cosine_similarity=1.0 - float(row.cosine_distance),
+                page_start=row.page_start,
+                page_end=row.page_end,
+                ocr_used=row.ocr_used,
             )
             for row in rows
         )

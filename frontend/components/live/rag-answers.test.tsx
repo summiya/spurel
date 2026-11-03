@@ -30,6 +30,9 @@ const grounded = {
       excerpt: "The company grants 30 days of annual leave after one year.",
       start_offset: 100,
       end_offset: 158,
+      page_start: 2,
+      page_end: 2,
+      ocr_used: true,
     },
   ],
 };
@@ -145,6 +148,7 @@ describe("SP-15 live RAG answer frontend", () => {
       rrf_k: 60,
     });
     expect(screen.getByText(/not independently verified claim citations/i)).toBeInTheDocument();
+    expect(screen.getByText(/PDF page 2 · includes OCR text/)).toBeInTheDocument();
   });
 
   it("distinguishes no matching context from model-generated answers", async () => {

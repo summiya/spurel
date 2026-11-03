@@ -27,6 +27,9 @@ class ChunkInspectionItem:
     start_offset: int
     end_offset: int
     embedding_count: int
+    page_start: int | None = None
+    page_end: int | None = None
+    ocr_used: bool = False
 
     @property
     def has_embeddings(self) -> bool:

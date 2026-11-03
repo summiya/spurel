@@ -195,7 +195,7 @@ The chart only connects stored runs, never invents daily values, and indicates
 when the selected period has insufficient data. Load older run-history pages
 explicitly when needed; only loaded history is charted. Model calls are not
 initiated and no global totals, p95 or other unmeasured statistics are invented.
-The overview is intentionally separate from SP-16 token-aware chunking and SP-17's optional structural splitting.
+The overview is intentionally separate from merged SP-16/SP-17 chunking and SP-18 PDF processing.
 
 ## SP-16: opt-in token-aware processing (merged)
 
@@ -233,7 +233,7 @@ cross-origin requests before contacting FastAPI. Processing requires normal
 embedding credentials; only explicit Process / Reprocess triggers embedding.
 
 
-## SP-17: recursive, Markdown and sentence-aware chunking (in review)
+## SP-17: recursive, Markdown and sentence-aware chunking (merged)
 
 The existing Knowledge Bases document-processing panel adds three *optional*
 character-bounded strategies to the existing Characters and Model tokens:
@@ -269,6 +269,57 @@ Repeat with `"recursive"` or `"sentences"`. The frontend proxy strictly
 validates the same allowlist; unknown modes and size/overlap violations are
 rejected before calling the backend. Existing blank-body processing is
 unchanged. Smoke tests must never trigger paid embeddings automatically.
+
+
+## SP-18: PDF page provenance, layout extraction and opt-in OCR (in review)
+
+The default PDF parser still calls `pypdf.PdfReader(page).extract_text()`,
+joins page content with two newlines and strips the outside, matching the
+legacy plain-text path. The parser now retains each **1-based PDF page's
+exact source-character span** in that combined text. The document chunk
+pipeline assigns each chunk a nullable `page_start`, `page_end`, and
+`ocr_used` based on intersection with those spans. One chunk can reference
+multiple pages. A new Alembic migration adds these nullable columns and
+constraints without modifying existing rows, versions, UUIDs, or retrieval
+decisions. Old chunks show "page unavailable"; new/reprocessed PDFs show real
+page labels. Text/Markdown do not acquire invented page numbers.
+
+Set `SPUREL_PDF_EXTRACTION_MODE=layout` in `.env` to opt in to the
+supported pypdf layout extraction, potentially better for columns and
+spacing. The default `plain` is unchanged. OCR is **disabled** unless the
+operator explicitly sets `SPUREL_PDF_OCR_ENABLED=true`. When enabled,
+only PDF pages with no extractable text are rasterized locally using
+`pdftoppm` and read by Tesseract. The Docker backend image installs both
+tools and English trained data. Settings:
+
+```dotenv
+SPUREL_PDF_OCR_ENABLED=false
+SPUREL_PDF_OCR_LANGUAGE=eng
+SPUREL_PDF_OCR_MAX_PAGES=5
+SPUREL_PDF_EXTRACTION_MODE=plain
+```
+
+Supported OCR languages use installed Tesseract language packs, expressed
+as `eng` or `eng+deu` (no shell commands accepted). The default cap is
+5 pages and the maximum configurable cap is 20 OCR pages per processing
+request. Input PDF limit remains 25 MB, 500 pages and 5 million extracted
+characters; each rendered page fits a bounded raster and has an explicit
+per-program timeout. OCR fails closed if tools are missing, page caps are
+exceeded or a command fails. Timeouts may still exceed the overall
+processing HTTP budget for many pages; reduce the OCR page cap for large
+scans. **OCR uses a local subprocess, not OpenAI or an external OCR API.**
+Embedding generation after parsing still requires normal credentials and
+may incur OpenAI charges.
+
+When you opt in, restart the backend by running `make up` again after
+rebuilding the image; use `docker compose up -d --build` if needed to
+install the tools. Do **not** run `docker compose down --volumes`.
+The parser is used only when an operator explicitly invokes processing;
+uploading files alone never starts OCR or embeddings.
+
+Page ranges and OCR flags are also available in read-only retrieval and
+RAG source summaries. They identify where the excerpt came from, not an
+independent proof that a model-generated claim is supported (SP-23).
 
 ## Environment and secrets
 

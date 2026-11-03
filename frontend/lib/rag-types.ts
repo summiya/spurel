@@ -15,6 +15,9 @@ export interface RagSource {
   excerpt: string;
   start_offset: number;
   end_offset: number;
+  page_start?: number | null;
+  page_end?: number | null;
+  ocr_used?: boolean;
 }
 
 export interface RagAnswerResponse {
@@ -100,6 +103,14 @@ export function isRagAnswerResponse(value: unknown): value is RagAnswerResponse 
       item.excerpt.length === 0 ||
       !integer(item.start_offset, 0, Number.MAX_SAFE_INTEGER) ||
       !integer(item.end_offset, item.start_offset, Number.MAX_SAFE_INTEGER) ||
+      !(
+        (item.page_start == null && item.page_end == null && item.ocr_used !== true) ||
+        (
+          integer(item.page_start, 1, 500) &&
+          integer(item.page_end, item.page_start, 500) &&
+          (item.ocr_used === undefined || typeof item.ocr_used === "boolean")
+        )
+      ) ||
       labels.has(item.label) ||
       ranks.has(item.retrieval_rank) ||
       chunkIds.has(item.chunk_id.toLowerCase())

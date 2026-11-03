@@ -127,6 +127,9 @@ def _to_chunk_inspection_response(item) -> ChunkInspectionResponse:
         embedding_count=item.embedding_count,
         token_count=token_count,
         tokenizer_encoding=encoding,
+        page_start=item.page_start,
+        page_end=item.page_end,
+        ocr_used=item.ocr_used,
     )
 
 

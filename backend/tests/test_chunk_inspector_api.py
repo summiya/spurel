@@ -58,6 +58,9 @@ def test_chunk_inspector_returns_safe_persisted_chunk_data() -> None:
             start_offset=10,
             end_offset=30,
             embedding_count=2,
+            page_start=2,
+            page_end=3,
+            ocr_used=True,
         ),
         ChunkInspectionItem(
             id=uuid4(),
@@ -83,6 +86,10 @@ def test_chunk_inspector_returns_safe_persisted_chunk_data() -> None:
     assert body["items"][0]["index"] == 0
     assert body["items"][0]["has_embeddings"] is True
     assert body["items"][0]["embedding_count"] == 2
+    assert body["items"][0]["page_start"] == 2
+    assert body["items"][0]["page_end"] == 3
+    assert body["items"][0]["ocr_used"] is True
+    assert body["items"][1]["page_start"] is None
     assert body["items"][1]["has_embeddings"] is False
     assert body["items"][1]["embedding_count"] == 0
     assert service.last_call == {

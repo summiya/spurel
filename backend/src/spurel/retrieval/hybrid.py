@@ -66,6 +66,9 @@ class HybridRetrievalMatch:
     keyword_rank: int | None
     cosine_similarity: float | None
     keyword_score: float | None
+    page_start: int | None = None
+    page_end: int | None = None
+    ocr_used: bool = False
 
 
 @dataclass(slots=True)
@@ -81,6 +84,9 @@ class _HybridCandidate:
     keyword_rank: int | None = None
     cosine_similarity: float | None = None
     keyword_score: float | None = None
+    page_start: int | None = None
+    page_end: int | None = None
+    ocr_used: bool = False
 
 
 class HybridRetrievalService:
@@ -167,6 +173,9 @@ class HybridRetrievalService:
                 keyword_rank=candidate.keyword_rank,
                 cosine_similarity=candidate.cosine_similarity,
                 keyword_score=candidate.keyword_score,
+                page_start=candidate.page_start,
+                page_end=candidate.page_end,
+                ocr_used=candidate.ocr_used,
             )
             for candidate in ranked[:limit]
         )
@@ -225,6 +234,9 @@ def _get_or_create_candidate(
             text=match.text,
             start_offset=match.start_offset,
             end_offset=match.end_offset,
+            page_start=match.page_start,
+            page_end=match.page_end,
+            ocr_used=match.ocr_used,
         )
         candidates[match.chunk_id] = candidate
         return candidate
@@ -235,6 +247,9 @@ def _get_or_create_candidate(
         or existing.text != match.text
         or existing.start_offset != match.start_offset
         or existing.end_offset != match.end_offset
+        or existing.page_start != match.page_start
+        or existing.page_end != match.page_end
+        or existing.ocr_used != match.ocr_used
     ):
         raise HybridRetrievalResultError(
             "retrievers returned inconsistent metadata for the same chunk"

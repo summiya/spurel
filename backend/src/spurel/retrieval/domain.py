@@ -21,3 +21,6 @@ class VectorRetrievalMatch:
     start_offset: int
     end_offset: int
     cosine_similarity: float
+    page_start: int | None = None
+    page_end: int | None = None
+    ocr_used: bool = False

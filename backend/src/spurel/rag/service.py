@@ -67,6 +67,9 @@ class RAGSource:
     excerpt: str
     start_offset: int
     end_offset: int
+    page_start: int | None = None
+    page_end: int | None = None
+    ocr_used: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -205,6 +208,10 @@ def _build_context(matches: Sequence[HybridRetrievalMatch]) -> _RAGContext:
             f"document_id={match.document_id}\n"
             f"chunk_id={match.chunk_id}\n"
         )
+        if match.page_start is not None:
+            header += f"pdf_pages={match.page_start}-{match.page_end}\n"
+            if match.ocr_used:
+                header += "ocr_used=true\n"
         footer = f"\n[/{label}]"
         remaining = MAX_RAG_CONTEXT_CHARACTERS - used
         available_excerpt = remaining - len(header) - len(footer)
@@ -236,6 +243,9 @@ def _build_context(matches: Sequence[HybridRetrievalMatch]) -> _RAGContext:
                 excerpt=excerpt,
                 start_offset=match.start_offset,
                 end_offset=excerpt_end_offset,
+                page_start=match.page_start,
+                page_end=match.page_end,
+                ocr_used=match.ocr_used,
             )
         )
 
