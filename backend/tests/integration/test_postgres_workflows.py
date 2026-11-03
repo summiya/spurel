@@ -9,8 +9,8 @@ import hashlib
 import os
 from collections.abc import AsyncIterator, Sequence
 from contextlib import asynccontextmanager
-from datetime import UTC, datetime, timedelta
 from dataclasses import dataclass, field
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from uuid import UUID, uuid4
 
@@ -21,14 +21,14 @@ from sqlalchemy.engine import make_url
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from spurel.documents.chunk_inspector import ChunkInspectorService
+from spurel.documents.chunk_pipeline import DocumentChunkPipeline
 from spurel.documents.chunk_ports import (
+    DocumentChunkPersistenceError,
     DocumentChunkVersionIncompleteError,
     DocumentProcessingConflictError,
 )
-from spurel.documents.chunk_versions_persistence import DocumentChunkVersionRecord
-from spurel.documents.chunk_pipeline import DocumentChunkPipeline
-from spurel.documents.chunk_ports import DocumentChunkPersistenceError
 from spurel.documents.chunk_service import DocumentChunkService
+from spurel.documents.chunk_versions_persistence import DocumentChunkVersionRecord
 from spurel.documents.chunking import DocumentChunk
 from spurel.documents.dependencies import (
     get_chunk_inspector_service,
