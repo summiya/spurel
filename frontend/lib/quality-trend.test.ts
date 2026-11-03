@@ -65,9 +65,7 @@ describe("saved quality-trend measurements", () => {
     const invalid = run({ run_id: "invalid", mean_recall_at_k: Number.NaN });
     const all = [future, newest, older, newest, invalid, wrongMode];
     const key = qualityConfigurationKey(sample);
-    expect(qualityChartPoints(all, key, 7, now).map((p) => p.run.run_id)).toEqual([
-      newest.run_id,
-    ]);
+    expect(qualityChartPoints(all, key, 7, now).map((p) => p.run.run_id)).toEqual([newest.run_id]);
     expect(qualityChartPoints(all, key, 30, now).map((p) => p.run.run_id)).toEqual([
       "older",
       newest.run_id,
@@ -97,6 +95,8 @@ describe("saved quality-trend measurements", () => {
     const key = qualityConfigurationKey(sample);
     expect(qualityChartPoints([], key, 7, now)).toEqual([]);
     expect(qualityChartPoints([run({ created_at: "not-a-date" })], key, 30, now)).toEqual([]);
-    expect(qualityChartPoints([run({ created_at: "2026-09-01T00:00:00Z" })], key, 30, now)).toEqual([]);
+    expect(qualityChartPoints([run({ created_at: "2026-09-01T00:00:00Z" })], key, 30, now)).toEqual(
+      [],
+    );
   });
 });

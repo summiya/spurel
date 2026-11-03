@@ -299,7 +299,6 @@ export function LiveOverviewPage() {
                 </p>
               ) : null}
             </Panel>
-
           </div>
 
           <div className="dashboard-grid">

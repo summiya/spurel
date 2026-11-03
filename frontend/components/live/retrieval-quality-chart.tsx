@@ -61,8 +61,7 @@ function QualityPlot({
   const last = points[points.length - 1];
   const fill =
     points.length >= 2
-      ? recall +
-        ` L${last.x.toFixed(2)} ${plotBottom} L${first.x.toFixed(2)} ${plotBottom} Z`
+      ? recall + ` L${last.x.toFixed(2)} ${plotBottom} L${first.x.toFixed(2)} ${plotBottom} Z`
       : "";
 
   return (
@@ -110,13 +109,7 @@ function QualityPlot({
         <text x={CHART_BOUNDS.left} y="184" fill="var(--subtle)" fontSize="10">
           {dateLabel(from)}
         </text>
-        <text
-          x={plotRight}
-          y="184"
-          textAnchor="end"
-          fill="var(--subtle)"
-          fontSize="10"
-        >
+        <text x={plotRight} y="184" textAnchor="end" fill="var(--subtle)" fontSize="10">
           {dateLabel(nowMs)}
         </text>
       </svg>
@@ -127,7 +120,9 @@ function QualityPlot({
         <span>
           <i className="legend-line purple" /> Precision @ K
         </span>
-        <span className="chart-period">{points.length} saved run(s) · {days} days</span>
+        <span className="chart-period">
+          {points.length} saved run(s) · {days} days
+        </span>
       </div>
       {points.length === 1 ? (
         <p className="text-hint">
@@ -140,7 +135,9 @@ function QualityPlot({
         identical; use Evaluation run comparison before interpreting a regression.
       </p>
       <ul className="sr-only" aria-label="Recorded run values in chart">
-        {points.map((point) => <li key={point.run.run_id}>{lineLabel(point)}</li>)}
+        {points.map((point) => (
+          <li key={point.run.run_id}>{lineLabel(point)}</li>
+        ))}
       </ul>
     </>
   );
@@ -173,9 +170,8 @@ export function RetrievalQualityChart({
     };
   }, [suppliedNowMs]);
   const nowMs = suppliedNowMs ?? measuredAt;
-  const points = activeConfig && nowMs !== null
-    ? qualityChartPoints(runs, activeConfig.key, days, nowMs)
-    : [];
+  const points =
+    activeConfig && nowMs !== null ? qualityChartPoints(runs, activeConfig.key, days, nowMs) : [];
 
   return (
     <Panel
@@ -225,7 +221,11 @@ export function RetrievalQualityChart({
           title="No evaluation dataset"
           description="Create a labeled dataset and run benchmarks to populate the quality graph."
           icon="chart"
-          action={<Link href="/evaluations" className="button ghost compact">Open evaluations</Link>}
+          action={
+            <Link href="/evaluations" className="button ghost compact">
+              Open evaluations
+            </Link>
+          }
         />
       ) : loading ? (
         <LoadingState label="Loading benchmark quality history" />
@@ -238,25 +238,43 @@ export function RetrievalQualityChart({
           title="No benchmark history yet"
           description="Uploading documents alone does not measure retrieval quality. Add labeled queries and run an evaluation."
           icon="chart"
-          action={<Link href="/evaluations" className="button ghost compact">Run evaluation</Link>}
+          action={
+            <Link href="/evaluations" className="button ghost compact">
+              Run evaluation
+            </Link>
+          }
         />
       ) : points.length === 0 ? (
         <EmptyState
           title={"No benchmark runs in the last " + days + " days"}
           description="The selected configuration has no recorded measurements in this time range. Try the other window or a different configuration."
           icon="chart"
-          action={<Link href="/evaluations" className="button ghost compact">Open evaluations</Link>}
+          action={
+            <Link href="/evaluations" className="button ghost compact">
+              Open evaluations
+            </Link>
+          }
         />
       ) : (
         <QualityPlot points={points} days={days} nowMs={nowMs} />
       )}
       {datasetName ? (
         <div className="quality-chart-actions">
-          <button type="button" className="button ghost compact" onClick={refresh} disabled={loading}>
+          <button
+            type="button"
+            className="button ghost compact"
+            onClick={refresh}
+            disabled={loading}
+          >
             Refresh history
           </button>
           {hasMore ? (
-            <button type="button" className="button ghost compact" onClick={loadMore} disabled={loadingMore}>
+            <button
+              type="button"
+              className="button ghost compact"
+              onClick={loadMore}
+              disabled={loadingMore}
+            >
               {loadingMore ? "Loading…" : "Load older runs"}
             </button>
           ) : null}

@@ -63,12 +63,20 @@ describe("Overview measured quality chart", () => {
         mean_precision_at_k: 0.4,
       }),
     ]);
-    expect(screen.getByRole("heading", { name: "Retrieval quality over time" })).toBeInTheDocument();
-    expect(screen.getByRole("img", { name: /Measured recall and precision over the last 7 days from 2 saved benchmark/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Retrieval quality over time" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("img", {
+        name: /Measured recall and precision over the last 7 days from 2 saved benchmark/i,
+      }),
+    ).toBeInTheDocument();
     expect(document.querySelectorAll(".quality-real-recall")).toHaveLength(1);
     expect(document.querySelectorAll(".quality-real-precision")).toHaveLength(1);
     expect(screen.getByText(/2 saved run\(s\)/)).toBeInTheDocument();
-    expect(screen.getByText(/Lines connect measurements, not daily estimates/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Lines connect measurements, not daily estimates/i),
+    ).toBeInTheDocument();
     expect(screen.queryByText("Sample · 7 days")).not.toBeInTheDocument();
   });
 
@@ -87,7 +95,9 @@ describe("Overview measured quality chart", () => {
     fireEvent.change(screen.getByRole("combobox", { name: "Chart time window" }), {
       target: { value: "30" },
     });
-    expect(screen.getByRole("img", { name: /over the last 30 days from 2 saved benchmark/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("img", { name: /over the last 30 days from 2 saved benchmark/i }),
+    ).toBeInTheDocument();
     expect(document.querySelectorAll(".quality-real-recall")).toHaveLength(1);
   });
 
@@ -110,11 +120,18 @@ describe("Overview measured quality chart", () => {
 
   it("keeps the panel visible without inventing points before labeled evaluations", () => {
     graph([]);
-    expect(screen.getByRole("heading", { name: "Retrieval quality over time" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Retrieval quality over time" }),
+    ).toBeInTheDocument();
     expect(screen.getByText("No benchmark history yet")).toBeInTheDocument();
-    expect(screen.getByText(/Uploading documents alone does not measure retrieval quality/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Uploading documents alone does not measure retrieval quality/i),
+    ).toBeInTheDocument();
     expect(screen.queryByRole("img", { name: /Measured recall/i })).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Run evaluation" })).toHaveAttribute("href", "/evaluations");
+    expect(screen.getByRole("link", { name: "Run evaluation" })).toHaveAttribute(
+      "href",
+      "/evaluations",
+    );
   });
 
   it("supports reading older saved pages without generating new evaluations", () => {

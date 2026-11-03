@@ -86,7 +86,8 @@ export function qualityRunsInWindow(
         run.mean_recall_at_k > 1 ||
         run.mean_precision_at_k < 0 ||
         run.mean_precision_at_k > 1
-      ) return false;
+      )
+        return false;
       unique.add(run.run_id);
       return true;
     })
@@ -117,6 +118,9 @@ export function qualityChartPoints(
 export function qualityPath(points: QualityPoint[], metric: "recallY" | "precisionY"): string {
   if (points.length < 2) return "";
   return points
-    .map((point, index) => `${index === 0 ? "M" : "L"}${point.x.toFixed(2)} ${point[metric].toFixed(2)}`)
+    .map(
+      (point, index) =>
+        `${index === 0 ? "M" : "L"}${point.x.toFixed(2)} ${point[metric].toFixed(2)}`,
+    )
     .join(" ");
 }

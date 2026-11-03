@@ -152,8 +152,14 @@ describe("Spurel live Overview", () => {
     expect(screen.getByText("Live FastAPI / PostgreSQL")).toBeInTheDocument();
     expect(screen.getByText("real retention policy")).toBeInTheDocument();
     expect(await screen.findByText("80.0%")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Retrieval quality over time" })).toBeInTheDocument();
-    expect(screen.getByRole("img", { name: /Measured recall and precision over the last 7 days from 1 saved benchmark/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Retrieval quality over time" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("img", {
+        name: /Measured recall and precision over the last 7 days from 1 saved benchmark/i,
+      }),
+    ).toBeInTheDocument();
     expect(screen.getByText("18.4 ms")).toBeInTheDocument();
     const indexedCard = screen.getByText("Indexed documents").closest(".metric-card");
     expect(indexedCard).not.toBeNull();
