@@ -26,6 +26,7 @@ class FakeStoredChunkReader:
         document_id: UUID,
         limit: int,
         offset: int,
+        chunk_version: int | None = None,
     ) -> Sequence[StoredDocumentChunk]:
         matches = [
             stored

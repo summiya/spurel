@@ -31,6 +31,8 @@ class DocumentChunkVersion:
     chunk_count: int
     created_at: datetime
     is_active: bool
+    status: str = "ready"
+    attempt_count: int = 0
 
 
 class DocumentVersionRepository(Protocol):

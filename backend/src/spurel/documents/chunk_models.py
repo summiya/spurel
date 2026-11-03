@@ -13,3 +13,12 @@ class StoredDocumentChunk:
     id: UUID
     document_id: UUID
     chunk: DocumentChunk
+
+
+@dataclass(frozen=True, slots=True)
+class StagedDocumentChunkSet:
+    """An existing active set or one exclusively claimed processing attempt."""
+
+    version: int
+    attempt_id: UUID | None
+    reused_active: bool

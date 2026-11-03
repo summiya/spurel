@@ -1,6 +1,6 @@
 """Application orchestration from persisted chunks to stored embeddings."""
 
-from collections.abc import Sequence
+from collections.abc import Awaitable, Callable, Sequence
 from dataclasses import dataclass
 from uuid import UUID
 
@@ -72,16 +72,22 @@ class DocumentEmbeddingPipeline:
         self,
         *,
         document_id: UUID,
+        chunk_version: int | None = None,
+        before_batch: Callable[[], Awaitable[None]] | None = None,
     ) -> DocumentEmbeddingPipelineResult:
         """Embed all persisted chunks for one document in bounded batches."""
         offset = 0
         embedded_chunk_count = 0
 
         while True:
+            if before_batch is not None:
+                await before_batch()
+
             chunks = await self._chunk_reader.list_stored_by_document(
                 document_id=document_id,
                 limit=self._batch_size,
                 offset=offset,
+                chunk_version=chunk_version,
             )
 
             if not chunks:

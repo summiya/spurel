@@ -67,6 +67,8 @@ class DocumentProcessingResponse(BaseModel):
     embedding_provider: str
     embedding_model: str
     embedding_dimensions: int
+    chunk_version: int = Field(default=1, ge=1)
+    reused_active_version: bool = False
 
 
 class DocumentChunkVersionResponse(BaseModel):

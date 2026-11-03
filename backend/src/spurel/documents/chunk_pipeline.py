@@ -15,6 +15,9 @@ class DocumentChunkPipelineResult:
     document_id: UUID
     knowledge_base_id: UUID
     chunk_count: int
+    version: int = 1
+    attempt_id: UUID | None = None
+    reused_active: bool = True
 
 
 class DocumentChunkPipeline:
@@ -45,7 +48,7 @@ class DocumentChunkPipeline:
 
         chunks = self._chunker.chunk(text=ingestion.parsed.text)
 
-        await self._chunk_service.replace_for_document(
+        staging = await self._chunk_service.replace_for_document(
             document_id=ingestion.document_id,
             chunks=chunks,
         )
@@ -54,4 +57,51 @@ class DocumentChunkPipeline:
             document_id=ingestion.document_id,
             knowledge_base_id=ingestion.knowledge_base_id,
             chunk_count=len(chunks),
+            version=staging.version,
+            attempt_id=staging.attempt_id,
+            reused_active=staging.reused_active,
+        )
+
+    async def promote_version(
+        self,
+        *,
+        document_id: UUID,
+        version: int,
+        attempt_id: UUID,
+        provider: str,
+        model: str,
+        dimensions: int,
+    ) -> None:
+        """Activate a staged version only after embedding coverage is verified."""
+        await self._chunk_service.promote_version(
+            document_id=document_id,
+            version=version,
+            attempt_id=attempt_id,
+            provider=provider,
+            model=model,
+            dimensions=dimensions,
+        )
+
+    async def fail_version(
+        self,
+        *,
+        document_id: UUID,
+        version: int,
+        attempt_id: UUID,
+    ) -> None:
+        """Fail a staged version without affecting its previous active index."""
+        await self._chunk_service.fail_version(
+            document_id=document_id, version=version, attempt_id=attempt_id
+        )
+
+    async def renew_version(
+        self,
+        *,
+        document_id: UUID,
+        version: int,
+        attempt_id: UUID,
+    ) -> None:
+        """Refresh staging ownership before an embedding batch."""
+        await self._chunk_service.renew_version(
+            document_id=document_id, version=version, attempt_id=attempt_id
         )

@@ -12,7 +12,11 @@ from spurel.documents.chunk_inspector import (
     ChunkInspectionPersistenceError,
     ChunkInspectorService,
 )
-from spurel.documents.chunk_ports import DocumentChunkPersistenceError
+from spurel.documents.chunk_ports import (
+    DocumentChunkPersistenceError,
+    DocumentChunkVersionIncompleteError,
+    DocumentProcessingConflictError,
+)
 from spurel.documents.chunking import DocumentChunkingError
 from spurel.documents.dependencies import (
     get_chunk_inspector_service,
@@ -370,6 +374,11 @@ async def process_document(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="document was not found",
         ) from exc
+    except DocumentProcessingConflictError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="document processing is already in progress or superseded",
+        ) from exc
     except (DocumentParseError, DocumentChunkingError) as exc:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -379,6 +388,7 @@ async def process_document(
         DocumentIngestionError,
         DocumentPersistenceError,
         DocumentChunkPersistenceError,
+        DocumentChunkVersionIncompleteError,
         ChunkEmbeddingPersistenceError,
         EmbeddingError,
         DocumentEmbeddingPipelineError,
@@ -396,4 +406,6 @@ async def process_document(
         embedding_provider=result.embedding_provider,
         embedding_model=result.embedding_model,
         embedding_dimensions=result.embedding_dimensions,
+        chunk_version=result.chunk_version,
+        reused_active_version=result.reused_active_version,
     )

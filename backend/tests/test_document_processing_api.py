@@ -70,6 +70,8 @@ def test_process_document_returns_complete_pipeline_summary() -> None:
         "embedding_provider": "openai",
         "embedding_model": "text-embedding-example",
         "embedding_dimensions": 1536,
+        "chunk_version": 1,
+        "reused_active_version": False,
     }
     assert service.last_call == (knowledge_base_id, document_id)
 

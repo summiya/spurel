@@ -103,6 +103,8 @@ def test_version_history_and_chunk_inspection_use_scoped_ids() -> None:
     assert versions.json()["items"][0]["version"] == 1
     assert versions.json()["items"][0]["chunk_count"] == 1
     assert versions.json()["items"][0]["is_active"] is True
+    assert versions.json()["items"][0]["status"] == "ready"
+    assert versions.json()["items"][0]["attempt_count"] == 0
 
     history = client.get(f"{base}/versions/1/chunks?limit=10&offset=0")
     assert history.status_code == 200

@@ -9,17 +9,23 @@ import hashlib
 import os
 from collections.abc import AsyncIterator, Sequence
 from contextlib import asynccontextmanager
+from datetime import UTC, datetime, timedelta
 from dataclasses import dataclass, field
 from pathlib import Path
 from uuid import UUID, uuid4
 
 import pytest
 from httpx import ASGITransport, AsyncClient
-from sqlalchemy import delete
+from sqlalchemy import delete, update
 from sqlalchemy.engine import make_url
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from spurel.documents.chunk_inspector import ChunkInspectorService
+from spurel.documents.chunk_ports import (
+    DocumentChunkVersionIncompleteError,
+    DocumentProcessingConflictError,
+)
+from spurel.documents.chunk_versions_persistence import DocumentChunkVersionRecord
 from spurel.documents.chunk_pipeline import DocumentChunkPipeline
 from spurel.documents.chunk_ports import DocumentChunkPersistenceError
 from spurel.documents.chunk_service import DocumentChunkService
@@ -43,7 +49,7 @@ from spurel.documents.storage import document_object_key
 from spurel.documents.upload_service import DocumentUploadService
 from spurel.documents.versions import DocumentVersionService
 from spurel.embeddings.chunk import ChunkEmbedding
-from spurel.embeddings.domain import EmbeddingBatch, EmbeddingVector
+from spurel.embeddings.domain import EmbeddingBatch, EmbeddingProviderError, EmbeddingVector
 from spurel.embeddings.pipeline import DocumentEmbeddingPipeline
 from spurel.embeddings.service import ChunkEmbeddingService
 from spurel.embeddings.sqlalchemy_repository import SqlAlchemyChunkEmbeddingRepository
@@ -180,6 +186,7 @@ def _processor(
     storage: LocalDocumentBlobStorage,
     provider: _DeterministicEmbeddings,
     chunk_size: int = 512,
+    batch_size: int = 256,
 ) -> DocumentProcessingService:
     documents = SqlAlchemyDocumentRepository(database.sessions)
     chunks = SqlAlchemyDocumentChunkRepository(database.sessions)
@@ -200,6 +207,7 @@ def _processor(
             chunk_reader=chunks,
             provider=provider,
             embedding_service=ChunkEmbeddingService(embeddings),
+            batch_size=batch_size,
         ),
     )
 
@@ -714,3 +722,292 @@ async def _version_round_trip(postgres_url: str, tmp_path: Path) -> None:
             )
             == 2
         )
+
+
+
+class _FailAfterOneBatch(_DeterministicEmbeddings):
+    """Simulate failure after one committed embedding batch."""
+
+    def __init__(self) -> None:
+        self.calls = 0
+
+    async def embed(self, texts: Sequence[str]) -> EmbeddingBatch:
+        self.calls += 1
+        if self.calls == 2:
+            raise EmbeddingProviderError("simulated embedding provider failure")
+        return await super().embed(texts)
+
+
+class _AlwaysFailEmbeddings(_DeterministicEmbeddings):
+    async def embed(self, texts: Sequence[str]) -> EmbeddingBatch:
+        raise EmbeddingProviderError("provider is unavailable")
+
+
+def test_failed_embeddings_do_not_publish_and_retry_preserves_staged_ids(
+    postgres_url: str, tmp_path: Path
+) -> None:
+    asyncio.run(_failed_embeddings_and_retry(postgres_url, tmp_path))
+
+
+async def _failed_embeddings_and_retry(postgres_url: str, tmp_path: Path) -> None:
+    async with _isolated_database(postgres_url) as database:
+        kb_id = await database.new_knowledge_base("Retryable document")
+        storage = LocalDocumentBlobStorage(tmp_path / "failed-retries")
+        provider = _DeterministicEmbeddings()
+        document_id = await _upload(
+            database,
+            storage,
+            kb_id,
+            "Refunds are available within thirty days. "
+            "Manager approval is mandatory for replacements. "
+            "Backups are maintained twice per day. "
+            "Refund requests always require confirmation.",
+        )
+        documents = SqlAlchemyDocumentRepository(database.sessions)
+        chunks = SqlAlchemyDocumentChunkRepository(database.sessions)
+        versions = DocumentVersionService(
+            SqlAlchemyDocumentVersionRepository(database.sessions)
+        )
+        await _processor(database, storage, provider).process(
+            knowledge_base_id=kb_id, document_id=document_id
+        )
+        active = await chunks.list_stored_by_document(document_id=document_id, limit=50, offset=0)
+        assert len(active) == 1
+        old_id = active[0].id
+
+        failing = _FailAfterOneBatch()
+        with pytest.raises(EmbeddingProviderError, match="simulated"):
+            await _processor(
+                database, storage, failing, chunk_size=42, batch_size=1
+            ).process(knowledge_base_id=kb_id, document_id=document_id)
+        assert failing.calls == 2
+        latest_document = await documents.get_by_id(
+            knowledge_base_id=kb_id, document_id=document_id
+        )
+        assert latest_document is not None
+        assert latest_document.active_chunk_version == 1
+
+        historical = await versions.list_versions(
+            knowledge_base_id=kb_id, document_id=document_id, limit=10, offset=0
+        )
+        assert [(item.version, item.status, item.is_active) for item in historical] == [
+            (2, "failed", False),
+            (1, "ready", True),
+        ]
+        failed_chunks = await versions.list_version_chunks(
+            knowledge_base_id=kb_id, document_id=document_id, version=2, limit=50, offset=0
+        )
+        failed_ids = {row.id for row in failed_chunks}
+        assert len(failed_ids) > 1
+        assert sum(row.embedding_count for row in failed_chunks) == 1
+
+        vectors, keywords, hybrid, _ = _retrievers(database, provider)
+        old_matches = await keywords.search(knowledge_base_id=kb_id, query="refund", limit=10)
+        assert [match.chunk_id for match in old_matches] == [old_id]
+        assert [row.id for row in await chunks.list_stored_by_document(
+            document_id=document_id, limit=50, offset=0
+        )] == [old_id]
+
+        retry = await _processor(
+            database, storage, _DeterministicEmbeddings(), chunk_size=42, batch_size=1
+        ).process(knowledge_base_id=kb_id, document_id=document_id)
+        assert retry.chunk_version == 2
+        assert retry.reused_active_version is False
+
+        after = await documents.get_by_id(knowledge_base_id=kb_id, document_id=document_id)
+        assert after is not None and after.active_chunk_version == 2
+        active_chunks = await chunks.list_stored_by_document(
+            document_id=document_id, limit=50, offset=0
+        )
+        assert {row.id for row in active_chunks} == failed_ids
+        history = await versions.list_versions(
+            knowledge_base_id=kb_id, document_id=document_id, limit=10, offset=0
+        )
+        assert history[0].status == "ready"
+        assert history[0].attempt_count == 2
+        assert history[0].is_active is True
+
+        # Only newly published chunks are searchable; old identity remains in history.
+        for results in (
+            await vectors.search(knowledge_base_id=kb_id, query="refund", limit=50),
+            await keywords.search(knowledge_base_id=kb_id, query="refund", limit=50),
+            await hybrid.search(
+                knowledge_base_id=kb_id, query="refund", limit=10, candidate_limit=50
+            ),
+        ):
+            assert results
+            assert old_id not in {row.chunk_id for row in results}
+            assert {row.chunk_id for row in results} <= failed_ids
+
+        assert (await versions.list_version_chunks(
+            knowledge_base_id=kb_id, document_id=document_id, version=1, limit=50, offset=0
+        ))[0].id == old_id
+
+
+def test_staged_version_cannot_publish_without_all_embeddings_and_is_fenced(
+    postgres_url: str, tmp_path: Path
+) -> None:
+    asyncio.run(_staging_fencing_and_expiration(postgres_url, tmp_path))
+
+
+async def _staging_fencing_and_expiration(postgres_url: str, tmp_path: Path) -> None:
+    async with _isolated_database(postgres_url) as database:
+        kb_id = await database.new_knowledge_base("Fenced staging")
+        storage = LocalDocumentBlobStorage(tmp_path / "fencing")
+        provider = _DeterministicEmbeddings()
+        content = (
+            "Refunds are available within thirty days. "
+            "A manager approves an exception if needed. "
+            "Backups are maintained every afternoon."
+        )
+        document_id = await _upload(database, storage, kb_id, content)
+        await _processor(database, storage, provider).process(
+            knowledge_base_id=kb_id, document_id=document_id
+        )
+        repository = SqlAlchemyDocumentChunkRepository(database.sessions)
+        version_chunks = FixedSizeDocumentChunker(chunk_size=40, overlap=0).chunk(text=content)
+        staging = await repository.replace_for_document(
+            document_id=document_id, chunks=version_chunks
+        )
+        assert staging.version == 2
+        assert staging.attempt_id is not None
+        assert staging.reused_active is False
+
+        with pytest.raises(DocumentChunkVersionIncompleteError):
+            await repository.promote_version(
+                document_id=document_id,
+                version=staging.version,
+                attempt_id=staging.attempt_id,
+                provider=provider.provider,
+                model=provider.model,
+                dimensions=provider.dimensions,
+            )
+
+        with pytest.raises(DocumentProcessingConflictError):
+            await repository.replace_for_document(
+                document_id=document_id, chunks=version_chunks
+            )
+
+        # Simulate a worker disappearing: recovery can reclaim after lease expiry.
+        async with database.sessions() as session:
+            async with session.begin():
+                await session.execute(
+                    update(DocumentChunkVersionRecord)
+                    .where(
+                        DocumentChunkVersionRecord.document_id == document_id,
+                        DocumentChunkVersionRecord.version == 2,
+                    )
+                    .values(lease_expires_at=datetime.now(UTC) - timedelta(minutes=1))
+                )
+        retry = await repository.replace_for_document(
+            document_id=document_id, chunks=version_chunks
+        )
+        assert retry.version == staging.version
+        assert retry.attempt_id is not None
+        assert retry.attempt_id != staging.attempt_id
+        with pytest.raises(DocumentProcessingConflictError):
+            await repository.promote_version(
+                document_id=document_id,
+                version=staging.version,
+                attempt_id=staging.attempt_id,
+                provider=provider.provider,
+                model=provider.model,
+                dimensions=provider.dimensions,
+            )
+        # A stale attempt may not mark a reclaimed attempt failed.
+        await repository.fail_version(
+            document_id=document_id,
+            version=staging.version,
+            attempt_id=staging.attempt_id,
+        )
+
+        published = await SqlAlchemyDocumentRepository(database.sessions).get_by_id(
+            knowledge_base_id=kb_id, document_id=document_id
+        )
+        assert published is not None
+        assert published.active_chunk_version == 1
+        history = await DocumentVersionService(
+            SqlAlchemyDocumentVersionRepository(database.sessions)
+        ).list_versions(
+            knowledge_base_id=kb_id, document_id=document_id, limit=10, offset=0
+        )
+        assert history[0].status == "processing"
+        assert history[0].attempt_count == 2
+
+        await DocumentEmbeddingPipeline(
+            chunk_reader=repository,
+            provider=provider,
+            embedding_service=ChunkEmbeddingService(
+                SqlAlchemyChunkEmbeddingRepository(database.sessions)
+            ),
+            batch_size=1,
+        ).run(
+            document_id=document_id,
+            chunk_version=retry.version,
+            before_batch=lambda: repository.renew_version(
+                document_id=document_id,
+                version=retry.version,
+                attempt_id=retry.attempt_id,
+            ),
+        )
+        await repository.promote_version(
+            document_id=document_id,
+            version=retry.version,
+            attempt_id=retry.attempt_id,
+            provider=provider.provider,
+            model=provider.model,
+            dimensions=provider.dimensions,
+        )
+        activated = await SqlAlchemyDocumentRepository(database.sessions).get_by_id(
+            knowledge_base_id=kb_id, document_id=document_id
+        )
+        assert activated is not None and activated.active_chunk_version == 2
+
+
+def test_failed_initial_index_is_invisible_until_successful_retry(
+    postgres_url: str, tmp_path: Path
+) -> None:
+    asyncio.run(_initial_index_failure_and_retry(postgres_url, tmp_path))
+
+
+async def _initial_index_failure_and_retry(postgres_url: str, tmp_path: Path) -> None:
+    async with _isolated_database(postgres_url) as database:
+        kb_id = await database.new_knowledge_base("First time indexing")
+        storage = LocalDocumentBlobStorage(tmp_path / "initial")
+        document_id = await _upload(database, storage, kb_id, "Refund policy for employees.")
+        with pytest.raises(EmbeddingProviderError):
+            await _processor(database, storage, _AlwaysFailEmbeddings()).process(
+                knowledge_base_id=kb_id, document_id=document_id
+            )
+
+        documents = SqlAlchemyDocumentRepository(database.sessions)
+        doc = await documents.get_by_id(knowledge_base_id=kb_id, document_id=document_id)
+        assert doc is not None and doc.active_chunk_version == 0
+        repository = SqlAlchemyDocumentChunkRepository(database.sessions)
+        assert not await repository.list_stored_by_document(
+            document_id=document_id, limit=10, offset=0
+        )
+        assert not await SqlAlchemyKeywordRetrievalRepository(
+            database.sessions
+        ).search(knowledge_base_id=kb_id, query="refund", limit=10)
+
+        versions = DocumentVersionService(
+            SqlAlchemyDocumentVersionRepository(database.sessions)
+        )
+        failed = await versions.list_versions(
+            knowledge_base_id=kb_id, document_id=document_id, limit=10, offset=0
+        )
+        assert len(failed) == 1
+        assert failed[0].version == 1
+        assert failed[0].status == "failed"
+
+        retry = await _processor(
+            database, storage, _DeterministicEmbeddings()
+        ).process(knowledge_base_id=kb_id, document_id=document_id)
+        assert retry.chunk_version == 1
+        assert (await documents.get_by_id(
+            knowledge_base_id=kb_id, document_id=document_id
+        )).active_chunk_version == 1
+        assert (await versions.list_versions(
+            knowledge_base_id=kb_id, document_id=document_id, limit=10, offset=0
+        ))[0].attempt_count == 2
