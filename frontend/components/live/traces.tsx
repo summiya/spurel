@@ -91,7 +91,10 @@ export function LiveTraceHistoryPage({ initialKnowledgeBaseId, initialTraceId }:
       ? snapshot.data
       : null;
   const compared =
-    comparison && base && first && second &&
+    comparison &&
+    base &&
+    first &&
+    second &&
     comparison.kb === base.id &&
     comparison.first === first.id &&
     comparison.second === second.id
