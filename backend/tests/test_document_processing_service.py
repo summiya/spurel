@@ -5,9 +5,11 @@ from uuid import UUID, uuid4
 
 import pytest
 
+from spurel.documents.chunk_options import ChunkStrategy, DocumentChunkOptions
 from spurel.documents.chunk_pipeline import DocumentChunkPipelineResult
 from spurel.documents.processing import DocumentProcessingService
 from spurel.embeddings.pipeline import DocumentEmbeddingPipelineResult
+from spurel.infrastructure.chunking.fixed import FixedSizeDocumentChunker
 
 
 @dataclass
@@ -228,3 +230,52 @@ def test_staged_processing_records_failure_without_promotion() -> None:
 
     assert embedding_pipeline.calls == [(document_id, 5)]
     assert chunk_pipeline.events == ["renew", "fail"]
+
+
+def test_processing_explicit_options_select_chunker_without_mutating_legacy_default() -> None:
+    knowledge_base_id = uuid4()
+    document_id = uuid4()
+
+    class ConfigurableFakeChunkPipeline(FakeChunkPipeline):
+        chosen_chunker: object | None = None
+
+        async def run(self, *, knowledge_base_id: UUID, document_id: UUID, chunker=None):
+            self.chosen_chunker = chunker
+            return await super().run(knowledge_base_id=knowledge_base_id, document_id=document_id)
+
+    chunk_pipeline = ConfigurableFakeChunkPipeline(
+        result=DocumentChunkPipelineResult(
+            document_id=document_id,
+            knowledge_base_id=knowledge_base_id,
+            chunk_count=1,
+        )
+    )
+    embedding_pipeline = FakeEmbeddingPipeline(
+        result=DocumentEmbeddingPipelineResult(
+            document_id=document_id,
+            provider="fake",
+            model="model",
+            dimensions=2,
+            embedded_chunk_count=1,
+        )
+    )
+    options = DocumentChunkOptions(strategy=ChunkStrategy.CHARACTERS, chunk_size=100, overlap=20)
+    service = DocumentProcessingService(
+        chunk_pipeline=chunk_pipeline,  # type: ignore[arg-type]
+        embedding_pipeline=embedding_pipeline,  # type: ignore[arg-type]
+        chunker_factory=lambda config: FixedSizeDocumentChunker(
+            chunk_size=config.chunk_size, overlap=config.overlap
+        ),
+    )
+
+    asyncio.run(
+        service.process(
+            knowledge_base_id=knowledge_base_id,
+            document_id=document_id,
+            chunk_options=options,
+        )
+    )
+    assert isinstance(chunk_pipeline.chosen_chunker, FixedSizeDocumentChunker)
+
+    asyncio.run(service.process(knowledge_base_id=knowledge_base_id, document_id=document_id))
+    assert chunk_pipeline.chosen_chunker is None

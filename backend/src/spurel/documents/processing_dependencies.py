@@ -26,6 +26,7 @@ from spurel.embeddings.service import ChunkEmbeddingService
 from spurel.embeddings.sqlalchemy_repository import (
     SqlAlchemyChunkEmbeddingRepository,
 )
+from spurel.infrastructure.chunking.factory import build_document_chunker
 from spurel.infrastructure.chunking.fixed import FixedSizeDocumentChunker
 from spurel.infrastructure.embeddings import OpenAIEmbeddingProvider
 from spurel.infrastructure.parsing.pdf import PdfDocumentParser
@@ -51,13 +52,9 @@ async def get_document_processing_service() -> AsyncIterator[DocumentProcessingS
     try:
         document_repository = SqlAlchemyDocumentRepository(async_session_factory)
         chunk_repository = SqlAlchemyDocumentChunkRepository(async_session_factory)
-        embedding_repository = SqlAlchemyChunkEmbeddingRepository(
-            async_session_factory
-        )
+        embedding_repository = SqlAlchemyChunkEmbeddingRepository(async_session_factory)
 
-        storage_root = Path(
-            os.getenv(LOCAL_STORAGE_ROOT_ENV, DEFAULT_LOCAL_STORAGE_ROOT)
-        )
+        storage_root = Path(os.getenv(LOCAL_STORAGE_ROOT_ENV, DEFAULT_LOCAL_STORAGE_ROOT))
         storage = LocalDocumentBlobStorage(storage_root)
 
         text_parser = TextDocumentParser()
@@ -91,6 +88,9 @@ async def get_document_processing_service() -> AsyncIterator[DocumentProcessingS
         yield DocumentProcessingService(
             chunk_pipeline=chunk_pipeline,
             embedding_pipeline=embedding_pipeline,
+            chunker_factory=lambda options: build_document_chunker(
+                options=options, model=config.model
+            ),
         )
     finally:
         await client.close()

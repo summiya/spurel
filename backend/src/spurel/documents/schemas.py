@@ -4,8 +4,14 @@ from datetime import datetime
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from spurel.documents.chunk_options import (
+    MAX_CHUNK_SIZE_TOKENS,
+    ChunkStrategy,
+    DocumentChunkOptions,
+)
+from spurel.documents.chunking import MAX_CHUNK_SIZE_CHARACTERS
 from spurel.documents.domain import DocumentMediaType
 
 
@@ -46,6 +52,8 @@ class ChunkInspectionResponse(BaseModel):
     end_offset: int
     has_embeddings: bool
     embedding_count: int
+    token_count: int | None = Field(default=None, ge=0)
+    tokenizer_encoding: str | None = None
 
 
 class ChunkInspectionListResponse(BaseModel):
@@ -54,6 +62,31 @@ class ChunkInspectionListResponse(BaseModel):
     items: list[ChunkInspectionResponse]
     limit: int
     offset: int
+
+
+class DocumentProcessingOptionsRequest(BaseModel):
+    """Explicit opt-in chunking controls; absent body retains legacy defaults."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    strategy: ChunkStrategy = ChunkStrategy.CHARACTERS
+    chunk_size: int = Field(default=1_000, strict=True, ge=1, le=MAX_CHUNK_SIZE_CHARACTERS)
+    overlap: int = Field(default=200, strict=True, ge=0, le=MAX_CHUNK_SIZE_CHARACTERS - 1)
+
+    @model_validator(mode="after")
+    def validate_chunking_bounds(self) -> "DocumentProcessingOptionsRequest":
+        if self.overlap >= self.chunk_size:
+            raise ValueError("overlap must be smaller than chunk size")
+        if self.strategy == ChunkStrategy.TOKENS and self.chunk_size > MAX_CHUNK_SIZE_TOKENS:
+            raise ValueError("token chunk size exceeds supported limit")
+        return self
+
+    def to_options(self) -> DocumentChunkOptions:
+        return DocumentChunkOptions(
+            strategy=self.strategy,
+            chunk_size=self.chunk_size,
+            overlap=self.overlap,
+        )
 
 
 class DocumentProcessingResponse(BaseModel):

@@ -13,6 +13,7 @@ from spurel.documents.ingestion_service import DocumentIngestionService
 from spurel.documents.parsing import DocumentParser, ParsedDocument
 from spurel.documents.ports import DocumentRepository
 from spurel.documents.storage import DocumentBlobStorage, document_object_key
+from spurel.infrastructure.chunking.fixed import FixedSizeDocumentChunker
 
 
 class FakeDocumentRepository(DocumentRepository):
@@ -252,3 +253,32 @@ def test_pipeline_does_not_persist_when_chunking_fails() -> None:
         )
 
     assert document.id not in chunk_repository.items
+
+
+def test_pipeline_can_opt_in_to_new_chunker_without_replacing_default() -> None:
+    content = b"abcdefghijklmnop"
+    document = Document.create(
+        knowledge_base_id=uuid4(),
+        filename="notes.txt",
+        media_type="text/plain",
+        size_bytes=len(content),
+    )
+    repository = FakeChunkRepository()
+    pipeline = _build_pipeline(
+        document=document,
+        content=content,
+        chunk_repository=repository,
+        chunker=FixedSizeDocumentChunker(chunk_size=8, overlap=2),
+    )
+    asyncio.run(
+        pipeline.run(
+            knowledge_base_id=document.knowledge_base_id,
+            document_id=document.id,
+            chunker=FixedSizeDocumentChunker(chunk_size=5, overlap=0),
+        )
+    )
+    assert repository.items[document.id][0].text == "abcde"
+
+    # The configured default chunker was not mutated by the opt-in run.
+    asyncio.run(pipeline.run(knowledge_base_id=document.knowledge_base_id, document_id=document.id))
+    assert repository.items[document.id][0].text == "abcdefgh"

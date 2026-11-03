@@ -5,6 +5,13 @@ import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } fro
 import { useRouter } from "next/navigation";
 
 import { Icon } from "@/components/icons";
+import {
+  DEFAULT_CHUNKING,
+  TOKEN_CHUNKING,
+  isLegacyChunking,
+  parseChunkingOptions,
+  type ChunkStrategy,
+} from "@/lib/chunking-options";
 import { EmptyState, ErrorState, LoadingState, PageHeading, Panel } from "@/components/ui";
 import { useDemoToast } from "@/components/workbench-shell";
 import { liveError, isPage, workspaceFetch } from "@/lib/live-client";
@@ -58,6 +65,10 @@ export function LiveKnowledgeBasesPage() {
   const [submittingError, setSubmittingError] = useState("");
   const [uploadBusy, setUploadBusy] = useState(false);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [chunkStrategy, setChunkStrategy] = useState<ChunkStrategy>("characters");
+  const [chunkSize, setChunkSize] = useState(DEFAULT_CHUNKING.chunk_size);
+  const [chunkOverlap, setChunkOverlap] = useState(DEFAULT_CHUNKING.overlap);
+
   const [actionError, setActionError] = useState("");
   const [search, setSearch] = useState("");
   const [loggingOut, setLoggingOut] = useState(false);
@@ -190,12 +201,35 @@ export function LiveKnowledgeBasesPage() {
 
   async function processDocument(document: LiveDocument) {
     if (!selectedId || processingId) return;
+    const options = parseChunkingOptions({
+      strategy: chunkStrategy,
+      chunk_size: chunkSize,
+      overlap: chunkOverlap,
+    });
+    if (!options) {
+      setActionError("Choose a valid chunk size and an overlap smaller than the size.");
+      return;
+    }
+    const legacy = isLegacyChunking(options);
+    if (
+      !legacy &&
+      !window.confirm(
+        `Reprocess ${document.filename} using ${options.chunk_size} ${chunkStrategy} per chunk and ${options.overlap} overlap? Embedding may incur OpenAI charges. The current active version remains available until processing succeeds.`,
+      )
+    )
+      return;
     setProcessingId(document.id);
     setActionError("");
     try {
       const result = await workspaceFetch<ProcessedDocument>(
         `/api/workspace/knowledge-bases/${selectedId}/documents/${document.id}/process`,
-        { method: "POST" },
+        legacy
+          ? { method: "POST" }
+          : {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(options),
+            },
       );
       setDocuments((current) =>
         current.map((item) =>
@@ -394,6 +428,73 @@ export function LiveKnowledgeBasesPage() {
               <Icon name="upload" size={15} /> {uploadBusy ? "Uploading…" : "Upload document"}
             </button>
           </form>
+          <div className="live-chunking-settings">
+            <div>
+              <strong>Chunking settings for the next processing run</strong>
+              <p className="text-hint">
+                Existing character chunking stays the default. Switch to token-based windows only
+                when you want model-aware token sizes. Changing settings does not modify any
+                document until you click Process or Reprocess.
+              </p>
+            </div>
+            <div className="live-chunking-controls">
+              <div>
+                <label htmlFor="chunk-strategy" className="field-label">
+                  Chunking method
+                </label>
+                <select
+                  id="chunk-strategy"
+                  className="select-control"
+                  value={chunkStrategy}
+                  onChange={(event) => {
+                    const strategy = event.target.value as ChunkStrategy;
+                    const defaults = strategy === "tokens" ? TOKEN_CHUNKING : DEFAULT_CHUNKING;
+                    setChunkStrategy(strategy);
+                    setChunkSize(defaults.chunk_size);
+                    setChunkOverlap(defaults.overlap);
+                  }}
+                >
+                  <option value="characters">Characters · existing default</option>
+                  <option value="tokens">Model tokens · opt-in</option>
+                </select>
+              </div>
+              <div>
+                <label htmlFor="chunk-size" className="field-label">
+                  Chunk size ({chunkStrategy === "tokens" ? "tokens" : "characters"})
+                </label>
+                <input
+                  id="chunk-size"
+                  className="input-control"
+                  type="number"
+                  min={1}
+                  max={chunkStrategy === "tokens" ? 2000 : 20000}
+                  value={chunkSize}
+                  onChange={(event) => setChunkSize(Number(event.target.value))}
+                />
+              </div>
+              <div>
+                <label htmlFor="chunk-overlap" className="field-label">
+                  Overlap ({chunkStrategy === "tokens" ? "tokens" : "characters"})
+                </label>
+                <input
+                  id="chunk-overlap"
+                  className="input-control"
+                  type="number"
+                  min={0}
+                  max={Math.max(0, chunkSize - 1)}
+                  value={chunkOverlap}
+                  onChange={(event) => setChunkOverlap(Number(event.target.value))}
+                />
+              </div>
+            </div>
+            {chunkStrategy === "tokens" ? (
+              <p className="text-hint">
+                Token counts use the tokenizer for the configured embedding model. A
+                20,000-character source-span safety cap also applies. Reprocessing creates a new
+                staged version when chunk boundaries change; older versions remain inspectable.
+              </p>
+            ) : null}
+          </div>
           {actionError ? (
             <div className="inline-notice live-error" role="alert">
               {actionError}

@@ -1,9 +1,12 @@
 """Application orchestration for complete document processing."""
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from uuid import UUID
 
+from spurel.documents.chunk_options import DocumentChunkOptions
 from spurel.documents.chunk_pipeline import DocumentChunkPipeline
+from spurel.documents.chunking import DocumentChunker, DocumentChunkingConfigError
 from spurel.embeddings.pipeline import DocumentEmbeddingPipeline
 
 
@@ -30,20 +33,30 @@ class DocumentProcessingService:
         *,
         chunk_pipeline: DocumentChunkPipeline,
         embedding_pipeline: DocumentEmbeddingPipeline,
+        chunker_factory: Callable[[DocumentChunkOptions], DocumentChunker] | None = None,
     ) -> None:
         self._chunk_pipeline = chunk_pipeline
         self._embedding_pipeline = embedding_pipeline
+        self._chunker_factory = chunker_factory
 
     async def process(
         self,
         *,
         knowledge_base_id: UUID,
         document_id: UUID,
+        chunk_options: DocumentChunkOptions | None = None,
     ) -> DocumentProcessingResult:
         """Parse, chunk, persist, embed, and index one document."""
+        run_options: dict[str, DocumentChunker] = {}
+        if chunk_options is not None:
+            if self._chunker_factory is None:
+                raise DocumentChunkingConfigError("processing chunker is unavailable")
+            run_options["chunker"] = self._chunker_factory(chunk_options)
+
         chunk_result = await self._chunk_pipeline.run(
             knowledge_base_id=knowledge_base_id,
             document_id=document_id,
+            **run_options,
         )
 
         try:

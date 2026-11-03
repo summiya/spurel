@@ -198,6 +198,41 @@ initiated and no global totals, p95 or other unmeasured statistics are invented.
 The overview is intentionally separate from SP-16's unbuilt backend token-aware
 chunking.
 
+## SP-16: opt-in token-aware processing (in review)
+
+The Knowledge Bases document panel keeps its existing **Process / Reprocess**
+buttons. New adjacent chunk settings permit switching from the unchanged
+character default (1,000 characters / 200 overlap) to **model tokens**
+(default 512 / 64). Both strategies validate chunk size and overlap. Custom
+settings require explicit user confirmation because reprocessing may incur
+embedding API charges. An unchanged no-body POST preserves the legacy
+processing code path.
+
+When enabled, the backend runs a `tiktoken` encoding for the configured
+`SPUREL_EMBEDDING_MODEL`. Token windows fit the requested token count and
+also the existing 20,000-character DB safety cap; overlap is bounded in
+model tokens. Exact Unicode/source character offsets and old chunk versions
+remain untouched. A new version is staged only if chunk boundaries/content
+differ; it becomes active only after embedding coverage is validated. Failed
+reprocessing does not replace the current active index.
+
+The Chunk Inspector adds read-only `token_count` and `tokenizer_encoding`
+to both active and historical chunk views. These counts are calculated when
+reading for the **currently configured embedding model**, not persisted at
+indexing time, so the displayed count for a historic version can change
+when the model encoding changes. Unknown tokenizer models show an unavailable
+count; the system does not estimate tokens from word/character heuristics.
+The `tiktoken` encoding cache may need internet access on first use.
+No provider API request is made solely for token counting.
+
+The new backend processing request body is optional:
+```json
+{"strategy":"tokens","chunk_size":512,"overlap":64}
+```
+The frontend allows only these keys and values, and rejects invalid or
+cross-origin requests before contacting FastAPI. Processing requires normal
+embedding credentials; only explicit Process / Reprocess triggers embedding.
+
 ## Environment and secrets
 
 `make init` copies `.env.example` to the ignored `.env` on first use, generates a strong random `SPUREL_API_TOKEN`, and restricts its permissions to the file owner on POSIX systems. It **does not replace** an existing valid token or provider key. Do not print, commit, or share your `.env`.

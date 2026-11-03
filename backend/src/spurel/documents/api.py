@@ -6,7 +6,7 @@ from collections.abc import AsyncIterator
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, HTTPException, Path, Query, UploadFile, status
+from fastapi import APIRouter, Body, Depends, File, HTTPException, Path, Query, UploadFile, status
 
 from spurel.documents.chunk_inspector import (
     ChunkInspectionPersistenceError,
@@ -46,12 +46,14 @@ from spurel.documents.schemas import (
     DocumentChunkVersionListResponse,
     DocumentChunkVersionResponse,
     DocumentListResponse,
+    DocumentProcessingOptionsRequest,
     DocumentProcessingResponse,
     DocumentResponse,
     DocumentUploadResponse,
     VersionedChunkInspectionListResponse,
 )
 from spurel.documents.service import DocumentService
+from spurel.documents.token_inspection import measured_tokens
 from spurel.documents.upload_service import (
     DocumentUploadError,
     DocumentUploadService,
@@ -108,6 +110,23 @@ def _to_document_response(document) -> DocumentResponse:
         size_bytes=document.size_bytes,
         created_at=document.created_at,
         active_chunk_version=document.active_chunk_version,
+    )
+
+
+def _to_chunk_inspection_response(item) -> ChunkInspectionResponse:
+    """Expose exact current-model token counts without altering stored versions."""
+    token_count, encoding = measured_tokens(item.text)
+    return ChunkInspectionResponse(
+        id=item.id,
+        document_id=item.document_id,
+        index=item.index,
+        text=item.text,
+        start_offset=item.start_offset,
+        end_offset=item.end_offset,
+        has_embeddings=item.has_embeddings,
+        embedding_count=item.embedding_count,
+        token_count=token_count,
+        tokenizer_encoding=encoding,
     )
 
 
@@ -293,19 +312,7 @@ async def inspect_document_version_chunks(
         ) from exc
 
     return VersionedChunkInspectionListResponse(
-        items=[
-            ChunkInspectionResponse(
-                id=item.id,
-                document_id=item.document_id,
-                index=item.index,
-                text=item.text,
-                start_offset=item.start_offset,
-                end_offset=item.end_offset,
-                has_embeddings=item.has_embeddings,
-                embedding_count=item.embedding_count,
-            )
-            for item in chunks
-        ],
+        items=[_to_chunk_inspection_response(item) for item in chunks],
         version=version,
         limit=limit,
         offset=offset,
@@ -338,19 +345,7 @@ async def inspect_document_chunks(
         ) from exc
 
     return ChunkInspectionListResponse(
-        items=[
-            ChunkInspectionResponse(
-                id=item.id,
-                document_id=item.document_id,
-                index=item.index,
-                text=item.text,
-                start_offset=item.start_offset,
-                end_offset=item.end_offset,
-                has_embeddings=item.has_embeddings,
-                embedding_count=item.embedding_count,
-            )
-            for item in chunks
-        ],
+        items=[_to_chunk_inspection_response(item) for item in chunks],
         limit=limit,
         offset=offset,
     )
@@ -364,12 +359,15 @@ async def process_document(
     knowledge_base_id: UUID,
     document_id: UUID,
     service: DocumentProcessingServiceDependency,
+    payload: Annotated[DocumentProcessingOptionsRequest | None, Body()] = None,
 ) -> DocumentProcessingResponse:
     """Parse, chunk, embed, and index one persisted document."""
     try:
+        options = {} if payload is None else {"chunk_options": payload.to_options()}
         result = await service.process(
             knowledge_base_id=knowledge_base_id,
             document_id=document_id,
+            **options,
         )
     except DocumentNotFoundError as exc:
         raise HTTPException(

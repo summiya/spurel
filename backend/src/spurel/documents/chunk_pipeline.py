@@ -39,6 +39,7 @@ class DocumentChunkPipeline:
         *,
         knowledge_base_id: UUID,
         document_id: UUID,
+        chunker: DocumentChunker | None = None,
     ) -> DocumentChunkPipelineResult:
         """Run the document through parse, chunk, and persistence stages."""
         ingestion = await self._ingestion_service.ingest(
@@ -46,7 +47,7 @@ class DocumentChunkPipeline:
             document_id=document_id,
         )
 
-        chunks = self._chunker.chunk(text=ingestion.parsed.text)
+        chunks = (chunker or self._chunker).chunk(text=ingestion.parsed.text)
 
         staging = await self._chunk_service.replace_for_document(
             document_id=ingestion.document_id,

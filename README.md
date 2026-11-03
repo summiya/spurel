@@ -118,6 +118,28 @@ loaded where supported; link through to Evaluations for run comparisons.
 No database migrations, new provider adapters or backend changes are required.
 This work is intentionally separate from planned SP-16 token-aware chunking.
 
+## SP-16: opt-in token-aware chunking (in review)
+
+Spurel's existing character chunking remains the default: **1,000 characters**
+with **200-character overlap**, with the same processing button and version
+history. The SP-16 branch adds a `Model tokens` option alongside those
+controls in the Knowledge Bases document panel. Token size defaults to
+**512**, overlap to **64**, both adjustable within validated bounds.
+
+The token mode uses `tiktoken` to count the **configured OpenAI embedding
+model's tokens** locally (no provider call just to count), and retains exact
+original-source character offsets, Unicode text, immutable version history
+and the safe staged-embedding/promotion lifecycle. Reprocessing may incur
+embedding API charges, and custom settings always require confirmation.
+The Chunk Inspector shows exact token counts with their **current embedding
+model encoding**; historical display counts are recomputed for that encoding,
+not claimed as immutable historical tokenizer provenance.
+
+The backend processing endpoint accepts optional JSON
+`{"strategy":"tokens","chunk_size":512,"overlap":64}`; bodyless
+POSTs keep the original character defaults. This integration adds no database
+migration and does not delete old versions or automatically reindex documents.
+
 ## Inspect real chunks (SP-11)
 
 Once signed in, open [Chunk Inspector](http://localhost:3000/chunks) or select

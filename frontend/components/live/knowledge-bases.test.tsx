@@ -124,6 +124,51 @@ describe("live source management", () => {
     expect(mocks.notify).toHaveBeenCalledWith("Knowledge base created in PostgreSQL.");
   });
 
+  it("keeps legacy character settings by default and opts into token sizing explicitly", async () => {
+    vi.stubGlobal(
+      "confirm",
+      vi.fn(() => true),
+    );
+    render(<LiveKnowledgeBasesPage />);
+    await screen.findByText("readme.txt");
+    const strategy = screen.getByRole("combobox", { name: "Chunking method" });
+    expect(strategy).toHaveValue("characters");
+    expect(screen.getByRole("spinbutton", { name: /Chunk size/ })).toHaveValue(1000);
+    fireEvent.change(strategy, { target: { value: "tokens" } });
+    expect(screen.getByRole("spinbutton", { name: /Chunk size/ })).toHaveValue(512);
+    expect(screen.getByRole("spinbutton", { name: /Overlap/ })).toHaveValue(64);
+    fireEvent.click(screen.getByRole("button", { name: /^Process$/i }));
+    await screen.findByText(/Indexed · version 1/);
+    expect(window.confirm).toHaveBeenCalledOnce();
+    const call = vi
+      .mocked(fetch)
+      .mock.calls.find(
+        ([url, opts]) => String(url).endsWith("/process") && opts?.method === "POST",
+      );
+    expect(JSON.parse(String(call?.[1]?.body))).toEqual({
+      strategy: "tokens",
+      chunk_size: 512,
+      overlap: 64,
+    });
+  });
+
+  it("does not process when the opt-in confirmation is declined", async () => {
+    vi.stubGlobal(
+      "confirm",
+      vi.fn(() => false),
+    );
+    render(<LiveKnowledgeBasesPage />);
+    await screen.findByText("readme.txt");
+    fireEvent.change(screen.getByRole("combobox", { name: "Chunking method" }), {
+      target: { value: "tokens" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /^Process$/i }));
+    expect(window.confirm).toHaveBeenCalledOnce();
+    expect(vi.mocked(fetch).mock.calls.some(([url]) => String(url).endsWith("/process"))).toBe(
+      false,
+    );
+  });
+
   it("processes a document and shows the persisted active version", async () => {
     render(<LiveKnowledgeBasesPage />);
     await screen.findByText("readme.txt");

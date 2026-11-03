@@ -3500,3 +3500,34 @@ html[data-motion="reduce"] *::after {
     flex-wrap: wrap;
   }
 }
+
+/* SP-16: additive processing options; preserves existing source document list. */
+.live-chunking-settings {
+  display: grid;
+  gap: 13px;
+  padding: 14px;
+  margin: 16px 0;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel-alt);
+}
+.live-chunking-settings > div > strong {
+  font-size: 12px;
+}
+.live-chunking-settings .text-hint {
+  line-height: 1.6;
+  margin: 6px 0 0;
+}
+.live-chunking-controls {
+  display: grid;
+  grid-template-columns: minmax(210px, 2fr) repeat(2, minmax(115px, 1fr));
+  gap: 12px;
+}
+.live-chunking-controls > div {
+  min-width: 0;
+}
+@media (max-width: 720px) {
+  .live-chunking-controls {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
