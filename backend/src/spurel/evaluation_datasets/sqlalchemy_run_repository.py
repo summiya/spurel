@@ -25,19 +25,19 @@ class SqlAlchemyEvaluationRunRepository:
         """Persist one run and all case snapshots in one transaction."""
         run_record = EvaluationRunRecord.from_domain(run)
         case_records = [
-            EvaluationRunCaseRecord.from_domain(run_id=run.id, case=case)
-            for case in run.cases
+            EvaluationRunCaseRecord.from_domain(run_id=run.id, case=case) for case in run.cases
         ]
 
         try:
             async with self._session_factory() as session:
                 async with session.begin():
                     session.add(run_record)
+                    # No ORM relationship links these models; flush the parent
+                    # before inserting child snapshots with run_id foreign keys.
+                    await session.flush()
                     session.add_all(case_records)
         except SQLAlchemyError as exc:
-            raise EvaluationRunPersistenceError(
-                "failed to persist evaluation run"
-            ) from exc
+            raise EvaluationRunPersistenceError("failed to persist evaluation run") from exc
 
     async def list_by_dataset(
         self,
@@ -66,9 +66,7 @@ class SqlAlchemyEvaluationRunRepository:
             async with self._session_factory() as session:
                 records = (await session.execute(statement)).scalars().all()
         except SQLAlchemyError as exc:
-            raise EvaluationRunPersistenceError(
-                "failed to list evaluation runs"
-            ) from exc
+            raise EvaluationRunPersistenceError("failed to list evaluation runs") from exc
 
         return tuple(record.to_summary() for record in records)
 
@@ -93,35 +91,22 @@ class SqlAlchemyEvaluationRunRepository:
 
         try:
             async with self._session_factory() as session:
-                record = (
-                    await session.execute(run_statement)
-                ).scalar_one_or_none()
+                record = (await session.execute(run_statement)).scalar_one_or_none()
                 if record is None:
                     return None
 
-                case_records = (
-                    await session.execute(cases_statement)
-                ).scalars().all()
+                case_records = (await session.execute(cases_statement)).scalars().all()
         except SQLAlchemyError as exc:
-            raise EvaluationRunPersistenceError(
-                "failed to load evaluation run"
-            ) from exc
+            raise EvaluationRunPersistenceError("failed to load evaluation run") from exc
 
         if len(case_records) != record.case_count:
-            raise EvaluationRunPersistenceError(
-                "evaluation run case snapshot is incomplete"
-            )
+            raise EvaluationRunPersistenceError("evaluation run case snapshot is incomplete")
 
         expected_positions = list(range(1, record.case_count + 1))
         actual_positions = [case_record.position for case_record in case_records]
         if actual_positions != expected_positions:
-            raise EvaluationRunPersistenceError(
-                "evaluation run case snapshot order is invalid"
-            )
+            raise EvaluationRunPersistenceError("evaluation run case snapshot order is invalid")
 
         return record.to_domain(
-            cases=tuple(
-                case_record.to_domain(cutoff=record.top_k)
-                for case_record in case_records
-            )
+            cases=tuple(case_record.to_domain(cutoff=record.top_k) for case_record in case_records)
         )
