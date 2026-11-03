@@ -79,9 +79,7 @@ class DocumentChunkRecord(Base):
         nullable=False,
     )
     chunk_index: Mapped[int] = mapped_column(Integer, nullable=False)
-    chunk_version: Mapped[int] = mapped_column(
-        Integer, nullable=False, server_default=text("1")
-    )
+    chunk_version: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("1"))
     text: Mapped[str] = mapped_column(Text, nullable=False)
     search_vector: Mapped[str] = mapped_column(
         TSVECTOR,

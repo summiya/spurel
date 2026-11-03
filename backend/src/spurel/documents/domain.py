@@ -34,9 +34,7 @@ class DocumentMediaType(StrEnum):
         try:
             return cls(value.strip().lower())
         except ValueError as exc:
-            raise UnsupportedDocumentMediaTypeError(
-                "document media type is not supported"
-            ) from exc
+            raise UnsupportedDocumentMediaTypeError("document media type is not supported") from exc
 
 
 @dataclass(frozen=True, slots=True)

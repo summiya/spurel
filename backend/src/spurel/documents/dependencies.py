@@ -41,6 +41,4 @@ def get_document_upload_service() -> DocumentUploadService:
 
 def get_document_version_service() -> DocumentVersionService:
     """Build read-only immutable chunk history access."""
-    return DocumentVersionService(
-        SqlAlchemyDocumentVersionRepository(async_session_factory)
-    )
+    return DocumentVersionService(SqlAlchemyDocumentVersionRepository(async_session_factory))

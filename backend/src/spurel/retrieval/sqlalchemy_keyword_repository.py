@@ -67,9 +67,7 @@ class SqlAlchemyKeywordRetrievalRepository:
             async with self._session_factory() as session:
                 rows = (await session.execute(statement)).all()
         except SQLAlchemyError as exc:
-            raise KeywordRetrievalRepositoryError(
-                "keyword retrieval failed"
-            ) from exc
+            raise KeywordRetrievalRepositoryError("keyword retrieval failed") from exc
 
         return tuple(
             KeywordRetrievalMatch(

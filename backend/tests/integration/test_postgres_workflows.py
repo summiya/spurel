@@ -573,9 +573,7 @@ async def _version_round_trip(postgres_url: str, tmp_path: Path) -> None:
         versions = DocumentVersionService(version_repo)
 
         await processor.process(knowledge_base_id=kb_id, document_id=doc_id)
-        first = await chunks_repo.list_stored_by_document(
-            document_id=doc_id, limit=50, offset=0
-        )
+        first = await chunks_repo.list_stored_by_document(document_id=doc_id, limit=50, offset=0)
         assert len(first) == 1
         original_id = first[0].id
         document = await SqlAlchemyDocumentRepository(database.sessions).get_by_id(
@@ -588,9 +586,7 @@ async def _version_round_trip(postgres_url: str, tmp_path: Path) -> None:
         evaluations = EvaluationDatasetService(
             SqlAlchemyEvaluationDatasetRepository(database.sessions)
         )
-        dataset = await evaluations.create_dataset(
-            knowledge_base_id=kb_id, name="Versioned labels"
-        )
+        dataset = await evaluations.create_dataset(knowledge_base_id=kb_id, name="Versioned labels")
         labeled = await evaluations.add_case(
             knowledge_base_id=kb_id,
             dataset_id=dataset.id,
@@ -600,15 +596,16 @@ async def _version_round_trip(postgres_url: str, tmp_path: Path) -> None:
 
         # Processing the same data and chunk boundaries must not replace IDs.
         await processor.process(knowledge_base_id=kb_id, document_id=doc_id)
-        same = await chunks_repo.list_stored_by_document(
-            document_id=doc_id, limit=50, offset=0
-        )
+        same = await chunks_repo.list_stored_by_document(document_id=doc_id, limit=50, offset=0)
         assert [row.id for row in same] == [original_id]
-        assert len(
-            await versions.list_versions(
-                knowledge_base_id=kb_id, document_id=doc_id, limit=50, offset=0
+        assert (
+            len(
+                await versions.list_versions(
+                    knowledge_base_id=kb_id, document_id=doc_id, limit=50, offset=0
+                )
             )
-        ) == 1
+            == 1
+        )
 
         # A new chunking strategy creates a new version without deleting old IDs.
         changed_processor = _processor(database, storage, provider, chunk_size=48)
@@ -659,17 +656,13 @@ async def _version_round_trip(postgres_url: str, tmp_path: Path) -> None:
         ):
             assert matches
             assert original_id not in {item.chunk_id for item in matches}
-            assert {item.chunk_id for item in matches} <= {
-                item.id for item in new_chunks
-            }
+            assert {item.chunk_id for item in matches} <= {item.id for item in new_chunks}
 
         # Public history is explicitly read-only and cannot cross KBs.
         app = create_app()
         app.dependency_overrides[get_document_version_service] = lambda: versions
         headers = {"Authorization": f"Bearer {_TEST_TOKEN}"}
-        async with AsyncClient(
-            transport=ASGITransport(app=app), base_url="http://test"
-        ) as client:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             base = f"/knowledge-bases/{kb_id}/documents/{doc_id}"
             response = await client.get(f"{base}/versions", headers=headers)
             assert response.status_code == 200
@@ -692,15 +685,16 @@ async def _version_round_trip(postgres_url: str, tmp_path: Path) -> None:
 
         # Identical second-version reprocessing is idempotent too.
         await changed_processor.process(knowledge_base_id=kb_id, document_id=doc_id)
-        again = await chunks_repo.list_stored_by_document(
-            document_id=doc_id, limit=50, offset=0
-        )
+        again = await chunks_repo.list_stored_by_document(document_id=doc_id, limit=50, offset=0)
         assert [row.id for row in again] == [row.id for row in new_chunks]
-        assert len(
-            await versions.list_versions(
-                knowledge_base_id=kb_id, document_id=doc_id, limit=50, offset=0
+        assert (
+            len(
+                await versions.list_versions(
+                    knowledge_base_id=kb_id, document_id=doc_id, limit=50, offset=0
+                )
             )
-        ) == 2
+            == 2
+        )
 
         # Concurrent identical writes are serialized by the parent document lock.
         concurrent_chunks = tuple(row.chunk for row in again)
@@ -712,8 +706,11 @@ async def _version_round_trip(postgres_url: str, tmp_path: Path) -> None:
             document_id=doc_id, limit=50, offset=0
         )
         assert [row.id for row in after_concurrent] == [row.id for row in again]
-        assert len(
-            await versions.list_versions(
-                knowledge_base_id=kb_id, document_id=doc_id, limit=50, offset=0
+        assert (
+            len(
+                await versions.list_versions(
+                    knowledge_base_id=kb_id, document_id=doc_id, limit=50, offset=0
+                )
             )
-        ) == 2
+            == 2
+        )

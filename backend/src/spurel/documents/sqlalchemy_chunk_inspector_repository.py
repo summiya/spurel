@@ -67,9 +67,7 @@ class SqlAlchemyChunkInspectorRepository:
             async with self._session_factory() as session:
                 rows = (await session.execute(statement)).all()
         except SQLAlchemyError as exc:
-            raise ChunkInspectionPersistenceError(
-                "failed to inspect document chunks"
-            ) from exc
+            raise ChunkInspectionPersistenceError("failed to inspect document chunks") from exc
 
         return tuple(
             ChunkInspectionItem(
