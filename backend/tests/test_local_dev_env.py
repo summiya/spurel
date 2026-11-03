@@ -58,9 +58,7 @@ def test_bootstrap_does_not_overwrite_existing_secrets(tmp_path: Path) -> None:
     "token",
     ["short", "A" * 31, "A" * 32 + " ", "A" * 32 + "\t"],
 )
-def test_bootstrap_refuses_weak_or_whitespace_tokens(
-    tmp_path: Path, token: str
-) -> None:
+def test_bootstrap_refuses_weak_or_whitespace_tokens(tmp_path: Path, token: str) -> None:
     _template(tmp_path)
     original = f"SPUREL_API_TOKEN={token}\nOPENAI_API_KEY=existing-secret\n"
     target = tmp_path / ".env"

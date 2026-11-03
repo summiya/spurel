@@ -12,7 +12,8 @@ USER node
 RUN npm install --no-audit --no-fund
 
 COPY --chown=node:node . ./
-RUN mkdir -p .next
+# .next is a named volume; allow the host-matching dev user to write to it.
+RUN mkdir -p .next && chmod 0777 .next
 
 EXPOSE 3000
 CMD ["npm", "run", "dev", "--", "--hostname", "0.0.0.0"]

@@ -80,7 +80,11 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+    # Match the host's source-file owner for Next.js tsconfig updates on Linux.
+    # Make provides these values; the defaults suit most Linux workstations.
+    user: "${SPUREL_HOST_UID:-1000}:${SPUREL_HOST_GID:-1000}"
     environment:
+      HOME: /tmp
       NEXT_TELEMETRY_DISABLED: "1"
       WATCHPACK_POLLING: "true"
     ports:

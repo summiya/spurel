@@ -89,6 +89,12 @@ Alembic safely after pulling newer migrations, and `make backend` /
 set `SPUREL_ENABLE_DOCS=1` in `.env` and restart via `make up`; it is
 disabled by default.
 
+**Host file permissions:** `make up` passes your UID/GID to the
+frontend container so Next.js can update bind-mounted TypeScript files
+without taking ownership as root. Prefer the Make targets instead of
+running `docker compose up` manually; direct Compose users may need to
+set `SPUREL_HOST_UID` and `SPUREL_HOST_GID` themselves.
+
 **Environment behavior:** Compose loads `.env`, then overrides the
 backend's `DATABASE_URL` to use the service hostname `postgres`.
 `DATABASE_URL` in `.env.example` uses `localhost` for optional host-based

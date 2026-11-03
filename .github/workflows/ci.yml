@@ -361,10 +361,10 @@ jobs:
         run: docker compose --env-file .env config --quiet
 
       - name: Build and start full development stack
-        run: docker compose --env-file .env up --detach --build --wait --wait-timeout 240
+        run: make up
 
       - name: Smoke-test migrated database, bearer-protected API and frontend
-        run: python3 scripts/check_dev_stack.py
+        run: make status
 
       - name: Inspect service logs on failure
         if: failure()

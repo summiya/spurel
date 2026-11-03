@@ -1,6 +1,7 @@
 .PHONY: init up down ps logs migrate backend frontend status
 
-COMPOSE := docker compose --env-file .env
+# Pass the local file owner's UID/GID for bind-mounted Next.js sources.
+COMPOSE := env SPUREL_HOST_UID=$(shell id -u) SPUREL_HOST_GID=$(shell id -g) docker compose --env-file .env
 
 init:
 	python3 scripts/init_dev_env.py
