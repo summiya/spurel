@@ -18,6 +18,13 @@ depends_on: str | Sequence[str] | None = None
 
 def upgrade() -> None:
     """Create append-only baseline promotion audit snapshots."""
+    # Alembic defaults to VARCHAR(32) for alembic_version.version_num.
+    # This revision identifier exceeds that limit: widen the column before
+    # Alembic writes the new revision after upgrade() returns.
+    op.execute(
+        "ALTER TABLE alembic_version ALTER COLUMN version_num TYPE VARCHAR(64)"
+    )
+
     op.create_table(
         "evaluation_baseline_promotions",
         sa.Column("id", sa.Uuid(), nullable=False),
