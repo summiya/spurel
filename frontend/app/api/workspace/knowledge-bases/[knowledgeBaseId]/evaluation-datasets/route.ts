@@ -1,6 +1,11 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { parseEvaluationPayload } from "@/lib/evaluation-types";
-import { backendRequest, pageOffset, safeBackendError, validUUID } from "@/lib/server/backend-client";
+import {
+  backendRequest,
+  pageOffset,
+  safeBackendError,
+  validUUID,
+} from "@/lib/server/backend-client";
 import { authFailure, noStore } from "@/lib/server/operator-session";
 
 type Context = { params: Promise<{ knowledgeBaseId: string }> };
@@ -46,7 +51,8 @@ export async function POST(request: NextRequest, context: Context) {
     return noStore(NextResponse.json({ error: "Invalid dataset name." }, { status: 422 }));
   try {
     const result = await backendRequest(`/knowledge-bases/${knowledgeBaseId}/evaluation-datasets`, {
-      method: "POST", body: JSON.stringify(payload),
+      method: "POST",
+      body: JSON.stringify(payload),
     });
     return noStore(NextResponse.json(result.payload, { status: result.status }));
   } catch (cause) {

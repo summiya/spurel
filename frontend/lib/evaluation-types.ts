@@ -8,7 +8,10 @@ export interface EvaluationDataset {
   case_count: number;
   created_at: string;
 }
-export interface EvaluationJudgment { chunk_id: string; relevance: number }
+export interface EvaluationJudgment {
+  chunk_id: string;
+  relevance: number;
+}
 export interface EvaluationCaseSummary {
   id: string;
   dataset_id: string;
@@ -17,7 +20,10 @@ export interface EvaluationCaseSummary {
   relevant_judgment_count: number;
   created_at: string;
 }
-export interface EvaluationCase extends Omit<EvaluationCaseSummary, "judgment_count" | "relevant_judgment_count"> {
+export interface EvaluationCase extends Omit<
+  EvaluationCaseSummary,
+  "judgment_count" | "relevant_judgment_count"
+> {
   judgments: EvaluationJudgment[];
 }
 export interface JudgmentIssue {
@@ -170,12 +176,18 @@ function number(value: unknown, min: number, max: number): value is number {
   return typeof value === "number" && Number.isFinite(value) && value >= min && value <= max;
 }
 function pair(value: Record<string, unknown>): boolean {
-  return isUUID(value.first_run_id) && isUUID(value.second_run_id) &&
-    value.first_run_id !== value.second_run_id;
+  return (
+    isUUID(value.first_run_id) &&
+    isUUID(value.second_run_id) &&
+    value.first_run_id !== value.second_run_id
+  );
 }
 
 /** Strict allowlist before any browser mutation reaches FastAPI. */
-export function parseEvaluationPayload(kind: string, input: unknown): Record<string, unknown> | null {
+export function parseEvaluationPayload(
+  kind: string,
+  input: unknown,
+): Record<string, unknown> | null {
   if (!object(input)) return null;
   if (kind === "dataset") {
     if (!keys(input, ["name"]) || typeof input.name !== "string") return null;
@@ -183,16 +195,25 @@ export function parseEvaluationPayload(kind: string, input: unknown): Record<str
     return name.length >= 1 && name.length <= 120 ? { name } : null;
   }
   if (kind === "case") {
-    if (!keys(input, ["query", "judgments"]) || typeof input.query !== "string" ||
-        !Array.isArray(input.judgments)) return null;
+    if (
+      !keys(input, ["query", "judgments"]) ||
+      typeof input.query !== "string" ||
+      !Array.isArray(input.judgments)
+    )
+      return null;
     const query = input.query.trim();
     if (!query || query.length > 8000 || !integer(input.judgments.length, 1, 100)) return null;
     const seen = new Set<string>();
     let relevant = 0;
     for (const item of input.judgments) {
-      if (!object(item) || !keys(item, ["chunk_id", "relevance"]) ||
-          !isUUID(item.chunk_id) || !integer(item.relevance, 0, 3) ||
-          seen.has(item.chunk_id.toLowerCase())) return null;
+      if (
+        !object(item) ||
+        !keys(item, ["chunk_id", "relevance"]) ||
+        !isUUID(item.chunk_id) ||
+        !integer(item.relevance, 0, 3) ||
+        seen.has(item.chunk_id.toLowerCase())
+      )
+        return null;
       seen.add(item.chunk_id.toLowerCase());
       if (item.relevance > 0) relevant += 1;
     }
@@ -202,8 +223,8 @@ export function parseEvaluationPayload(kind: string, input: unknown): Record<str
     const allowed = kind === "hybrid" ? ["top_k", "candidate_k", "rrf_k"] : ["top_k"];
     if (!keys(input, allowed) || !integer(input.top_k, 1, 100)) return null;
     if (kind === "hybrid") {
-      if (!integer(input.candidate_k, input.top_k, 100) ||
-          !integer(input.rrf_k, 1, 1000)) return null;
+      if (!integer(input.candidate_k, input.top_k, 100) || !integer(input.rrf_k, 1, 1000))
+        return null;
       return { top_k: input.top_k, candidate_k: input.candidate_k, rrf_k: input.rrf_k };
     }
     return { top_k: input.top_k };
@@ -214,11 +235,18 @@ export function parseEvaluationPayload(kind: string, input: unknown): Record<str
       : null;
   }
   if (kind === "gate") {
-    if (!keys(input, ["first_run_id", "second_run_id", "thresholds"]) ||
-        !pair(input) || !object(input.thresholds)) return null;
+    if (
+      !keys(input, ["first_run_id", "second_run_id", "thresholds"]) ||
+      !pair(input) ||
+      !object(input.thresholds)
+    )
+      return null;
     const allowed = [
-      "max_mean_precision_drop", "max_mean_recall_drop", "max_mrr_drop",
-      "max_mean_ndcg_drop", "max_mean_judgment_coverage_drop",
+      "max_mean_precision_drop",
+      "max_mean_recall_drop",
+      "max_mrr_drop",
+      "max_mean_ndcg_drop",
+      "max_mean_judgment_coverage_drop",
       "max_mean_duration_increase_ms",
     ];
     if (!keys(input.thresholds, allowed) || Object.keys(input.thresholds).length === 0) return null;

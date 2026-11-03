@@ -2,7 +2,12 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { parseEvaluationPayload } from "@/lib/evaluation-types";
 import { evaluationOperation } from "@/lib/evaluation-route-contract";
-import { backendRequest, pageOffset, safeBackendError, validUUID } from "@/lib/server/backend-client";
+import {
+  backendRequest,
+  pageOffset,
+  safeBackendError,
+  validUUID,
+} from "@/lib/server/backend-client";
 import { authFailure, noStore } from "@/lib/server/operator-session";
 
 type Context = { params: Promise<{ knowledgeBaseId: string; segments: string[] }> };
@@ -14,8 +19,12 @@ async function handler(request: NextRequest, context: Context) {
   if (denied) return noStore(denied);
 
   const { knowledgeBaseId, segments } = await context.params;
-  if (!validUUID(knowledgeBaseId) || !Array.isArray(segments) ||
-      segments.length < 2 || !validUUID(segments[0])) {
+  if (
+    !validUUID(knowledgeBaseId) ||
+    !Array.isArray(segments) ||
+    segments.length < 2 ||
+    !validUUID(segments[0])
+  ) {
     return noStore(NextResponse.json({ error: "Invalid evaluation reference." }, { status: 400 }));
   }
 
@@ -54,8 +63,10 @@ async function handler(request: NextRequest, context: Context) {
     const result = await backendRequest(path, {
       method: operation.mode === "write" ? operation.method : "GET",
       body,
-      timeoutMs: operation.mode === "write" && ["keyword", "vector", "hybrid"].includes(operation.kind)
-        ? 180_000 : 30_000,
+      timeoutMs:
+        operation.mode === "write" && ["keyword", "vector", "hybrid"].includes(operation.kind)
+          ? 180_000
+          : 30_000,
     });
     return noStore(NextResponse.json(result.payload, { status: result.status }));
   } catch (cause) {
@@ -64,6 +75,12 @@ async function handler(request: NextRequest, context: Context) {
   }
 }
 
-export async function GET(request: NextRequest, context: Context) { return handler(request, context); }
-export async function POST(request: NextRequest, context: Context) { return handler(request, context); }
-export async function PUT(request: NextRequest, context: Context) { return handler(request, context); }
+export async function GET(request: NextRequest, context: Context) {
+  return handler(request, context);
+}
+export async function POST(request: NextRequest, context: Context) {
+  return handler(request, context);
+}
+export async function PUT(request: NextRequest, context: Context) {
+  return handler(request, context);
+}

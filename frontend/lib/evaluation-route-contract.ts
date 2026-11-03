@@ -16,15 +16,14 @@ export function evaluationOperation(
   if (method === "GET") {
     if (["cases", "runs", "baselines", "baselines/history"].includes(relative))
       return { mode: "read", suffix: relative, paginated: true };
-    if (relative === "judgment-audit")
-      return { mode: "read", suffix: relative, paginated: false };
-    if ((section === "cases" || section === "runs") &&
-        rest.length === 1 && validUUID(rest[0]))
+    if (relative === "judgment-audit") return { mode: "read", suffix: relative, paginated: false };
+    if ((section === "cases" || section === "runs") && rest.length === 1 && validUUID(rest[0]))
       return { mode: "read", suffix: relative, paginated: false };
     return null;
   }
   if (method === "POST") {
-    if (relative === "cases") return { mode: "write", suffix: relative, kind: "case", method: "POST" };
+    if (relative === "cases")
+      return { mode: "write", suffix: relative, kind: "case", method: "POST" };
     if (section === "evaluate" && rest.length === 1 && isEvaluationMode(rest[0]))
       return { mode: "write", suffix: relative, kind: rest[0], method: "POST" };
     if (relative === "run-comparisons")
