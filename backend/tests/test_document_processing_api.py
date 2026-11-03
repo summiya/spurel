@@ -10,6 +10,7 @@ from spurel.documents.processing_dependencies import (
 )
 from spurel.embeddings.domain import EmbeddingProviderError
 from spurel.main import create_app
+from spurel.security import require_api_token
 
 
 class FakeDocumentProcessingService:
@@ -33,6 +34,7 @@ class FakeDocumentProcessingService:
 
 def _client(service: FakeDocumentProcessingService) -> TestClient:
     application = create_app()
+    application.dependency_overrides[require_api_token] = lambda: None
     application.dependency_overrides[get_document_processing_service] = (
         lambda: service
     )

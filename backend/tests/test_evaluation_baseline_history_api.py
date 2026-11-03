@@ -15,6 +15,7 @@ from spurel.evaluation_datasets.dependencies import (
 )
 from spurel.evaluation_datasets.execution import DatasetEvaluationMode
 from spurel.main import create_app
+from spurel.security import require_api_token
 
 
 class FakeEvaluationBaselineHistoryService:
@@ -71,6 +72,7 @@ def _promotion(
 
 def _client(service: FakeEvaluationBaselineHistoryService) -> TestClient:
     application = create_app()
+    application.dependency_overrides[require_api_token] = lambda: None
     application.dependency_overrides[
         get_evaluation_baseline_service
     ] = lambda: service

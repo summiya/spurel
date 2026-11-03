@@ -9,6 +9,7 @@ from spurel.documents.chunk_inspector import (
 )
 from spurel.documents.dependencies import get_chunk_inspector_service
 from spurel.main import create_app
+from spurel.security import require_api_token
 
 
 class FakeChunkInspectorService:
@@ -38,6 +39,7 @@ class FakeChunkInspectorService:
 
 def _client(service: FakeChunkInspectorService) -> TestClient:
     application = create_app()
+    application.dependency_overrides[require_api_token] = lambda: None
     application.dependency_overrides[get_chunk_inspector_service] = lambda: service
     return TestClient(application)
 

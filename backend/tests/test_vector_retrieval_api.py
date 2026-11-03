@@ -8,6 +8,7 @@ from spurel.retrieval.dependencies import get_traced_vector_retrieval_service
 from spurel.retrieval.domain import VectorRetrievalMatch
 from spurel.retrieval.ports import VectorRetrievalRepositoryError
 from spurel.retrieval.traced import TracedRetrievalResult
+from spurel.security import require_api_token
 
 class FakeVectorRetrievalService:
     def __init__(self) -> None:
@@ -42,6 +43,7 @@ class FakeVectorRetrievalService:
 
 def _client(service: FakeVectorRetrievalService) -> TestClient:
     application = create_app()
+    application.dependency_overrides[require_api_token] = lambda: None
     application.dependency_overrides[get_traced_vector_retrieval_service] = lambda: service
     return TestClient(application)
 

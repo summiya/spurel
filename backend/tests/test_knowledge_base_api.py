@@ -7,6 +7,7 @@ from spurel.knowledge_bases.domain import KnowledgeBase
 from spurel.knowledge_bases.ports import KnowledgeBasePersistenceError
 from spurel.knowledge_bases.service import KnowledgeBaseService
 from spurel.main import create_app
+from spurel.security import require_api_token
 
 
 class FakeKnowledgeBaseRepository:
@@ -27,6 +28,7 @@ class FakeKnowledgeBaseRepository:
 
 def _client(repository: FakeKnowledgeBaseRepository) -> TestClient:
     application = create_app()
+    application.dependency_overrides[require_api_token] = lambda: None
     application.dependency_overrides[get_knowledge_base_service] = lambda: KnowledgeBaseService(
         repository
     )

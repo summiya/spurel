@@ -14,6 +14,7 @@ from spurel.evaluation_datasets.ports import EvaluationDatasetPersistenceError
 from spurel.evaluation_datasets.service import EvaluationDatasetNotFoundError
 from spurel.main import create_app
 from spurel.retrieval.evaluation import RelevanceJudgment
+from spurel.security import require_api_token
 
 
 class FakeEvaluationDatasetService:
@@ -99,6 +100,7 @@ class FakeEvaluationDatasetService:
 
 def _client(service: FakeEvaluationDatasetService) -> TestClient:
     application = create_app()
+    application.dependency_overrides[require_api_token] = lambda: None
     application.dependency_overrides[get_evaluation_dataset_service] = lambda: service
     return TestClient(application)
 

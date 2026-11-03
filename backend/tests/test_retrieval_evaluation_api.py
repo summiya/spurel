@@ -11,6 +11,7 @@ from spurel.retrieval.evaluation import (
 )
 from spurel.retrieval.trace_ports import RetrievalTracePersistenceError
 from spurel.retrieval.trace_service import RetrievalTraceNotFoundError
+from spurel.security import require_api_token
 
 
 class FakeRetrievalEvaluationService:
@@ -41,6 +42,7 @@ class FakeRetrievalEvaluationService:
 
 def _client(service: FakeRetrievalEvaluationService) -> TestClient:
     application = create_app()
+    application.dependency_overrides[require_api_token] = lambda: None
     application.dependency_overrides[
         get_retrieval_evaluation_service
     ] = lambda: service

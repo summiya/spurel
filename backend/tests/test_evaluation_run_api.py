@@ -14,6 +14,7 @@ from spurel.evaluation_datasets.run_ports import EvaluationRunPersistenceError
 from spurel.evaluation_datasets.run_service import EvaluationRunNotFoundError
 from spurel.main import create_app
 from spurel.retrieval.evaluation import RetrievalMetricValues
+from spurel.security import require_api_token
 
 
 class FakeEvaluationRunService:
@@ -138,6 +139,7 @@ def _summary(run: EvaluationRun) -> EvaluationRunSummary:
 
 def _client(service: FakeEvaluationRunService) -> TestClient:
     application = create_app()
+    application.dependency_overrides[require_api_token] = lambda: None
     application.dependency_overrides[get_evaluation_run_service] = lambda: service
     return TestClient(application)
 
