@@ -38,7 +38,9 @@ jobs:
         run: ruff check .
 
       - name: Ruff format
-        run: ruff format --check .
+        run: |
+          ruff format --diff .
+          ruff format --check .
 
       - name: Pytest
         run: python -m pytest -q

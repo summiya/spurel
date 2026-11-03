@@ -16,6 +16,7 @@ from spurel.retrieval.tracing import (
     RetrievalTraceResult,
 )
 
+
 class VectorRetrievalRunner(Protocol):
     """Vector retrieval capability consumed by the tracing decorator."""
 
