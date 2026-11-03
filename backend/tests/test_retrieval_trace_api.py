@@ -13,6 +13,7 @@ from spurel.retrieval.tracing import (
     RetrievalTraceResult,
     RetrievalTraceSummary,
 )
+from spurel.security import require_api_token
 
 
 class FakeRetrievalTraceService:
@@ -48,6 +49,7 @@ class FakeRetrievalTraceService:
 
 def _client(service: FakeRetrievalTraceService) -> TestClient:
     application = create_app()
+    application.dependency_overrides[require_api_token] = lambda: None
     application.dependency_overrides[get_retrieval_trace_service] = lambda: service
     return TestClient(application)
 

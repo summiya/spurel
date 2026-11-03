@@ -8,6 +8,7 @@ from spurel.retrieval.dependencies import get_traced_keyword_retrieval_service
 from spurel.retrieval.keyword_domain import KeywordRetrievalMatch
 from spurel.retrieval.keyword_ports import KeywordRetrievalRepositoryError
 from spurel.retrieval.traced import TracedRetrievalResult
+from spurel.security import require_api_token
 
 
 class FakeKeywordRetrievalService:
@@ -41,6 +42,7 @@ class FakeKeywordRetrievalService:
 
 def _client(service: FakeKeywordRetrievalService) -> TestClient:
     application = create_app()
+    application.dependency_overrides[require_api_token] = lambda: None
     application.dependency_overrides[get_traced_keyword_retrieval_service] = lambda: service
     return TestClient(application)
 

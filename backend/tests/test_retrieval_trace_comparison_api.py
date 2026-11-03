@@ -14,6 +14,7 @@ from spurel.retrieval.trace_comparison import (
 )
 from spurel.retrieval.trace_service import RetrievalTraceNotFoundError
 from spurel.retrieval.tracing import RetrievalTraceMode
+from spurel.security import require_api_token
 
 
 class FakeTraceComparisonService:
@@ -42,6 +43,7 @@ class FakeTraceComparisonService:
 
 def _client(service: FakeTraceComparisonService) -> TestClient:
     application = create_app()
+    application.dependency_overrides[require_api_token] = lambda: None
     application.dependency_overrides[
         get_retrieval_trace_comparison_service
     ] = lambda: service

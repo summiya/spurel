@@ -26,6 +26,30 @@
 > **Spurel is currently in early-stage design / pre-alpha.**  
 > The screenshots below are product concept mockups, not screenshots of a finished implementation. The repository is being built in public.
 
+## 🔐 API authentication
+
+All Spurel business endpoints require a **shared bearer token**. The liveness endpoint `GET /health` remains unauthenticated. This first security boundary is suitable for a single trusted service/operator; it is **not** user login, organization isolation, or permission-aware multi-tenancy.
+
+1. Generate a long, random token:
+
+   ```bash
+   python -c 'import secrets; print(secrets.token_urlsafe(32))'
+   ```
+
+2. Set `SPUREL_API_TOKEN` in your local `.env` file (do not commit it). The token must contain at least 32 printable, non-whitespace ASCII characters.
+
+3. Include it when calling protected endpoints:
+
+   ```bash
+   curl -H "Authorization: Bearer $SPUREL_API_TOKEN" http://localhost:8000/knowledge-bases
+   ```
+
+A missing or invalid server-side token configuration returns **503** for all protected API routes (fail closed). Missing, malformed, or incorrect bearer credentials return **401** with `WWW-Authenticate: Bearer`. The same `SPUREL_API_TOKEN` environment variable is already understood by Spurel's benchmark/quality-gate CLI.
+
+**API documentation:** Swagger UI (`/docs`), ReDoc, and OpenAPI JSON (`/openapi.json`) are disabled by default. For trusted local development only, set `SPUREL_ENABLE_DOCS=1` before starting the API. This exposes Swagger UI and its OpenAPI schema without authentication, but business endpoints still require the bearer token (use **Authorize** in Swagger). Do not enable public docs unless this metadata exposure is intentional.
+
+**Security boundaries:** Use HTTPS when accessing the API remotely. Do not embed `SPUREL_API_TOKEN` in a browser application or ship it to end users. A future frontend should use a server-side gateway/session model, and publicly hosted multi-user deployments additionally require user authentication, tenant authorization, and role-based access control.
+
 ## ⚙️ Local environment
 
 Copy the committed example file and add your own local secrets:
@@ -47,6 +71,8 @@ The example includes the configuration currently used by Spurel:
 - `DATABASE_URL`
 - `SPUREL_LOCAL_STORAGE_ROOT`
 - `OPENAI_API_KEY`
+- `SPUREL_API_TOKEN`
+- `SPUREL_ENABLE_DOCS`
 - `SPUREL_EMBEDDING_MODEL`
 - `SPUREL_EMBEDDING_DIMENSIONS`
 

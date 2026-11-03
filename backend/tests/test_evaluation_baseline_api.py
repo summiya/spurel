@@ -20,6 +20,7 @@ from spurel.evaluation_datasets.dependencies import (
 from spurel.evaluation_datasets.execution import DatasetEvaluationMode
 from spurel.evaluation_datasets.run_service import EvaluationRunNotFoundError
 from spurel.main import create_app
+from spurel.security import require_api_token
 
 
 class FakeEvaluationBaselineService:
@@ -105,6 +106,7 @@ def _baseline(
 
 def _client(service: FakeEvaluationBaselineService) -> TestClient:
     application = create_app()
+    application.dependency_overrides[require_api_token] = lambda: None
     application.dependency_overrides[
         get_evaluation_baseline_service
     ] = lambda: service

@@ -16,6 +16,7 @@ from spurel.evaluation_datasets.quality_gate import (
 from spurel.evaluation_datasets.run_ports import EvaluationRunPersistenceError
 from spurel.evaluation_datasets.run_service import EvaluationRunNotFoundError
 from spurel.main import create_app
+from spurel.security import require_api_token
 
 
 class FakeEvaluationQualityGateService:
@@ -48,6 +49,7 @@ class FakeEvaluationQualityGateService:
 
 def _client(service: FakeEvaluationQualityGateService) -> TestClient:
     application = create_app()
+    application.dependency_overrides[require_api_token] = lambda: None
     application.dependency_overrides[
         get_evaluation_quality_gate_service
     ] = lambda: service

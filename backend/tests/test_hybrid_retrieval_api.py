@@ -7,6 +7,7 @@ from spurel.main import create_app
 from spurel.retrieval.dependencies import get_traced_hybrid_retrieval_service
 from spurel.retrieval.hybrid import HybridRetrievalMatch, HybridRetrievalResultError
 from spurel.retrieval.traced import TracedRetrievalResult
+from spurel.security import require_api_token
 
 
 class FakeHybridRetrievalService:
@@ -44,6 +45,7 @@ class FakeHybridRetrievalService:
 
 def _client(service: FakeHybridRetrievalService) -> TestClient:
     application = create_app()
+    application.dependency_overrides[require_api_token] = lambda: None
     application.dependency_overrides[get_traced_hybrid_retrieval_service] = lambda: service
     return TestClient(application)
 

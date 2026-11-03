@@ -8,6 +8,7 @@ from spurel.documents.domain import Document
 from spurel.documents.ports import DocumentPersistenceError
 from spurel.documents.service import DocumentService
 from spurel.main import create_app
+from spurel.security import require_api_token
 
 
 class FakeDocumentRepository:
@@ -38,6 +39,7 @@ class FakeDocumentRepository:
 
 def _client(repository: FakeDocumentRepository) -> TestClient:
     application = create_app()
+    application.dependency_overrides[require_api_token] = lambda: None
     application.dependency_overrides[get_document_service] = lambda: DocumentService(
         repository
     )

@@ -6,6 +6,7 @@ from spurel.generation.ports import TextGenerationProviderError
 from spurel.main import create_app
 from spurel.rag.dependencies import get_rag_answer_service
 from spurel.rag.service import RAGAnswer, RAGSource
+from spurel.security import require_api_token
 
 
 class FakeRAGAnswerService:
@@ -54,6 +55,7 @@ class FakeRAGAnswerService:
 
 def _client(service: FakeRAGAnswerService) -> TestClient:
     application = create_app()
+    application.dependency_overrides[require_api_token] = lambda: None
     application.dependency_overrides[get_rag_answer_service] = lambda: service
     return TestClient(application)
 

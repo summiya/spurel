@@ -18,6 +18,7 @@ from spurel.evaluation_datasets.run_ports import EvaluationRunPersistenceError
 from spurel.evaluation_datasets.service import EvaluationDatasetNotFoundError
 from spurel.main import create_app
 from spurel.retrieval.evaluation import RetrievalMetricValues
+from spurel.security import require_api_token
 
 
 class FakeDatasetEvaluationService:
@@ -109,6 +110,7 @@ def _client(
     hybrid: FakeDatasetEvaluationService | None = None,
 ) -> TestClient:
     application = create_app()
+    application.dependency_overrides[require_api_token] = lambda: None
     if vector is not None:
         application.dependency_overrides[
             get_vector_dataset_evaluation_service

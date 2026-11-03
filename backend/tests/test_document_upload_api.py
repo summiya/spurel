@@ -8,6 +8,7 @@ from spurel.documents.dependencies import get_document_upload_service
 from spurel.documents.domain import Document
 from spurel.documents.upload_service import DocumentUploadError, DocumentUploadResult
 from spurel.main import create_app
+from spurel.security import require_api_token
 
 
 class FakeDocumentUploadService:
@@ -47,6 +48,7 @@ class FakeDocumentUploadService:
 
 def _client(service: FakeDocumentUploadService) -> TestClient:
     application = create_app()
+    application.dependency_overrides[require_api_token] = lambda: None
     application.dependency_overrides[get_document_upload_service] = lambda: service
     return TestClient(application)
 
