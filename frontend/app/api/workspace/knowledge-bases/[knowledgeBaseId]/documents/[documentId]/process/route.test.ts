@@ -67,6 +67,20 @@ describe("SP-16 authenticated document processing proxy", () => {
     expect(mocks.authFailure).toHaveBeenCalledWith(expect.any(NextRequest), true);
   });
 
+  it("accepts explicit recursive, Markdown and sentence-aware processing without changing older modes", async () => {
+    for (const strategy of ["recursive", "markdown", "sentences"]) {
+      mocks.backendRequest.mockClear();
+      const options = { strategy, chunk_size: 1000, overlap: 200 };
+      const response = await POST(request(JSON.stringify(options)), ctx());
+      expect(response.status).toBe(200);
+      expect(mocks.backendRequest).toHaveBeenCalledWith(upstream, {
+        method: "POST",
+        body: JSON.stringify(options),
+        timeoutMs: 180000,
+      });
+    }
+  });
+
   it("rejects unknown or invalid options without upstream/provider calls", async () => {
     for (const body of [
       JSON.stringify({ strategy: "tokens", chunk_size: 2001, overlap: 200 }),

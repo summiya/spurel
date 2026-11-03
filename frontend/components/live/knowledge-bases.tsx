@@ -214,7 +214,7 @@ export function LiveKnowledgeBasesPage() {
     if (
       !legacy &&
       !window.confirm(
-        `Reprocess ${document.filename} using ${options.chunk_size} ${chunkStrategy} per chunk and ${options.overlap} overlap? Embedding may incur OpenAI charges. The current active version remains available until processing succeeds.`,
+        `Process ${document.filename} with ${chunkStrategy} chunking (${options.chunk_size} ${chunkStrategy === "tokens" ? "tokens" : "characters"} per chunk, ${options.overlap} overlap)? Embeddings may incur OpenAI charges. Existing active versions remain available until processing succeeds.`,
       )
     )
       return;
@@ -432,9 +432,9 @@ export function LiveKnowledgeBasesPage() {
             <div>
               <strong>Chunking settings for the next processing run</strong>
               <p className="text-hint">
-                Existing character chunking stays the default. Switch to token-based windows only
-                when you want model-aware token sizes. Changing settings does not modify any
-                document until you click Process or Reprocess.
+                Character and model-token methods remain unchanged. Add recursive, Markdown-heading
+                or sentence-aware splitting when you want to preserve document structure. Nothing is
+                reprocessed until you click Process or Reprocess.
               </p>
             </div>
             <div className="live-chunking-controls">
@@ -456,6 +456,9 @@ export function LiveKnowledgeBasesPage() {
                 >
                   <option value="characters">Characters · existing default</option>
                   <option value="tokens">Model tokens · opt-in</option>
+                  <option value="recursive">Recursive · paragraphs and lines</option>
+                  <option value="markdown">Markdown · heading-aware sections</option>
+                  <option value="sentences">Sentences · natural boundaries</option>
                 </select>
               </div>
               <div>
@@ -492,6 +495,19 @@ export function LiveKnowledgeBasesPage() {
                 Token counts use the tokenizer for the configured embedding model. A
                 20,000-character source-span safety cap also applies. Reprocessing creates a new
                 staged version when chunk boundaries change; older versions remain inspectable.
+              </p>
+            ) : null}
+            {chunkStrategy === "recursive" ||
+            chunkStrategy === "markdown" ||
+            chunkStrategy === "sentences" ? (
+              <p className="text-hint">
+                {chunkStrategy === "recursive"
+                  ? "Prefer paragraph, sentence, then line/word breaks; long spans fall back to character windows."
+                  : chunkStrategy === "markdown"
+                    ? "Prefer Markdown headings as section boundaries, ignoring heading-like text in fenced code."
+                    : "Prefer complete sentences; oversized sentences fall back to line or word breaks."}{" "}
+                Size and overlap are measured in characters. Overlap may be reduced to keep
+                boundaries intact; previous index versions remain available.
               </p>
             ) : null}
           </div>

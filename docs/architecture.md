@@ -46,7 +46,23 @@ FastAPI runs on Python 3.13 and uses Pydantic schemas, application services, int
 | [`backend/migrations/`](../backend/migrations/) | PostgreSQL schema migrations |
 | [`frontend/app/`](../frontend/app/) | Operator-protected source management, chunks, retrieval, traces and evaluations; RAG answers connected by SP-15 branch |
 
-### SP-16 token-aware chunking (in review)
+### SP-17 structured chunking (in review)
+
+A separate infrastructure adapter provides recursive paragraph/line/space,
+Markdown-heading, and sentence-aware chunking. It runs after the same text
+normalization stage as the existing character and token modes, and returns
+the same immutable `DocumentChunk` values with exact source offsets. Each
+mode enforces the existing 20,000-character storage cap and 10,000-chunk
+limit; oversized sections fall back to safer boundaries and ultimately a
+hard character window. Markdown fences prevent code headings from being
+interpreted as document sections.
+
+The `ChunkStrategy` enum and secured processing payload gain only additive
+values; no API path, chunk persistence table, existing strategy, or document
+versioning behavior is replaced. Staging, embeddings, activation and
+historical reads remain handled by the existing pipeline and repositories.
+
+### SP-16 token-aware chunking (merged)
 
 Existing fixed-size **character** chunking remains unchanged by default.
 An optional processing payload selects bounded `tiktoken` model-token
@@ -62,7 +78,7 @@ recomputed, rather than represented as original version provenance.
 ## Ingestion and versioned indexing
 
 1. Upload a text, Markdown or **unencrypted, text-extractable PDF** to a knowledge base. File metadata is stored in PostgreSQL and source bytes in local blob storage.
-2. Parse the bytes. The current chunker uses fixed-size **character windows** with an optional overlap and exact text offsets. This is not token-aware chunking.
+2. Parse the bytes. Character windows remain the default, with opt-in model-token windows from SP-16; SP-17 adds optional recursive, Markdown-heading and sentence boundaries. All preserve exact source offsets.
 3. Create a new immutable chunk-set version in `processing` state. The previous `active_chunk_version` remains queryable while embedding proceeds.
 4. Generate embeddings in batches with the current OpenAI adapter. Persist them using chunk UUID, provider, model and dimensions.
 5. Verify complete embedding coverage and promote the staged version in one database transaction. A failed embedding call leaves the older version active.
@@ -170,6 +186,6 @@ development workflow**, not scalable user identity or tenant authorization.
 
 ## What is planned, not implemented
 
-The frontend has live source, chunk, retrieval, trace-comparison, evaluation and provider-backed RAG answer inspection. A frontend follow-up summarizes real Overview data, including a 7/30-day retrieval-quality chart plotting persisted evaluation runs without inferred measurements or new backend APIs. The following are **not built**: recursive/semantic/token-aware chunking, scanned-PDF OCR, BM25, pgvector ANN/HNSW, metadata filters, rerankers, independent citation/claim verification, non-OpenAI providers, data-source connectors, Redis-backed background jobs, experiment export and production auth/monitoring.
+The frontend has live source, chunk, retrieval, trace-comparison, evaluation and provider-backed RAG answer inspection. A frontend follow-up summarizes real Overview data, including a 7/30-day retrieval-quality chart plotting persisted evaluation runs without inferred measurements or new backend APIs. The following are **not built on main**: structured (SP-17 in review) or semantic/LLM-based chunking, scanned-PDF OCR, BM25, pgvector ANN/HNSW, metadata filters, rerankers, independent citation/claim verification, non-OpenAI providers, data-source connectors, Redis-backed background jobs, experiment export and production auth/monitoring.
 
 For the exact implementation order and deliverables, use [SP-01–SP-28 roadmap](roadmap.md).

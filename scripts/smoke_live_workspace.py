@@ -292,6 +292,25 @@ def run(root: Path) -> None:
         content_type="application/json", origin=base,
     )[0] == 400
 
+    # SP-17: structured modes share strict same-origin validation, without
+    # submitting a valid request that would call a paid embedding provider.
+    for strategy in ("recursive", "markdown", "sentences"):
+        invalid_structure = json.dumps(
+            {"strategy": strategy, "chunk_size": 100, "overlap": 100}
+        ).encode("utf-8")
+        assert _request(
+            opener, base, process_endpoint, method="POST",
+            data=invalid_structure, content_type="application/json", origin=base,
+        )[0] == 422
+        explicit_structure = json.dumps(
+            {"strategy": strategy, "chunk_size": 1000, "overlap": 200}
+        ).encode("utf-8")
+        assert _request(
+            opener, base, process_endpoint, method="POST",
+            data=explicit_structure, content_type="application/json",
+            origin="http://untrusted.example",
+        )[0] == 403
+
     status, _ = _request(opener, base, "/api/operator/logout", method="POST", data=b"", origin=base)
     assert status == 200
     assert _request(opener, base, endpoint)[0] == 401
