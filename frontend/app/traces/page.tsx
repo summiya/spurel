@@ -17,10 +17,10 @@ export default async function TraceHistoryRoute({
     redirect("/operator/login");
   }
   const params = await searchParams;
-  const initialKnowledgeBaseId = typeof params.kb === "string" && validUUID(params.kb)
-    ? params.kb : undefined;
-  const initialTraceId = typeof params.trace === "string" && validUUID(params.trace)
-    ? params.trace : undefined;
+  const initialKnowledgeBaseId =
+    typeof params.kb === "string" && validUUID(params.kb) ? params.kb : undefined;
+  const initialTraceId =
+    typeof params.trace === "string" && validUUID(params.trace) ? params.trace : undefined;
   return (
     <LiveTraceHistoryPage
       initialKnowledgeBaseId={initialKnowledgeBaseId}

@@ -12,10 +12,15 @@ const b = "d73b06d7-a20e-4ddf-9859-242d69d4372f";
 
 describe("trace history comparison boundary", () => {
   it("allows two distinct valid scoped trace UUIDs only", () => {
-    expect(parseTraceComparisonRequest({ first_trace_id: a, second_trace_id: b }))
-      .toEqual({ first_trace_id: a, second_trace_id: b });
+    expect(parseTraceComparisonRequest({ first_trace_id: a, second_trace_id: b })).toEqual({
+      first_trace_id: a,
+      second_trace_id: b,
+    });
     for (const bad of [
-      null, [], {}, "text",
+      null,
+      [],
+      {},
+      "text",
       { first_trace_id: a, second_trace_id: a },
       { first_trace_id: a, second_trace_id: a.toUpperCase() },
       { first_trace_id: a, second_trace_id: "invalid" },

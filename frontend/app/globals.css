@@ -2879,7 +2879,10 @@ html[data-motion="reduce"] *::after {
   align-items: flex-end;
   gap: 14px;
 }
-.trace-source-chooser > div { flex: 1; min-width: 0; }
+.trace-source-chooser > div {
+  flex: 1;
+  min-width: 0;
+}
 .trace-filters {
   display: grid;
   grid-template-columns: 1fr minmax(105px, 130px);
@@ -2893,9 +2896,16 @@ html[data-motion="reduce"] *::after {
   border-bottom: 1px solid var(--border);
   margin-bottom: 10px;
 }
-.live-trace-list-entry .trace-row { width: 100%; min-width: 0; }
-.live-trace-list-entry .trace-content strong { overflow-wrap: anywhere; }
-.trace-compare-target { justify-self: end; }
+.live-trace-list-entry .trace-row {
+  width: 100%;
+  min-width: 0;
+}
+.live-trace-list-entry .trace-content strong {
+  overflow-wrap: anywhere;
+}
+.trace-compare-target {
+  justify-self: end;
+}
 .trace-detail-facts {
   display: grid;
   gap: 8px;
@@ -2915,8 +2925,14 @@ html[data-motion="reduce"] *::after {
   overflow-wrap: anywhere;
   text-align: right;
 }
-.live-trace-evidence { align-items: start; }
-.live-trace-evidence > div { display: grid; gap: 6px; min-width: 0; }
+.live-trace-evidence {
+  align-items: start;
+}
+.live-trace-evidence > div {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
 .live-trace-evidence p {
   margin: 2px 0;
   overflow-wrap: anywhere;
@@ -2930,7 +2946,9 @@ html[data-motion="reduce"] *::after {
   gap: 13px;
   margin-bottom: 20px;
 }
-.trace-comparison-controls > div { min-width: 0; }
+.trace-comparison-controls > div {
+  min-width: 0;
+}
 .trace-compare-stats {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -2946,8 +2964,14 @@ html[data-motion="reduce"] *::after {
   border-radius: 9px;
   min-width: 0;
 }
-.trace-compare-stats small { color: var(--subtle); font-size: 10px; }
-.trace-compare-stats strong { overflow-wrap: anywhere; font-size: 14px; }
+.trace-compare-stats small {
+  color: var(--subtle);
+  font-size: 10px;
+}
+.trace-compare-stats strong {
+  overflow-wrap: anywhere;
+  font-size: 14px;
+}
 .trace-run-side-by-side {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2989,7 +3013,9 @@ html[data-motion="reduce"] *::after {
   gap: 12px;
   justify-content: space-between;
 }
-.trace-aligned-heading strong { overflow-wrap: anywhere; }
+.trace-aligned-heading strong {
+  overflow-wrap: anywhere;
+}
 .trace-aligned-row p {
   margin: 0;
   white-space: pre-wrap;
@@ -3010,14 +3036,28 @@ html[data-motion="reduce"] *::after {
   overflow-wrap: anywhere;
 }
 @media (max-width: 1050px) {
-  .trace-comparison-controls { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .trace-comparison-controls > button { grid-column: 1 / -1; justify-self: start; }
-  .trace-compare-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .trace-comparison-controls {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .trace-comparison-controls > button {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+  .trace-compare-stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 @media (max-width: 580px) {
-  .trace-source-chooser { align-items: stretch; flex-direction: column; }
-  .trace-filters { grid-template-columns: minmax(0, 1fr); }
-  .trace-comparison-controls, .trace-run-side-by-side, .trace-compare-stats {
+  .trace-source-chooser {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .trace-filters {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .trace-comparison-controls,
+  .trace-run-side-by-side,
+  .trace-compare-stats {
     grid-template-columns: minmax(0, 1fr);
   }
 }

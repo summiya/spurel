@@ -61,17 +61,24 @@ const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3
 export function parseTraceComparisonRequest(value: unknown): TraceComparisonRequest | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   const record = value as Record<string, unknown>;
-  if (Object.keys(record).length !== 2 ||
-      typeof record.first_trace_id !== "string" ||
-      typeof record.second_trace_id !== "string" ||
-      !UUID_PATTERN.test(record.first_trace_id) ||
-      !UUID_PATTERN.test(record.second_trace_id) ||
-      record.first_trace_id.toLowerCase() === record.second_trace_id.toLowerCase()) return null;
+  if (
+    Object.keys(record).length !== 2 ||
+    typeof record.first_trace_id !== "string" ||
+    typeof record.second_trace_id !== "string" ||
+    !UUID_PATTERN.test(record.first_trace_id) ||
+    !UUID_PATTERN.test(record.second_trace_id) ||
+    record.first_trace_id.toLowerCase() === record.second_trace_id.toLowerCase()
+  )
+    return null;
 
   return { first_trace_id: record.first_trace_id, second_trace_id: record.second_trace_id };
 }
 
-export function rankMovement(delta: number | null, firstRank: number | null, secondRank: number | null): string {
+export function rankMovement(
+  delta: number | null,
+  firstRank: number | null,
+  secondRank: number | null,
+): string {
   if (firstRank === null) return "Only in B";
   if (secondRank === null) return "Only in A";
   if (delta === null) return "Unknown";

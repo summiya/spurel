@@ -15,14 +15,18 @@ export async function POST(request: NextRequest, context: Context) {
     return noStore(NextResponse.json({ error: "Invalid knowledge base." }, { status: 400 }));
   }
   if (Number(request.headers.get("content-length") ?? 0) > MAX_REQUEST_BYTES) {
-    return noStore(NextResponse.json({ error: "Comparison request is too large." }, { status: 413 }));
+    return noStore(
+      NextResponse.json({ error: "Comparison request is too large." }, { status: 413 }),
+    );
   }
 
   let raw: unknown;
   try {
     const text = await request.text();
     if (text.length > MAX_REQUEST_BYTES) {
-      return noStore(NextResponse.json({ error: "Comparison request is too large." }, { status: 413 }));
+      return noStore(
+        NextResponse.json({ error: "Comparison request is too large." }, { status: 413 }),
+      );
     }
     raw = JSON.parse(text);
   } catch {
@@ -30,9 +34,14 @@ export async function POST(request: NextRequest, context: Context) {
   }
   const payload = parseTraceComparisonRequest(raw);
   if (!payload) {
-    return noStore(NextResponse.json({
-      error: "Choose two distinct saved retrieval trace IDs from the same knowledge base.",
-    }, { status: 422 }));
+    return noStore(
+      NextResponse.json(
+        {
+          error: "Choose two distinct saved retrieval trace IDs from the same knowledge base.",
+        },
+        { status: 422 },
+      ),
+    );
   }
 
   try {

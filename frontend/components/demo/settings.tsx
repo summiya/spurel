@@ -110,8 +110,8 @@ export function SettingsPage() {
           </div>
           <p className="muted-panel-note">
             SP-10–SP-13 connect sources, chunk inspection, retrieval and saved trace comparisons to
-            FastAPI. Evaluations and RAG answers remain demo screens. Never put your API token
-            in NEXT_PUBLIC_* settings.
+            FastAPI. Evaluations and RAG answers remain demo screens. Never put your API token in
+            NEXT_PUBLIC_* settings.
           </p>
         </Panel>
       </div>

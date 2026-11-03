@@ -1,6 +1,11 @@
 import { type NextRequest, NextResponse } from "next/server";
 
-import { backendRequest, pageOffset, safeBackendError, validUUID } from "@/lib/server/backend-client";
+import {
+  backendRequest,
+  pageOffset,
+  safeBackendError,
+  validUUID,
+} from "@/lib/server/backend-client";
 import { authFailure, noStore } from "@/lib/server/operator-session";
 
 type Context = { params: Promise<{ knowledgeBaseId: string }> };

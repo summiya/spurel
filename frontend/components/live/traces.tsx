@@ -36,20 +36,25 @@ function elapsed(value: number): string {
   return value.toFixed(1) + " ms";
 }
 
-function ScoreCell({ item, mode }: {
+function ScoreCell({
+  item,
+  mode,
+}: {
   item: TraceComparisonResult;
   mode: "vector" | "keyword" | "hybrid";
 }) {
-  const first = mode === "vector"
-    ? formatTraceScore(item.first_cosine_similarity, 4)
-    : mode === "keyword"
-      ? formatTraceScore(item.first_keyword_score, 5)
-      : formatTraceScore(item.first_rrf_score, 6);
-  const second = mode === "vector"
-    ? formatTraceScore(item.second_cosine_similarity, 4)
-    : mode === "keyword"
-      ? formatTraceScore(item.second_keyword_score, 5)
-      : formatTraceScore(item.second_rrf_score, 6);
+  const first =
+    mode === "vector"
+      ? formatTraceScore(item.first_cosine_similarity, 4)
+      : mode === "keyword"
+        ? formatTraceScore(item.first_keyword_score, 5)
+        : formatTraceScore(item.first_rrf_score, 6);
+  const second =
+    mode === "vector"
+      ? formatTraceScore(item.second_cosine_similarity, 4)
+      : mode === "keyword"
+        ? formatTraceScore(item.second_keyword_score, 5)
+        : formatTraceScore(item.second_rrf_score, 6);
   return (
     <span className="trace-score-pair">
       {traceScoreLabel(mode)} · A: {first} / B: {second}
@@ -57,17 +62,12 @@ function ScoreCell({ item, mode }: {
   );
 }
 
-export function LiveTraceHistoryPage({
-  initialKnowledgeBaseId,
-  initialTraceId,
-}: Props) {
+export function LiveTraceHistoryPage({ initialKnowledgeBaseId, initialTraceId }: Props) {
   const notify = useDemoToast();
   const bases = useWorkspacePages<LiveKnowledgeBase>("/api/workspace/knowledge-bases");
   const [baseId, setBaseId] = useState(initialKnowledgeBaseId ?? "");
   const base = bases.items.find((item) => item.id === baseId) ?? bases.items[0] ?? null;
-  const traceRoot = base
-    ? `/api/workspace/knowledge-bases/${base.id}/retrieval`
-    : null;
+  const traceRoot = base ? `/api/workspace/knowledge-bases/${base.id}/retrieval` : null;
   const history = useWorkspacePages<RetrievalTraceSummary>(
     traceRoot ? `${traceRoot}/traces` : null,
   );
@@ -84,21 +84,24 @@ export function LiveTraceHistoryPage({
   const serial = useRef(0);
 
   const first = history.items.find((item) => item.id === firstId) ?? history.items[0] ?? null;
-  const second = history.items.find((item) => item.id === secondId && item.id !== first?.id) ?? null;
+  const second =
+    history.items.find((item) => item.id === secondId && item.id !== first?.id) ?? null;
   const detail = snapshot?.kb === base?.id && snapshot.id === first?.id ? snapshot.data : null;
-  const compared = comparison?.kb === base?.id &&
+  const compared =
+    comparison?.kb === base?.id &&
     comparison.first === first?.id &&
     comparison.second === second?.id
-    ? comparison.data
-    : null;
+      ? comparison.data
+      : null;
 
   const filtered = useMemo(() => {
     const search = filter.trim().toLowerCase();
-    return history.items.filter((item) =>
-      (modeFilter === "all" || modeFilter === item.mode) &&
-      (item.query.toLowerCase().includes(search) ||
-        item.id.toLowerCase().includes(search) ||
-        item.mode.toLowerCase().includes(search)),
+    return history.items.filter(
+      (item) =>
+        (modeFilter === "all" || modeFilter === item.mode) &&
+        (item.query.toLowerCase().includes(search) ||
+          item.id.toLowerCase().includes(search) ||
+          item.mode.toLowerCase().includes(search)),
     );
   }, [history.items, filter, modeFilter]);
 
@@ -198,11 +201,14 @@ export function LiveTraceHistoryPage({
       />
       <div className="inline-notice">
         <Icon name="shield" size={16} />
-        All comparisons use immutable saved trace snapshots from the backend. They do not
-        rerun searches or call an embedding model. Rank and overlap changes alone do
-        not measure answer quality.
+        All comparisons use immutable saved trace snapshots from the backend. They do not rerun
+        searches or call an embedding model. Rank and overlap changes alone do not measure answer
+        quality.
       </div>
-      <Panel title="Trace workspace" hint="Choose the knowledge base that contains your saved retrievals">
+      <Panel
+        title="Trace workspace"
+        hint="Choose the knowledge base that contains your saved retrievals"
+      >
         {bases.loading ? (
           <LoadingState label="Loading knowledge bases" />
         ) : bases.error ? (
@@ -212,18 +218,29 @@ export function LiveTraceHistoryPage({
             icon="database"
             title="No knowledge bases"
             description="Create a knowledge base and run a query before viewing saved traces."
-            action={<Link href="/knowledge-bases" className="button ghost compact">Manage sources</Link>}
+            action={
+              <Link href="/knowledge-bases" className="button ghost compact">
+                Manage sources
+              </Link>
+            }
           />
         ) : (
           <>
             <div className="trace-source-chooser">
               <div>
-                <label className="field-label" htmlFor="trace-kb">Knowledge base</label>
-                <select className="select-control" id="trace-kb"
+                <label className="field-label" htmlFor="trace-kb">
+                  Knowledge base
+                </label>
+                <select
+                  className="select-control"
+                  id="trace-kb"
                   value={base?.id ?? ""}
-                  onChange={(event) => selectBase(event.target.value)}>
+                  onChange={(event) => selectBase(event.target.value)}
+                >
                   {bases.items.map((item) => (
-                    <option key={item.id} value={item.id}>{item.name}</option>
+                    <option key={item.id} value={item.id}>
+                      {item.name}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -232,8 +249,12 @@ export function LiveTraceHistoryPage({
               </button>
             </div>
             {bases.hasMore ? (
-              <button type="button" className="button ghost compact live-load-more"
-                disabled={bases.loadingMore} onClick={() => void bases.loadMore()}>
+              <button
+                type="button"
+                className="button ghost compact live-load-more"
+                disabled={bases.loadingMore}
+                onClick={() => void bases.loadMore()}
+              >
                 {bases.loadingMore ? "Loading…" : "Load more knowledge bases"}
               </button>
             ) : null}
@@ -247,21 +268,40 @@ export function LiveTraceHistoryPage({
             title="Saved retrievals"
             hint="Newest first · filter currently loaded records"
             action={
-              <button type="button" className="button ghost compact"
-                onClick={() => { invalidate(); history.refresh(); }}
-                disabled={history.loading || history.loadingMore}>
+              <button
+                type="button"
+                className="button ghost compact"
+                onClick={() => {
+                  invalidate();
+                  history.refresh();
+                }}
+                disabled={history.loading || history.loadingMore}
+              >
                 <Icon name="refresh" size={14} /> Refresh
               </button>
             }
           >
             <div className="trace-filters">
-              <label className="sr-only" htmlFor="trace-search">Filter loaded traces</label>
-              <input id="trace-search" type="search" className="input-control"
+              <label className="sr-only" htmlFor="trace-search">
+                Filter loaded traces
+              </label>
+              <input
+                id="trace-search"
+                type="search"
+                className="input-control"
                 placeholder="Query, mode or trace ID..."
-                value={filter} onChange={(event) => setFilter(event.target.value)} />
-              <label className="sr-only" htmlFor="trace-mode-filter">Filter retrieval mode</label>
-              <select id="trace-mode-filter" className="select-control" value={modeFilter}
-                onChange={(event) => setModeFilter(event.target.value)}>
+                value={filter}
+                onChange={(event) => setFilter(event.target.value)}
+              />
+              <label className="sr-only" htmlFor="trace-mode-filter">
+                Filter retrieval mode
+              </label>
+              <select
+                id="trace-mode-filter"
+                className="select-control"
+                value={modeFilter}
+                onChange={(event) => setModeFilter(event.target.value)}
+              >
                 <option value="all">All modes</option>
                 <option value="keyword">Keyword</option>
                 <option value="vector">Vector</option>
@@ -277,35 +317,48 @@ export function LiveTraceHistoryPage({
                 icon="search"
                 title="No saved retrievals"
                 description="Run one or more queries in Retrieval Lab. Even a zero-result query saves a trace."
-                action={<Link href={`/retrieval?kb=${base.id}`} className="button ghost compact">
-                  Run a query
-                </Link>}
+                action={
+                  <Link href={`/retrieval?kb=${base.id}`} className="button ghost compact">
+                    Run a query
+                  </Link>
+                }
               />
             ) : filtered.length === 0 ? (
-              <EmptyState title="No loaded traces match"
-                description="Clear your filter or load another page to find older runs." />
+              <EmptyState
+                title="No loaded traces match"
+                description="Clear your filter or load another page to find older runs."
+              />
             ) : (
               <div className="trace-list">
                 {filtered.map((item) => (
                   <div className="live-trace-list-entry" key={item.id}>
-                    <button type="button"
+                    <button
+                      type="button"
                       className={"trace-row " + (item.id === first?.id ? "active" : "")}
                       aria-pressed={item.id === first?.id}
-                      onClick={() => selectFirst(item.id)}>
-                      <span className="trace-icon"><Icon name="search" size={17} /></span>
+                      onClick={() => selectFirst(item.id)}
+                    >
+                      <span className="trace-icon">
+                        <Icon name="search" size={17} />
+                      </span>
                       <span className="trace-content">
                         <strong>{item.query}</strong>
                         <small>
                           {item.mode} · {when(item.created_at)} · {item.result_count} result(s)
                         </small>
-                        <small>ID {item.id.slice(0, 8)} · Top K {item.top_k}</small>
+                        <small>
+                          ID {item.id.slice(0, 8)} · Top K {item.top_k}
+                        </small>
                       </span>
                       <span className="trace-duration">{elapsed(item.duration_ms)}</span>
                     </button>
-                    <button type="button" className="button ghost compact trace-compare-target"
+                    <button
+                      type="button"
+                      className="button ghost compact trace-compare-target"
                       disabled={item.id === first?.id}
                       aria-label={`Compare ${item.query} as B`}
-                      onClick={() => selectSecond(item.id)}>
+                      onClick={() => selectSecond(item.id)}
+                    >
                       {second?.id === item.id ? "Selected B" : "Use as B"}
                     </button>
                   </div>
@@ -313,9 +366,12 @@ export function LiveTraceHistoryPage({
               </div>
             )}
             {history.hasMore ? (
-              <button type="button" className="button ghost live-load-more"
+              <button
+                type="button"
+                className="button ghost live-load-more"
                 disabled={history.loadingMore}
-                onClick={() => void history.loadMore()}>
+                onClick={() => void history.loadMore()}
+              >
                 {history.loadingMore ? "Loading…" : "Load older traces"}
               </button>
             ) : null}
@@ -330,73 +386,136 @@ export function LiveTraceHistoryPage({
               <>
                 <h3 className="trace-query-title">{first.query}</h3>
                 <div className="trace-stat-grid">
-                  <span><strong>{first.result_count}</strong><small>Saved results</small></span>
-                  <span><strong>{elapsed(first.duration_ms)}</strong><small>Duration</small></span>
-                  <span><strong>Top {first.top_k}</strong><small>Requested K</small></span>
+                  <span>
+                    <strong>{first.result_count}</strong>
+                    <small>Saved results</small>
+                  </span>
+                  <span>
+                    <strong>{elapsed(first.duration_ms)}</strong>
+                    <small>Duration</small>
+                  </span>
+                  <span>
+                    <strong>Top {first.top_k}</strong>
+                    <small>Requested K</small>
+                  </span>
                 </div>
                 <div className="trace-detail-facts">
-                  <span>Trace ID <strong>{first.id}</strong></span>
-                  <span>Created <strong>{when(first.created_at)}</strong></span>
+                  <span>
+                    Trace ID <strong>{first.id}</strong>
+                  </span>
+                  <span>
+                    Created <strong>{when(first.created_at)}</strong>
+                  </span>
                   {first.mode === "hybrid" ? (
-                    <span>Hybrid pool <strong>Candidate K {first.candidate_k} · RRF K {first.rrf_k}</strong></span>
+                    <span>
+                      Hybrid pool{" "}
+                      <strong>
+                        Candidate K {first.candidate_k} · RRF K {first.rrf_k}
+                      </strong>
+                    </span>
                   ) : null}
-                  <span>Embedding <strong>{first.embedding_model ?? "Not applicable (keyword)"}
-                    {first.embedding_dimensions ? ` · ${first.embedding_dimensions} dimensions` : ""}</strong></span>
+                  <span>
+                    Embedding{" "}
+                    <strong>
+                      {first.embedding_model ?? "Not applicable (keyword)"}
+                      {first.embedding_dimensions
+                        ? ` · ${first.embedding_dimensions} dimensions`
+                        : ""}
+                    </strong>
+                  </span>
                 </div>
                 <div className="retrieval-inspector-actions">
-                  <button type="button" className="button primary compact" disabled={snapshotBusy}
-                    onClick={() => void inspect()}>
+                  <button
+                    type="button"
+                    className="button primary compact"
+                    disabled={snapshotBusy}
+                    onClick={() => void inspect()}
+                  >
                     <Icon name="layers" size={14} />
-                    {snapshotBusy ? "Reading…" : detail ? "Reload saved evidence" : "View saved evidence"}
+                    {snapshotBusy
+                      ? "Reading…"
+                      : detail
+                        ? "Reload saved evidence"
+                        : "View saved evidence"}
                   </button>
                   <Link href={`/retrieval?kb=${base.id}`} className="button ghost compact">
                     <Icon name="play" size={14} /> Run another query
                   </Link>
                 </div>
-                {snapshotError ? <div className="inline-notice live-error" role="alert">{snapshotError}</div> : null}
+                {snapshotError ? (
+                  <div className="inline-notice live-error" role="alert">
+                    {snapshotError}
+                  </div>
+                ) : null}
                 {detail ? (
                   <div className="trace-evidence">
-                    {detail.results.length ? detail.results.map((item) => (
-                      <div className="trace-evidence-row live-trace-evidence" key={item.chunk_id}>
-                        <span className="result-rank">{String(item.rank).padStart(2, "0")}</span>
-                        <div>
-                          <strong>Chunk {item.chunk_index + 1} · {item.chunk_id.slice(0, 8)}</strong>
-                          <p>{item.text}</p>
-                          <small>Source offsets {item.start_offset}–{item.end_offset}</small>
-                          <small>Raw {traceScoreLabel(detail.mode)}: {
-                            otherScore(
-                              detail.mode === "vector"
-                                ? item.cosine_similarity
-                                : detail.mode === "keyword" ? item.keyword_score : item.rrf_score,
-                              detail.mode === "hybrid" ? 6 : detail.mode === "keyword" ? 5 : 4,
-                            )
-                          }</small>
-                          <Link href={`/chunks?kb=${base.id}&doc=${item.document_id}`}
-                            className="text-hint">Inspect original document</Link>
+                    {detail.results.length ? (
+                      detail.results.map((item) => (
+                        <div className="trace-evidence-row live-trace-evidence" key={item.chunk_id}>
+                          <span className="result-rank">{String(item.rank).padStart(2, "0")}</span>
+                          <div>
+                            <strong>
+                              Chunk {item.chunk_index + 1} · {item.chunk_id.slice(0, 8)}
+                            </strong>
+                            <p>{item.text}</p>
+                            <small>
+                              Source offsets {item.start_offset}–{item.end_offset}
+                            </small>
+                            <small>
+                              Raw {traceScoreLabel(detail.mode)}:{" "}
+                              {otherScore(
+                                detail.mode === "vector"
+                                  ? item.cosine_similarity
+                                  : detail.mode === "keyword"
+                                    ? item.keyword_score
+                                    : item.rrf_score,
+                                detail.mode === "hybrid" ? 6 : detail.mode === "keyword" ? 5 : 4,
+                              )}
+                            </small>
+                            <Link
+                              href={`/chunks?kb=${base.id}&doc=${item.document_id}`}
+                              className="text-hint"
+                            >
+                              Inspect original document
+                            </Link>
+                          </div>
                         </div>
-                      </div>
-                    )) : (
-                      <EmptyState title="Zero-result saved trace"
-                        description="This completed run returned no indexed chunks; its query and timing are still persisted." />
+                      ))
+                    ) : (
+                      <EmptyState
+                        title="Zero-result saved trace"
+                        description="This completed run returned no indexed chunks; its query and timing are still persisted."
+                      />
                     )}
                   </div>
                 ) : null}
               </>
             ) : (
-              <EmptyState title="Select a trace"
-                description="Choose a saved retrieval on the left to inspect its source data." />
+              <EmptyState
+                title="Select a trace"
+                description="Choose a saved retrieval on the left to inspect its source data."
+              />
             )}
           </Panel>
         </div>
       ) : null}
 
       {base && history.items.length > 0 ? (
-        <Panel title="Compare two saved retrievals" hint="Read-only comparison · A is the selected trace, B is a second run from this knowledge base">
+        <Panel
+          title="Compare two saved retrievals"
+          hint="Read-only comparison · A is the selected trace, B is a second run from this knowledge base"
+        >
           <div className="trace-comparison-controls">
             <div>
-              <label htmlFor="trace-first" className="field-label">Trace A · baseline</label>
-              <select id="trace-first" className="select-control"
-                value={first?.id ?? ""} onChange={(event) => selectFirst(event.target.value)}>
+              <label htmlFor="trace-first" className="field-label">
+                Trace A · baseline
+              </label>
+              <select
+                id="trace-first"
+                className="select-control"
+                value={first?.id ?? ""}
+                onChange={(event) => selectFirst(event.target.value)}
+              >
                 {history.items.map((item) => (
                   <option key={item.id} value={item.id}>
                     {item.mode} · {item.query.slice(0, 70)} · {item.id.slice(0, 8)}
@@ -405,26 +524,40 @@ export function LiveTraceHistoryPage({
               </select>
             </div>
             <div>
-              <label htmlFor="trace-second" className="field-label">Trace B · comparison</label>
-              <select id="trace-second" className="select-control"
+              <label htmlFor="trace-second" className="field-label">
+                Trace B · comparison
+              </label>
+              <select
+                id="trace-second"
+                className="select-control"
                 value={second?.id ?? ""}
-                onChange={(event) => selectSecond(event.target.value)}>
+                onChange={(event) => selectSecond(event.target.value)}
+              >
                 <option value="">Choose a different saved trace</option>
-                {history.items.filter((item) => item.id !== first?.id).map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.mode} · {item.query.slice(0, 70)} · {item.id.slice(0, 8)}
-                  </option>
-                ))}
+                {history.items
+                  .filter((item) => item.id !== first?.id)
+                  .map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.mode} · {item.query.slice(0, 70)} · {item.id.slice(0, 8)}
+                    </option>
+                  ))}
               </select>
             </div>
-            <button type="button" className="button primary"
+            <button
+              type="button"
+              className="button primary"
               disabled={!first || !second || comparisonBusy}
-              onClick={() => void compare()}>
+              onClick={() => void compare()}
+            >
               <Icon name="activity" size={16} />
               {comparisonBusy ? "Comparing…" : "Compare saved traces"}
             </button>
           </div>
-          {comparisonError ? <div className="inline-notice live-error" role="alert">{comparisonError}</div> : null}
+          {comparisonError ? (
+            <div className="inline-notice live-error" role="alert">
+              {comparisonError}
+            </div>
+          ) : null}
           {compared ? (
             <>
               {!compared.same_query ? (
@@ -437,49 +570,85 @@ export function LiveTraceHistoryPage({
               {compared.first.mode !== compared.second.mode ? (
                 <div className="inline-notice">
                   <Icon name="info" size={16} />
-                  Different retrieval modes: raw cosine, PostgreSQL FTS and RRF scores use
-                  different scales and must not be compared numerically across modes.
+                  Different retrieval modes: raw cosine, PostgreSQL FTS and RRF scores use different
+                  scales and must not be compared numerically across modes.
                 </div>
               ) : null}
               <div className="trace-compare-stats">
-                <span><small>Shared chunks</small><strong>{compared.overlap_count}</strong></span>
-                <span><small>Union of chunks</small><strong>{compared.union_count}</strong></span>
-                <span><small>Jaccard overlap</small>
-                  <strong>{compared.overlap_ratio === null
-                    ? "N/A · no chunks" : `${(compared.overlap_ratio * 100).toFixed(1)}%`}</strong>
+                <span>
+                  <small>Shared chunks</small>
+                  <strong>{compared.overlap_count}</strong>
                 </span>
-                <span><small>Only in A / B</small>
-                  <strong>{compared.first_only_count} / {compared.second_only_count}</strong>
+                <span>
+                  <small>Union of chunks</small>
+                  <strong>{compared.union_count}</strong>
                 </span>
-                <span><small>B duration − A duration</small>
-                  <strong>{compared.duration_delta_ms >= 0 ? "+" : ""}{elapsed(compared.duration_delta_ms)}</strong>
+                <span>
+                  <small>Jaccard overlap</small>
+                  <strong>
+                    {compared.overlap_ratio === null
+                      ? "N/A · no chunks"
+                      : `${(compared.overlap_ratio * 100).toFixed(1)}%`}
+                  </strong>
+                </span>
+                <span>
+                  <small>Only in A / B</small>
+                  <strong>
+                    {compared.first_only_count} / {compared.second_only_count}
+                  </strong>
+                </span>
+                <span>
+                  <small>B duration − A duration</small>
+                  <strong>
+                    {compared.duration_delta_ms >= 0 ? "+" : ""}
+                    {elapsed(compared.duration_delta_ms)}
+                  </strong>
                 </span>
               </div>
               <div className="trace-run-side-by-side">
                 {([compared.first, compared.second] as const).map((side, index) => (
                   <div className="trace-run-side" key={side.trace_id}>
-                    <strong>Trace {index === 0 ? "A" : "B"} · {side.mode}</strong>
+                    <strong>
+                      Trace {index === 0 ? "A" : "B"} · {side.mode}
+                    </strong>
                     <small>{side.query}</small>
-                    <small>Top {side.top_k} · {side.result_count} result(s) · {elapsed(side.duration_ms)}</small>
+                    <small>
+                      Top {side.top_k} · {side.result_count} result(s) · {elapsed(side.duration_ms)}
+                    </small>
                     {side.mode === "hybrid" ? (
-                      <small>Candidate K {side.candidate_k} · RRF K {side.rrf_k}</small>
+                      <small>
+                        Candidate K {side.candidate_k} · RRF K {side.rrf_k}
+                      </small>
                     ) : null}
-                    <small>{side.embedding_model ?? "No query embeddings"}
-                      {side.embedding_dimensions ? ` · ${side.embedding_dimensions} dimensions` : ""}</small>
+                    <small>
+                      {side.embedding_model ?? "No query embeddings"}
+                      {side.embedding_dimensions
+                        ? ` · ${side.embedding_dimensions} dimensions`
+                        : ""}
+                    </small>
                   </div>
                 ))}
               </div>
               <h3 className="subsection-title">Aligned ranked evidence</h3>
               {compared.results.length === 0 ? (
-                <EmptyState title="Both traces returned no matches"
-                  description="There are no chunks to align. The comparison still preserves the queries, timing and configuration." />
+                <EmptyState
+                  title="Both traces returned no matches"
+                  description="There are no chunks to align. The comparison still preserves the queries, timing and configuration."
+                />
               ) : (
                 <div className="trace-aligned-results">
                   {compared.results.map((item) => (
                     <div className="trace-aligned-row" key={item.chunk_id}>
                       <div className="trace-aligned-heading">
-                        <strong>Chunk {item.chunk_index + 1} · {item.chunk_id.slice(0, 8)}</strong>
-                        <span className={"status-badge " + (item.rank_delta !== null && item.rank_delta < 0 ? "success" : "")}>
+                        <strong>
+                          Chunk {item.chunk_index + 1} · {item.chunk_id.slice(0, 8)}
+                        </strong>
+                        <span
+                          className={
+                            "status-badge " +
+                            (item.rank_delta !== null && item.rank_delta < 0 ? "success" : "")
+                          }
+                        >
                           {rankMovement(item.rank_delta, item.first_rank, item.second_rank)}
                         </span>
                       </div>
@@ -487,25 +656,40 @@ export function LiveTraceHistoryPage({
                       <div className="trace-aligned-details">
                         <span>Rank A: {item.first_rank ?? "—"}</span>
                         <span>Rank B: {item.second_rank ?? "—"}</span>
-                        <span>Source {item.start_offset}–{item.end_offset}</span>
+                        <span>
+                          Source {item.start_offset}–{item.end_offset}
+                        </span>
                       </div>
                       {compared.first.mode === compared.second.mode ? (
                         <ScoreCell item={item} mode={compared.first.mode} />
                       ) : (
                         <div className="trace-score-pair">
-                          A {traceScoreLabel(compared.first.mode)}: {
-                            formatTraceScore(
-                              compared.first.mode === "vector" ? item.first_cosine_similarity :
-                              compared.first.mode === "keyword" ? item.first_keyword_score : item.first_rrf_score,
-                              compared.first.mode === "hybrid" ? 6 : compared.first.mode === "keyword" ? 5 : 4,
-                            )
-                          } · B {traceScoreLabel(compared.second.mode)}: {
-                            formatTraceScore(
-                              compared.second.mode === "vector" ? item.second_cosine_similarity :
-                              compared.second.mode === "keyword" ? item.second_keyword_score : item.second_rrf_score,
-                              compared.second.mode === "hybrid" ? 6 : compared.second.mode === "keyword" ? 5 : 4,
-                            )
-                          }
+                          A {traceScoreLabel(compared.first.mode)}:{" "}
+                          {formatTraceScore(
+                            compared.first.mode === "vector"
+                              ? item.first_cosine_similarity
+                              : compared.first.mode === "keyword"
+                                ? item.first_keyword_score
+                                : item.first_rrf_score,
+                            compared.first.mode === "hybrid"
+                              ? 6
+                              : compared.first.mode === "keyword"
+                                ? 5
+                                : 4,
+                          )}{" "}
+                          · B {traceScoreLabel(compared.second.mode)}:{" "}
+                          {formatTraceScore(
+                            compared.second.mode === "vector"
+                              ? item.second_cosine_similarity
+                              : compared.second.mode === "keyword"
+                                ? item.second_keyword_score
+                                : item.second_rrf_score,
+                            compared.second.mode === "hybrid"
+                              ? 6
+                              : compared.second.mode === "keyword"
+                                ? 5
+                                : 4,
+                          )}
                         </div>
                       )}
                     </div>
@@ -513,15 +697,15 @@ export function LiveTraceHistoryPage({
                 </div>
               )}
               <p className="text-hint">
-                Rank movement = B rank − A rank: negative moves toward rank 1, positive
-                moves away. This is a descriptive comparison of stored outputs, not
-                relevance evaluation or a causal quality assessment.
+                Rank movement = B rank − A rank: negative moves toward rank 1, positive moves away.
+                This is a descriptive comparison of stored outputs, not relevance evaluation or a
+                causal quality assessment.
               </p>
             </>
           ) : (
             <p className="muted-panel-note">
-              Select two different stored traces from this knowledge base, then compare.
-              No search is rerun and no model API request is made.
+              Select two different stored traces from this knowledge base, then compare. No search
+              is rerun and no model API request is made.
             </p>
           )}
         </Panel>
