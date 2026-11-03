@@ -340,3 +340,38 @@ jobs:
 
       - name: Production build
         run: npm run build
+
+  compose:
+    name: Local Compose smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7.0.1
+
+      - name: Set up Python for local bootstrap
+        uses: actions/setup-python@v7.0.0
+        with:
+          python-version: "3.13"
+
+      - name: Initialize local environment without logging secrets
+        run: python3 scripts/init_dev_env.py
+
+      - name: Validate Compose configuration
+        run: docker compose --env-file .env config --quiet
+
+      - name: Build and start full development stack
+        run: make up
+
+      - name: Smoke-test migrated database, bearer-protected API and frontend
+        run: make status
+
+      - name: Inspect service logs on failure
+        if: failure()
+        run: |
+          docker compose --env-file .env ps -a || true
+          docker compose --env-file .env logs --tail=150 || true
+
+      - name: Remove CI containers and disposable volumes
+        if: always()
+        run: docker compose --env-file .env down --volumes --remove-orphans

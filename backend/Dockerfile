@@ -1,0 +1,22 @@
+# Development image. Compose supplies source-code bind mounts for hot reload.
+FROM python:3.13-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+WORKDIR /app
+
+COPY pyproject.toml ./
+COPY src ./src
+RUN python -m pip install --no-cache-dir -e .
+
+COPY alembic.ini ./
+COPY migrations ./migrations
+
+RUN useradd --create-home --uid 10001 spurel \
+    && mkdir -p /app/.spurel/storage \
+    && chown -R spurel:spurel /app
+USER spurel
+
+EXPOSE 8000
+CMD ["uvicorn", "spurel.main:app", "--host", "0.0.0.0", "--port", "8000"]
