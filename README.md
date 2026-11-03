@@ -14,7 +14,7 @@
 </p>
 
 > [!IMPORTANT]
-> **Pre-alpha, not production ready.** The backend has working ingestion, retrieval, RAG and evaluation APIs. The Next.js frontend now has an **interactive design-preview shell** in SP-09 (this PR), using clearly labeled sample data; actual API-backed screens are planned for SP-10–SP-15. Images below are product **concept designs**, not screenshots of a functioning workbench.
+> **Pre-alpha, not production ready.** Knowledge Bases, Documents and Chunk Inspector are backed by live FastAPI/PostgreSQL data after local operator sign-in. Retrieval, evaluation, traces and RAG answer screens still use **clearly labeled sample data**. The images below are concept illustrations, not verified screenshots of backend results.
 
 [Quick start](#quick-start) · [Implemented today](#implemented-today) · [Architecture](docs/architecture.md) · [Roadmap](docs/roadmap.md) · [Development guide](docs/development.md) · [Benchmark CI](docs/quality-gate-ci.md)
 
@@ -22,7 +22,7 @@
 
 Spurel helps RAG developers understand **which document chunks were retrieved, how they ranked, whether the answer was grounded, and whether a change improved retrieval quality**.
 
-The current backend supports a measurable path from document upload to retrieval traces and persisted benchmark runs. The approved design is implemented as an interactive, navigable frontend preview, but its metrics, documents and retrieval results are **illustrative**, not backend data.
+The backend supports document ingestion, persisted chunk versions, retrieval traces, and evaluation runs. The frontend now exposes **live source and chunk inspection**; retrieval/evaluation/answer metrics shown in other screens are still **illustrative**, not live backend results.
 
 ## Quick start
 
@@ -39,7 +39,7 @@ make down     # Stop without deleting the local database or uploaded files
 
 | Local service | URL or port | Status |
 | --- | --- | --- |
-| Next.js frontend | http://127.0.0.1:3000 | Live KB/documents after local operator login; other screens are demos |
+| Next.js frontend | http://127.0.0.1:3000 | Live knowledge bases, documents and chunks after local operator login |
 | FastAPI health | http://127.0.0.1:8000/health | Public |
 | FastAPI business API | http://127.0.0.1:8000/knowledge-bases | Shared bearer token required |
 | PostgreSQL + pgvector | 127.0.0.1:5432 | Local development only |
@@ -56,26 +56,38 @@ curl -H "Authorization: Bearer $SPUREL_API_TOKEN" \
 
 No OpenAI key is required to **start** the stack or manage knowledge bases. Document embedding and generated answers require provider credentials and configuration. See the [development guide](docs/development.md) for environment variables, tests, migrations, alternate ports and data safety.
 
-## Frontend preview (SP-09)
+## Interactive frontend (SP-09–SP-11)
 
 The approved midnight-blue, cyan and violet design is implemented in Next.js as a responsive
 application shell with keyboard command search (**⌘K / Ctrl+K**), theme switching, and eight
-interactive demo views: Overview, Knowledge Bases, Retrieval Lab, Chunk Inspector, Evaluations,
-Trace History, RAG Answers, and Settings. You can change retrieval mode and Top K, inspect
-different sample documents and chunk versions, compare sample runs, and explore cited example
-answers. **Every sample result, metric and document is fabricated for this design preview.**
+routes: Overview, Knowledge Bases, Retrieval Lab, Chunk Inspector, Evaluations,
+Trace History, RAG Answers, and Settings. You can change retrieval mode and Top K,
+compare illustrative benchmark runs, and explore sample RAG answers. **Only
+Knowledge Bases, Documents and Chunk Inspector are currently API-backed.**
 
-**SP-10 connects live Knowledge Bases and Documents** through a signed, HTTP-only local
-operator session. Create collections, upload files and process them directly against your
-PostgreSQL-backed FastAPI API. The backend bearer token is used **only in the Next.js server**,
-never sent to browser JavaScript. Retrieval, chunk inspection, evaluation, trace and RAG
-views remain illustrative demo screens until subsequent SP-11–SP-15 milestones.
+**SP-10 connects live Knowledge Bases and Documents**, and **SP-11 connects the
+Chunk Inspector** through the same signed, HTTP-only local operator session.
+Create collections, upload and process documents, then inspect the active chunks
+and historic processing versions, including exact offsets, UUIDs and embedding
+availability. The backend bearer token stays **only on the Next.js server**.
+Retrieval, evaluations, traces and RAG answers remain demos until SP-12–SP-15.
 
 After `make up`, find your locally generated operator password in the ignored
 `.env` by running `grep '^SPUREL_FRONTEND_OPERATOR_PASSWORD=' .env` from the repo root.
 Open `http://localhost:3000/knowledge-bases` (or your configured frontend host port)
 and sign in. Never share the password or session signing secret. Use `make up` after
 pulling SP-10 to add the missing settings to **existing** `.env` files.
+
+## Inspect real chunks (SP-11)
+
+Once signed in, open [Chunk Inspector](http://localhost:3000/chunks) or select
+**Inspect chunks** beside a document in Knowledge Bases. Select its active
+index or a saved older version to view the actual stored excerpts, chunk UUIDs,
+source character offsets, processing status and embedding-record counts.
+Historical versions are **read-only and not used by normal retrieval**.
+Pagination and text filtering operate on explicitly loaded pages, not the
+entire database. An uploaded but unprocessed document correctly shows **no
+active chunks**; indexing requires a configured embedding provider.
 
 ## Implemented today
 
@@ -91,6 +103,7 @@ pulling SP-10 to add the missing settings to **existing** `.env` files.
 | RAG answers | Hybrid retrieval plus OpenAI text generation, bounded source excerpts and model-requested source labels | [RAG](backend/src/spurel/rag/) |
 | Reprocessing | Immutable chunk-set versions, stable UUIDs for unchanged chunks, staged embeddings, fenced retries and atomic activation | [Processing](backend/src/spurel/documents/processing.py) |
 | Live frontend source management | Local operator login, live knowledge-base creation/list, document upload/list and indexing, server-only backend proxy | [Knowledge bases](frontend/components/live/knowledge-bases.tsx) |
+| Live Chunk Inspector | Read-only active chunks, historical versions, persisted text, offsets, embedding counts, filtering and pagination | [Chunk Inspector](frontend/components/live/chunk-inspector.tsx) |
 | Local developer tools | Full-stack Docker Compose, Alembic, pytest/PostgreSQL integration checks, Ruff, frontend lint/types/tests/build | [Development](docs/development.md) |
 
 **Security boundary:** A local operator password gates the Next.js source-management API. A
@@ -100,7 +113,7 @@ local access**, not per-user authorization, RBAC, or permission-aware multi-tena
 
 ## Not implemented yet
 
-The following are roadmap items, **not current capabilities**: API-connected frontend workflows, token-aware/structured chunking, OCR or scanned-PDF support, BM25, HNSW/ANN indexing, metadata retrieval filters, cross-encoder reranking, citation verification, additional hosted/local model adapters, multi-source connectors, experiment export, durable background ingestion and production-grade multi-user authorization.
+The following are roadmap items, **not current capabilities**: live retrieval/evaluation/trace/RAG frontend workflows, token-aware/structured chunking, OCR or scanned-PDF support, BM25, HNSW/ANN indexing, metadata retrieval filters, cross-encoder reranking, citation verification, additional hosted/local model adapters, multi-source connectors, experiment export, durable background ingestion and production-grade multi-user authorization.
 
 For task scope and order, see the [maintained roadmap](docs/roadmap.md).
 
@@ -124,7 +137,7 @@ Set `SPUREL_ENABLE_DOCS=1` **only in a trusted local environment** to expose Swa
 ## Architecture at a glance
 
 ```text
-Next.js interactive demo (backend wiring planned)
+Next.js live source/chunk inspection + other demo views
           |
           v
  FastAPI + shared bearer authentication
@@ -142,7 +155,7 @@ Backend code is organized into domain/application services, interfaces (ports), 
 
 ## UI vision (concepts only)
 
-These images illustrate the planned interface. The repository now serves a responsive React implementation of this design with **sample-only data**. These images remain illustrative mockups; they are not screenshots of live Spurel backend results.
+These images illustrate the planned interface. The repository now serves a responsive React workbench with **live source/chunk inspection** and sample-only retrieval/evaluation views. These images remain illustrative mockups; they are not screenshots of live Spurel backend results.
 
 <p align="center">
   <img src="./docs/assets/retrieval-playground.svg" alt="Concept only: retrieval playground with candidate scores" width="100%" />
@@ -156,7 +169,7 @@ The future workbench will make source candidates, scoring, chunk boundaries, eva
 
 ## Roadmap and contributing
 
-The [roadmap](docs/roadmap.md) tracks **SP-01–SP-28** by phase, distinguishes merged foundations from upcoming work, and lists priorities and acceptance criteria. SP-09 introduces the interactive frontend shell and demo screens. SP-10–SP-15 will connect those screens to real backend workflows through an authenticated server-only boundary.
+The [roadmap](docs/roadmap.md) tracks **SP-01–SP-28** by phase, distinguishes merged foundations from upcoming work, and lists priorities and acceptance criteria. SP-09 built the frontend shell, SP-10 connected source management and SP-11 connects chunk inspection. SP-12–SP-15 will implement the remaining retrieval/evaluation/trace/RAG workflows.
 
 Spurel is being built in public. For substantial changes, open an issue first and follow the existing architecture and tests. Good contribution areas include retrieval strategies, parsers, evaluation methods, reliable ingestion, UI, and documentation.
 

@@ -434,6 +434,13 @@ export function LiveKnowledgeBasesPage() {
                         : "Uploaded · not indexed"}
                     </span>
                   </div>
+                  <Link
+                    href={`/chunks?kb=${selectedId}&doc=${document.id}`}
+                    className="button ghost compact"
+                    aria-label={`Inspect chunks of ${document.filename}`}
+                  >
+                    <Icon name="layers" size={14} /> Inspect chunks
+                  </Link>
                   <button
                     type="button"
                     className="button ghost compact"
@@ -462,8 +469,8 @@ export function LiveKnowledgeBasesPage() {
             </button>
           ) : null}
           <p className="muted-panel-note">
-            Processing requires <code>OPENAI_API_KEY</code> in your server environment. Historical
-            chunk inspection is the next workbench integration.
+            Processing requires <code>OPENAI_API_KEY</code> in your server environment. Inspect the
+            active index and older versions in the Chunk Inspector.
           </p>
         </Panel>
       ) : null}

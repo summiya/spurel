@@ -2,15 +2,16 @@
 
 [← README](../README.md) · [Roadmap](roadmap.md) · [Local development](development.md)
 
-Spurel has working backend APIs and an interactive Next.js frontend. SP-10 wires the
-Knowledge Bases and Documents screen to the backend through local operator
-authentication. Other workbench screens continue to use clearly labeled fixtures.
+Spurel has working backend APIs and an interactive Next.js frontend. SP-10 wires
+Knowledge Bases and Documents to FastAPI; SP-11 adds **read-only live chunk
+and historical version inspection** using the same local operator session.
+Retrieval, evaluation, traces and generated answer screens remain fixtures.
 
 ## System boundary
 
 ```text
-                             Next.js interactive demo
-                            (fixtures, not backend data)
+                             Next.js live source / chunk inspector
+                            + separate demo-only views
                                       |
                                       v
                           FastAPI business endpoints
@@ -44,7 +45,7 @@ FastAPI runs on Python 3.13 and uses Pydantic schemas, application services, int
 | [`evaluation_datasets/`](../backend/src/spurel/evaluation_datasets/) | Labeled data, benchmarks, baseline history, quality gates and CLI |
 | [`infrastructure/`](../backend/src/spurel/infrastructure/) | PDF/text parsers, fixed character chunker, local storage, OpenAI adapters |
 | [`backend/migrations/`](../backend/migrations/) | PostgreSQL schema migrations |
-| [`frontend/app/`](../frontend/app/) | Live Knowledge Bases and Documents routes behind operator sign-in; other workbench views use fixtures pending later milestones |
+| [`frontend/app/`](../frontend/app/) | Live Knowledge Bases, Documents and Chunk Inspector routes behind operator sign-in; other workbench views remain fixtures |
 
 ## Ingestion and versioned indexing
 
@@ -58,6 +59,15 @@ FastAPI runs on Python 3.13 and uses Pydantic schemas, application services, int
 The indexer uses a per-document processing lease and fenced attempt ID to prevent a stale worker from activating a reclaimed version. **It runs in the HTTP request**, not in a durable job queue. A provider call longer than the lease is a known recovery edge case; see the [roadmap](roadmap.md).
 
 Historical versions, IDs and embeddings remain inspectable, even after activation of a newer version. Old relevance labels are deliberately not cascaded away.
+
+The **SP-11 Chunk Inspector** reads the existing FastAPI document, version and
+chunk-inspection endpoints through explicit operator-authenticated Next.js GET
+handlers. Active chunks use the normal `/chunks` read endpoint; selecting a
+historical version fetches `/versions/{version}/chunks` without promoting it.
+The UI exposes persisted text, zero-based chunk index, source offsets and the
+number of embedding records, **not** invented similarity/quality scores.
+Each list is paginated, and unindexed uploads return empty active chunk lists.
+The frontend sends no embedding or generation requests during inspection.
 
 ## Retrieval and RAG
 
@@ -115,6 +125,6 @@ development workflow**, not scalable user identity or tenant authorization.
 
 ## What is planned, not implemented
 
-The approved design now exists as a fixture-based interactive React preview. The following are **not built**: live API-connected debugging UI, recursive/semantic/token-aware chunking, scanned-PDF OCR, BM25, pgvector ANN/HNSW, metadata filters, rerankers, citation verification, non-OpenAI providers, data-source connectors, Redis-backed background jobs, experiment export and production auth/monitoring.
+The frontend has live source/chunk inspection and fixture-based advanced workbench views. The following are **not built**: live retrieval/evaluation/trace/RAG UI, recursive/semantic/token-aware chunking, scanned-PDF OCR, BM25, pgvector ANN/HNSW, metadata filters, rerankers, citation verification, non-OpenAI providers, data-source connectors, Redis-backed background jobs, experiment export and production auth/monitoring.
 
 For the exact implementation order and deliverables, use [SP-01–SP-28 roadmap](roadmap.md).

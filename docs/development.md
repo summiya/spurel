@@ -2,7 +2,7 @@
 
 [← README](../README.md) · [Architecture](architecture.md) · [Roadmap](roadmap.md) · [Benchmark gates](quality-gate-ci.md)
 
-This guide covers Spurel's **working pre-alpha backend** and **interactive, sample-data Next.js frontend foundation**. The Docker Compose configuration is for **localhost development, not production**.
+This guide covers Spurel's **working pre-alpha backend** and its Next.js frontend, including live source and chunk inspection plus separate demo-only retrieval/evaluation views. The Docker Compose configuration is for **localhost development, not production**.
 
 ## Requirements and startup
 
@@ -23,7 +23,7 @@ make down     # Stop containers and preserve DB/document volumes
 | PostgreSQL 17 + pgvector | 127.0.0.1:5432 | Docker |
 | Alembic migrator | One-shot service; no port | PostgreSQL healthy |
 | FastAPI backend | http://127.0.0.1:8000 | Migrations completed |
-| Next.js sample-data workbench | http://127.0.0.1:3000 | Backend healthy |
+| Next.js source/chunk workbench | http://127.0.0.1:3000 | Backend healthy |
 
 The `Makefile` passes your local UID/GID to the frontend container so the Next.js process can safely write bind-mounted source files on Linux. Its `node_modules` and `.next` directories use named volumes.
 
@@ -38,7 +38,7 @@ make frontend  # Follow frontend logs
 
 **Service names:** `postgres`, `migrate`, `backend`, `frontend`. The backend communicates with the DB using `postgres:5432` inside the Compose network, not `localhost`.
 
-## Live knowledge bases and document management (SP-10)
+## Live knowledge bases, documents and chunk inspection (SP-10–SP-11)
 
 After pulling SP-10, run `make up` from the repository root, **including on an
 existing installation**. The bootstrap adds two new strong random secrets to
@@ -58,6 +58,15 @@ documents (max **25 MB**) and trigger processing. Indexing requires a valid
 `OPENAI_API_KEY`; without one, document uploads still work but indexing fails
 with a service-unavailable message.
 
+For **SP-11**, open `/chunks` after signing in, or click **Inspect chunks**
+next to an uploaded document. The page lists actual database-backed
+knowledge bases, documents and saved chunk-set versions, including the active
+index, historical snapshots, stored text, source character offsets, chunk UUIDs,
+embedding counts and `processing/ready/failed` status. These reads never
+alter the active version. Loading more and searching the currently loaded
+chunks are explicitly distinguished from full-index searching. Documents
+without a successfully published index show no active chunks.
+
 The frontend keeps a **signed, 8-hour, HTTP-only, SameSite=Strict** local
 operator cookie. The Next.js server alone knows the backend `SPUREL_API_TOKEN`
 and calls `http://backend:8000` within Compose. Browser write requests require
@@ -65,7 +74,7 @@ a same-origin `Origin` header; unknown paths and identifiers are not forwarded
 via a generic proxy. Signing out clears the cookie. This simple single-operator
 access is **not a production login or multi-tenant authorization system**.
 
-**Other Spurel screens remain interactive demos**, with clearly labeled
+**Retrieval, evaluations, traces and RAG answers remain interactive demos**, with clearly labeled
 illustrative evidence and metrics. Do not mistake their results for saved
 database records.
 
@@ -108,8 +117,8 @@ curl -H "Authorization: Bearer $SPUREL_API_TOKEN" \
 
 Anonymous protected requests return `401`; a missing or weak *server-side* token configuration disables the protected routes with `503`. `SPUREL_ENABLE_DOCS=1` enables `/docs` and `/openapi.json` without protecting the schema itself, so use it only on a trusted interface.
 
-**Never place this token in `NEXT_PUBLIC_*` environment variables or send it from browser JavaScript.** Spurel currently has **no** user/session authentication, RBAC or true tenant authorization. SP-10 provides a local operator session for the protected Knowledge Bases and Documents
-APIs only. The other screens still show demo data. No protected API proxy is
+**Never place this token in `NEXT_PUBLIC_*` environment variables or send it from browser JavaScript.** Spurel currently has **no** user/session authentication, RBAC or true tenant authorization. SP-10 and SP-11 use a local operator session for protected Knowledge Bases,
+Documents, and read-only Chunk Inspector APIs. Remaining screens still show demo data. No protected API proxy is
 accessible without a valid operator session; multi-user login remains unimplemented.
 
 ## Run the backend on the host (optional)
@@ -129,7 +138,7 @@ alembic upgrade head
 uvicorn spurel.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-The host `DATABASE_URL` uses `localhost`. Do not run another API container on the same host port. The frontend can also run separately with Node 22 and `npm install` / `npm run dev` from `frontend/`. The preview uses local fixture data, not real workspace records.
+The host `DATABASE_URL` uses `localhost`. Do not run another API container on the same host port. The frontend can also run separately with Node 22 and `npm install` / `npm run dev` from `frontend/`. The source and chunk inspector require the server-only operator credentials and a running FastAPI backend. Other screens still use fixtures.
 
 ## Tests and quality checks
 
@@ -185,7 +194,7 @@ Every pull request and push to `main` triggers five independent checks in [CI](.
 | PostgreSQL migrations | Legacy-to-current migrations, preserved chunk IDs/embeddings and pgvector |
 | PostgreSQL integration | Real database document/retrieval/evaluation scenarios with deterministic embeddings |
 | Frontend checks | ESLint, Prettier, TypeScript, Vitest and Next.js production build |
-| Local Compose smoke | Full-stack Docker build/up, migrations, bearer auth, frontend operator session, same-origin writes, real KB creation and upload, cleanup |
+| Local Compose smoke | Full-stack Docker build/up, migrations, operator session, cross-origin checks, real KB creation/upload, read-only chunk/version inspection, anonymous denial, cleanup |
 
 Real OpenAI keys are **not required** for CI. Two separate workflows — [RAG quality gate](../.github/workflows/rag-quality-gate.yml) and [RAG benchmark gate](../.github/workflows/rag-benchmark-gate.yml) — are **manual/reusable**, not automatic on every PR. See [benchmark-gate CLI setup](quality-gate-ci.md).
 
