@@ -358,15 +358,11 @@ async def _http_upload_process_retrieve(postgres_url: str, tmp_path: Path) -> No
                 assert all(match["document_id"] != str(uploaded_ids[2]) for match in matches)
 
                 trace_id = UUID(response.json()["trace_id"])
-                persisted = await traces.get_by_id(
-                    knowledge_base_id=public_kb, trace_id=trace_id
-                )
+                persisted = await traces.get_by_id(knowledge_base_id=public_kb, trace_id=trace_id)
                 assert persisted.results[0].document_id == uploaded_ids[0]
                 assert persisted.mode.value == mode
 
-            assert await traces.list_by_knowledge_base(
-                knowledge_base_id=public_kb, limit=20
-            )
+            assert await traces.list_by_knowledge_base(knowledge_base_id=public_kb, limit=20)
             document = await SqlAlchemyDocumentRepository(database.sessions).get_by_id(
                 knowledge_base_id=public_kb, document_id=uploaded_ids[0]
             )
@@ -416,9 +412,7 @@ async def _evaluation_round_trip(postgres_url: str, tmp_path: Path) -> None:
             executor=DatasetEvaluationExecutionService(
                 repository=evaluation_repository,
                 retriever=KeywordDatasetRetriever(
-                    KeywordRetrievalService(
-                        SqlAlchemyKeywordRetrievalRepository(database.sessions)
-                    )
+                    KeywordRetrievalService(SqlAlchemyKeywordRetrievalRepository(database.sessions))
                 ),
                 mode=DatasetEvaluationMode.KEYWORD,
             ),
@@ -534,6 +528,9 @@ async def _chunk_transaction_round_trip(postgres_url: str, tmp_path: Path) -> No
         assert len(updated) == 1
         assert updated[0].vector.values == (0.0, 1.0, 0.0)
 
-        assert await SqlAlchemyDocumentRepository(database.sessions).get_by_id(
-            knowledge_base_id=uuid4(), document_id=document_id
-        ) is None
+        assert (
+            await SqlAlchemyDocumentRepository(database.sessions).get_by_id(
+                knowledge_base_id=uuid4(), document_id=document_id
+            )
+            is None
+        )
