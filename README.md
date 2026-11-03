@@ -14,7 +14,7 @@
 </p>
 
 > [!IMPORTANT]
-> **Pre-alpha, not production ready.** Knowledge Bases, Documents and Chunk Inspector are backed by live FastAPI/PostgreSQL data after local operator sign-in. Retrieval, evaluation, traces and RAG answer screens still use **clearly labeled sample data**. The images below are concept illustrations, not verified screenshots of backend results.
+> **Pre-alpha, not production ready.** Knowledge Bases, Documents, Chunk Inspector and Retrieval Lab are backed by live FastAPI/PostgreSQL data after local operator sign-in. Evaluation, trace-history/comparison and RAG answer screens still use **clearly labeled sample data**. The images below are concept illustrations, not verified screenshots of backend results.
 
 [Quick start](#quick-start) · [Implemented today](#implemented-today) · [Architecture](docs/architecture.md) · [Roadmap](docs/roadmap.md) · [Development guide](docs/development.md) · [Benchmark CI](docs/quality-gate-ci.md)
 
@@ -22,7 +22,7 @@
 
 Spurel helps RAG developers understand **which document chunks were retrieved, how they ranked, whether the answer was grounded, and whether a change improved retrieval quality**.
 
-The backend supports document ingestion, persisted chunk versions, retrieval traces, and evaluation runs. The frontend now exposes **live source and chunk inspection**; retrieval/evaluation/answer metrics shown in other screens are still **illustrative**, not live backend results.
+The backend supports document ingestion, persisted chunk versions, retrieval traces, and evaluation runs. The frontend exposes **live source, chunk and retrieval inspection**. Evaluation and RAG-answer metrics shown in their separate screens remain **illustrative**, not backend results.
 
 ## Quick start
 
@@ -56,7 +56,7 @@ curl -H "Authorization: Bearer $SPUREL_API_TOKEN" \
 
 No OpenAI key is required to **start** the stack or manage knowledge bases. Document embedding and generated answers require provider credentials and configuration. See the [development guide](docs/development.md) for environment variables, tests, migrations, alternate ports and data safety.
 
-## Interactive frontend (SP-09–SP-11)
+## Interactive frontend (SP-09–SP-12)
 
 The approved midnight-blue, cyan and violet design is implemented in Next.js as a responsive
 application shell with keyboard command search (**⌘K / Ctrl+K**), theme switching, and eight
@@ -65,12 +65,13 @@ Trace History, RAG Answers, and Settings. You can change retrieval mode and Top 
 compare illustrative benchmark runs, and explore sample RAG answers. **Only
 Knowledge Bases, Documents and Chunk Inspector are currently API-backed.**
 
-**SP-10 connects live Knowledge Bases and Documents**, and **SP-11 connects the
-Chunk Inspector** through the same signed, HTTP-only local operator session.
+**SP-10 connects Knowledge Bases and Documents, SP-11 connects the
+Chunk Inspector, and SP-12 connects the Retrieval Lab**, all through
+the same signed, HTTP-only local operator session.
 Create collections, upload and process documents, then inspect the active chunks
 and historic processing versions, including exact offsets, UUIDs and embedding
 availability. The backend bearer token stays **only on the Next.js server**.
-Retrieval, evaluations, traces and RAG answers remain demos until SP-12–SP-15.
+Evaluations, trace history/comparison and RAG answers remain demos until SP-13–SP-15.
 
 After `make up`, find your locally generated operator password in the ignored
 `.env` by running `grep '^SPUREL_FRONTEND_OPERATOR_PASSWORD=' .env` from the repo root.
@@ -89,6 +90,29 @@ Pagination and text filtering operate on explicitly loaded pages, not the
 entire database. An uploaded but unprocessed document correctly shows **no
 active chunks**; indexing requires a configured embedding provider.
 
+## Run real retrieval (SP-12)
+
+After operator sign-in, open **[Retrieval Lab](http://localhost:3000/retrieval)**,
+select a knowledge base, enter a query, choose **Keyword**, **Vector** or
+**Hybrid**, and click **Run live retrieval**. The response contains real
+ranked chunks, source offsets, raw scores, execution duration and the
+persisted retrieval trace ID. **Inspect saved trace** reads the stored
+snapshot and provider/model metadata; trace history/comparisons are
+separate SP-13 work.
+
+- **Keyword** uses PostgreSQL full-text search (`ts_rank_cd`, **not BM25**).
+  It makes no query-time embedding-model call.
+- **Vector** performs exact pgvector cosine retrieval and calls the configured
+  embedding provider for the query.
+- **Hybrid** runs both retrieval modes and fuses rankings with RRF. It supports
+  `top_k`, `candidate_k` and `rrf_k`. Scores have **different scales**;
+  the frontend displays the raw values, not invented percentages.
+
+Both Vector and Hybrid may incur provider costs and require a configured
+`OPENAI_API_KEY` plus compatible indexed embeddings. **No mode can return
+evidence from a document until it has been successfully processed**.
+Queries run only after you explicitly submit them, not as you type.
+
 ## Implemented today
 
 | Capability | Implementation | Where |
@@ -104,6 +128,7 @@ active chunks**; indexing requires a configured embedding provider.
 | Reprocessing | Immutable chunk-set versions, stable UUIDs for unchanged chunks, staged embeddings, fenced retries and atomic activation | [Processing](backend/src/spurel/documents/processing.py) |
 | Live frontend source management | Local operator login, live knowledge-base creation/list, document upload/list and indexing, server-only backend proxy | [Knowledge bases](frontend/components/live/knowledge-bases.tsx) |
 | Live Chunk Inspector | Read-only active chunks, historical versions, persisted text, offsets, embedding counts, filtering and pagination | [Chunk Inspector](frontend/components/live/chunk-inspector.tsx) |
+| Live Retrieval Lab | Keyword, vector and hybrid queries; actual raw ranked scores, source offsets, parameters, persisted trace inspection | [Retrieval Lab](frontend/components/live/retrieval-lab.tsx) |
 | Local developer tools | Full-stack Docker Compose, Alembic, pytest/PostgreSQL integration checks, Ruff, frontend lint/types/tests/build | [Development](docs/development.md) |
 
 **Security boundary:** A local operator password gates the Next.js source-management API. A
@@ -113,7 +138,7 @@ local access**, not per-user authorization, RBAC, or permission-aware multi-tena
 
 ## Not implemented yet
 
-The following are roadmap items, **not current capabilities**: live retrieval/evaluation/trace/RAG frontend workflows, token-aware/structured chunking, OCR or scanned-PDF support, BM25, HNSW/ANN indexing, metadata retrieval filters, cross-encoder reranking, citation verification, additional hosted/local model adapters, multi-source connectors, experiment export, durable background ingestion and production-grade multi-user authorization.
+The following are roadmap items, **not current capabilities**: live evaluation, trace-history/comparison and RAG-answer frontend workflows, token-aware/structured chunking, OCR or scanned-PDF support, BM25, HNSW/ANN indexing, metadata retrieval filters, cross-encoder reranking, citation verification, additional hosted/local model adapters, multi-source connectors, experiment export, durable background ingestion and production-grade multi-user authorization.
 
 For task scope and order, see the [maintained roadmap](docs/roadmap.md).
 
@@ -137,7 +162,7 @@ Set `SPUREL_ENABLE_DOCS=1` **only in a trusted local environment** to expose Swa
 ## Architecture at a glance
 
 ```text
-Next.js live source/chunk inspection + other demo views
+Next.js live source, chunk and retrieval inspection
           |
           v
  FastAPI + shared bearer authentication
@@ -169,7 +194,7 @@ The future workbench will make source candidates, scoring, chunk boundaries, eva
 
 ## Roadmap and contributing
 
-The [roadmap](docs/roadmap.md) tracks **SP-01–SP-28** by phase, distinguishes merged foundations from upcoming work, and lists priorities and acceptance criteria. SP-09 built the frontend shell, SP-10 connected source management and SP-11 connects chunk inspection. SP-12–SP-15 will implement the remaining retrieval/evaluation/trace/RAG workflows.
+The [roadmap](docs/roadmap.md) tracks **SP-01–SP-28** by phase. SP-09 built the frontend shell, SP-10 connected source management, SP-11 connected chunk inspection and SP-12 adds live retrieval. SP-13–SP-15 will implement trace comparisons, evaluation and RAG-answer workflows.
 
 Spurel is being built in public. For substantial changes, open an issue first and follow the existing architecture and tests. Good contribution areas include retrieval strategies, parsers, evaluation methods, reliable ingestion, UI, and documentation.
 

@@ -2,7 +2,7 @@
 
 [← README](../README.md) · [Architecture](architecture.md) · [Roadmap](roadmap.md) · [Benchmark gates](quality-gate-ci.md)
 
-This guide covers Spurel's **working pre-alpha backend** and its Next.js frontend, including live source and chunk inspection plus separate demo-only retrieval/evaluation views. The Docker Compose configuration is for **localhost development, not production**.
+This guide covers Spurel's **working pre-alpha backend** and its Next.js frontend, including live source, chunk and retrieval inspection plus separate demo-only evaluation/answer views. The Docker Compose configuration is for **localhost development, not production**.
 
 ## Requirements and startup
 
@@ -23,7 +23,7 @@ make down     # Stop containers and preserve DB/document volumes
 | PostgreSQL 17 + pgvector | 127.0.0.1:5432 | Docker |
 | Alembic migrator | One-shot service; no port | PostgreSQL healthy |
 | FastAPI backend | http://127.0.0.1:8000 | Migrations completed |
-| Next.js source/chunk workbench | http://127.0.0.1:3000 | Backend healthy |
+| Next.js source/chunk/retrieval workbench | http://127.0.0.1:3000 | Backend healthy |
 
 The `Makefile` passes your local UID/GID to the frontend container so the Next.js process can safely write bind-mounted source files on Linux. Its `node_modules` and `.next` directories use named volumes.
 
@@ -74,9 +74,34 @@ a same-origin `Origin` header; unknown paths and identifiers are not forwarded
 via a generic proxy. Signing out clears the cookie. This simple single-operator
 access is **not a production login or multi-tenant authorization system**.
 
-**Retrieval, evaluations, traces and RAG answers remain interactive demos**, with clearly labeled
+**Evaluations, trace history/comparison and RAG answers remain interactive demos**, with clearly labeled
 illustrative evidence and metrics. Do not mistake their results for saved
 database records.
+
+## Live Retrieval Lab (SP-12)
+
+After signing in, open `/retrieval` or choose **Search this knowledge base**
+from the Knowledge Bases screen. The Retrieval Lab submits a query to the
+real backend **only when you click Run live retrieval**. Choose one of:
+
+- **Keyword** (default): PostgreSQL `websearch_to_tsquery` and `ts_rank_cd`;
+  no query-time embedding API call. This is not BM25.
+- **Vector**: exact pgvector cosine ranking with the configured query embedding
+  provider. This can require `OPENAI_API_KEY` and incur model usage charges.
+- **Hybrid**: parallel vector and keyword ranking fused by reciprocal rank
+  fusion, configurable `top_k`, `candidate_k` and `rrf_k`. It can also
+  incur query embedding API charges.
+
+The UI displays **raw** backend score units, ranked chunk IDs and source
+offsets, actual duration and the persisted trace ID. **Inspect saved trace**
+reads provider/model metadata and the stored trace snapshot; trace
+history/comparison UI is planned for SP-13. Changing the query/settings
+without running again leaves previous results clearly marked as old.
+
+**First index documents** from Knowledge Bases. An uploaded but unprocessed
+document has no active searchable chunks, so retrieval returns no matches.
+The session cookie and server-only `SPUREL_API_TOKEN` secure these two new
+allowlisted endpoints; no secrets are sent to browser JavaScript.
 
 ## Environment and secrets
 
@@ -117,8 +142,9 @@ curl -H "Authorization: Bearer $SPUREL_API_TOKEN" \
 
 Anonymous protected requests return `401`; a missing or weak *server-side* token configuration disables the protected routes with `503`. `SPUREL_ENABLE_DOCS=1` enables `/docs` and `/openapi.json` without protecting the schema itself, so use it only on a trusted interface.
 
-**Never place this token in `NEXT_PUBLIC_*` environment variables or send it from browser JavaScript.** Spurel currently has **no** user/session authentication, RBAC or true tenant authorization. SP-10 and SP-11 use a local operator session for protected Knowledge Bases,
-Documents, and read-only Chunk Inspector APIs. Remaining screens still show demo data. No protected API proxy is
+**Never place this token in `NEXT_PUBLIC_*` environment variables or send it from browser JavaScript.** Spurel currently has **no** user/session authentication, RBAC or true tenant authorization. SP-10 through SP-12 use a local operator session for protected Knowledge Bases,
+Documents, Chunk Inspector and Retrieval Lab APIs. Evaluation, trace history
+and RAG answers still use demo data. No protected API proxy is
 accessible without a valid operator session; multi-user login remains unimplemented.
 
 ## Run the backend on the host (optional)
@@ -194,7 +220,7 @@ Every pull request and push to `main` triggers five independent checks in [CI](.
 | PostgreSQL migrations | Legacy-to-current migrations, preserved chunk IDs/embeddings and pgvector |
 | PostgreSQL integration | Real database document/retrieval/evaluation scenarios with deterministic embeddings |
 | Frontend checks | ESLint, Prettier, TypeScript, Vitest and Next.js production build |
-| Local Compose smoke | Full-stack Docker build/up, migrations, operator session, cross-origin checks, real KB creation/upload, read-only chunk/version inspection, anonymous denial, cleanup |
+| Local Compose smoke | Full-stack Docker build/up, migrations, operator session, cross-origin checks, real KB/upload/chunk reads, keyword retrieval and saved trace read without OpenAI, anonymous denial, cleanup |
 
 Real OpenAI keys are **not required** for CI. Two separate workflows — [RAG quality gate](../.github/workflows/rag-quality-gate.yml) and [RAG benchmark gate](../.github/workflows/rag-benchmark-gate.yml) — are **manual/reusable**, not automatic on every PR. See [benchmark-gate CLI setup](quality-gate-ci.md).
 

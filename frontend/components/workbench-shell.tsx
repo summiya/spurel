@@ -181,6 +181,7 @@ export function WorkbenchShell({ children }: { children: ReactNode }) {
                   <span />{" "}
                   {pathname === "/knowledge-bases" ||
                   pathname === "/chunks" ||
+                  pathname === "/retrieval" ||
                   pathname === "/operator/login"
                     ? "LIVE WORKSPACE"
                     : "INTERACTIVE DEMO"}
@@ -202,8 +203,8 @@ export function WorkbenchShell({ children }: { children: ReactNode }) {
             <main id="main-content" className="page-content" tabIndex={-1}>
               {children}
               <footer className="page-footer">
-                {pathname === "/knowledge-bases" || pathname === "/chunks"
-                  ? "SPUREL · LIVE SOURCE MANAGEMENT & CHUNK INSPECTION · OTHER SCREENS USE SAMPLE DATA"
+                {pathname === "/knowledge-bases" || pathname === "/chunks" || pathname === "/retrieval"
+                  ? "SPUREL · LIVE SOURCE MANAGEMENT, CHUNKS & RETRIEVAL · OTHER SCREENS USE SAMPLE DATA"
                   : "SPUREL DESIGN PREVIEW · DEMO SCREENS USE ILLUSTRATIVE DATA"}
               </footer>
             </main>

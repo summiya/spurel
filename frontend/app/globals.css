@@ -2723,3 +2723,130 @@ html[data-motion="reduce"] *::after {
     align-items: stretch;
   }
 }
+
+/* SP-12: interactive retrieval with real, raw backend scores. */
+.retrieval-base-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 13px;
+  margin-bottom: 19px;
+}
+.retrieval-base-row > div {
+  min-width: 0;
+  flex: 1;
+}
+.retrieval-config-grid {
+  display: grid;
+  grid-template-columns: minmax(210px, 1.5fr) repeat(3, minmax(105px, .65fr));
+  gap: 14px;
+  align-items: end;
+  margin-top: 20px;
+}
+.retrieval-submit-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 20px;
+}
+.retrieval-score {
+  margin-left: auto;
+  color: var(--green);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.retrieval-trace-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  justify-content: space-between;
+  padding: 14px 0;
+  border-top: 1px solid var(--border);
+  margin-top: 12px;
+}
+.retrieval-trace-id {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--muted);
+  font-size: 11px;
+}
+.live-retrieval-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+.live-retrieval-metrics > span {
+  display: grid;
+  gap: 7px;
+  padding: 13px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--panel-alt);
+  min-width: 0;
+}
+.live-retrieval-metrics small,
+.retrieval-score-facts small {
+  color: var(--subtle);
+  font-size: 10px;
+}
+.live-retrieval-metrics strong {
+  overflow-wrap: anywhere;
+  color: var(--text);
+  font-size: 12px;
+}
+.saved-trace-details {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  margin: 10px 0 4px;
+  background: var(--accent-soft);
+}
+.saved-trace-details strong { font-size: 12px; }
+.saved-trace-details span {
+  color: var(--muted);
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+.retrieval-score-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 15px 0;
+}
+.retrieval-score-facts > div {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+  padding: 11px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel-alt);
+}
+.retrieval-score-facts strong {
+  overflow-wrap: anywhere;
+  font-size: 11px;
+}
+.retrieval-inspector-actions, .retrieval-source-link {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 11px;
+  margin: 14px 0;
+}
+@media (max-width: 1200px) {
+  .retrieval-config-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .retrieval-score { white-space: normal; text-align: right; }
+}
+@media (max-width: 580px) {
+  .retrieval-base-row { align-items: stretch; flex-direction: column; }
+  .retrieval-config-grid { grid-template-columns: minmax(0, 1fr); }
+  .retrieval-submit-row { align-items: stretch; flex-direction: column; }
+  .live-retrieval-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .retrieval-score-facts { grid-template-columns: minmax(0, 1fr); }
+  .retrieval-score { font-size: 10px; }
+}

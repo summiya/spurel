@@ -1,4 +1,4 @@
-"""CI-only end-to-end check of operator auth, sources and read-only chunk inspection."""
+"""CI-only operator/session test with real sources, chunk reads and keyword retrieval."""
 
 import http.cookiejar
 import json
@@ -135,14 +135,53 @@ def run(root: Path) -> None:
     assert _request(opener, base, f"{document_path}/invalid-id/versions")[0] == 400
     assert _request(opener, base, chunks_path + "?version=1")[0] == 404
 
+    # SP-12: keyword is a real PostgreSQL full-text query with no OpenAI calls.
+    # The newly uploaded document is unindexed, so a valid empty result is expected.
+    retrieval_root = f"{endpoint}/{kb_id}/retrieval"
+    keyword_endpoint = f"{retrieval_root}/keyword"
+    keyword_payload = json.dumps({"query": "Smoke-test document", "top_k": 10}).encode("utf-8")
+
+    assert _request(opener, base, keyword_endpoint, method="POST", data=keyword_payload,
+                    content_type="application/json", origin="http://untrusted.example")[0] == 403
+    assert _request(opener, base, f"{retrieval_root}/rerank", method="POST", data=keyword_payload,
+                    content_type="application/json", origin=base)[0] == 400
+    assert _request(opener, base, keyword_endpoint, method="POST",
+                    data=b'{"query":"x","top_k":0}', content_type="application/json",
+                    origin=base)[0] == 422
+    assert _request(opener, base, f"{retrieval_root}/hybrid", method="POST",
+                    data=b'{"query":"x","top_k":10,"candidate_k":5,"rrf_k":60}',
+                    content_type="application/json", origin=base)[0] == 422
+
+    status, retrieval = _request(
+        opener, base, keyword_endpoint, method="POST", data=keyword_payload,
+        content_type="application/json", origin=base,
+    )
+    assert status == 200, (status, retrieval)
+    assert retrieval["mode"] == "keyword"
+    assert retrieval["query"] == "Smoke-test document"
+    assert retrieval["matches"] == []
+    assert retrieval["duration_ms"] >= 0
+    trace_id = str(UUID(retrieval["trace_id"]))
+    trace_path = f"{retrieval_root}/traces/{trace_id}"
+    status, trace = _request(opener, base, trace_path)
+    assert status == 200, (status, trace)
+    assert trace["id"] == trace_id
+    assert trace["mode"] == "keyword"
+    assert trace["results"] == []
+    assert trace["embedding_provider"] is None
+    assert _request(opener, base, f"{retrieval_root}/traces/invalid-id")[0] == 400
+
     status, _ = _request(opener, base, "/api/operator/logout", method="POST", data=b"", origin=base)
     assert status == 200
     assert _request(opener, base, endpoint)[0] == 401
     assert _request(opener, base, versions_path)[0] == 401
     assert _request(opener, base, chunks_path)[0] == 401
+    assert _request(opener, base, trace_path)[0] == 401
+    assert _request(opener, base, keyword_endpoint, method="POST", data=keyword_payload,
+                    content_type="application/json", origin=base)[0] == 401
     print(
-        "SP-11 operator session, KB/document workflow, read-only chunk/version "
-        "inspection and authorization: PASS"
+        "SP-12 operator auth, real sources, chunks, keyword retrieval and "
+        "persisted trace access: PASS"
     )
 
 

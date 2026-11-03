@@ -105,12 +105,13 @@ export function SettingsPage() {
             <span className="status-badge success">Not in browser</span>
           </div>
           <div className="pipeline-detail last">
-            <span>Knowledge bases, documents and chunks</span>
-            <span className="status-badge success">Live · SP-10</span>
+            <span>Knowledge bases, documents, chunks and retrieval</span>
+            <span className="status-badge success">Live · SP-10–12</span>
           </div>
           <p className="muted-panel-note">
-            SP-10–SP-15 will connect each screen through an authenticated server-side boundary. Do
-            not place your API token in NEXT_PUBLIC_* settings.
+            SP-10–SP-12 connect source, chunk and retrieval workflows to FastAPI.
+            Evaluations, trace comparisons and RAG answer screens remain demos until
+            later milestones. Never put your API token in NEXT_PUBLIC_* settings.
           </p>
         </Panel>
       </div>

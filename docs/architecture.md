@@ -4,13 +4,14 @@
 
 Spurel has working backend APIs and an interactive Next.js frontend. SP-10 wires
 Knowledge Bases and Documents to FastAPI; SP-11 adds **read-only live chunk
-and historical version inspection** using the same local operator session.
-Retrieval, evaluation, traces and generated answer screens remain fixtures.
+and historical version inspection**, and SP-12 adds **live keyword, vector and
+hybrid retrieval** using the same local operator session. Evaluation, trace
+comparison/history and generated-answer screens remain fixtures.
 
 ## System boundary
 
 ```text
-                             Next.js live source / chunk inspector
+                             Next.js live source / chunk / retrieval
                             + separate demo-only views
                                       |
                                       v
@@ -45,7 +46,7 @@ FastAPI runs on Python 3.13 and uses Pydantic schemas, application services, int
 | [`evaluation_datasets/`](../backend/src/spurel/evaluation_datasets/) | Labeled data, benchmarks, baseline history, quality gates and CLI |
 | [`infrastructure/`](../backend/src/spurel/infrastructure/) | PDF/text parsers, fixed character chunker, local storage, OpenAI adapters |
 | [`backend/migrations/`](../backend/migrations/) | PostgreSQL schema migrations |
-| [`frontend/app/`](../frontend/app/) | Live Knowledge Bases, Documents and Chunk Inspector routes behind operator sign-in; other workbench views remain fixtures |
+| [`frontend/app/`](../frontend/app/) | Live source management, Chunk Inspector and Retrieval Lab behind operator sign-in; evaluation/trace-history/RAG views remain fixtures |
 
 ## Ingestion and versioned indexing
 
@@ -81,6 +82,23 @@ The frontend sends no embedding or generation requests during inspection.
 RAG generation builds a bounded context from traced hybrid matches and calls an OpenAI text-generation adapter. Responses expose the exact source excerpts and labels requested by the system prompt. **Source-label display is not citation/claim verification**; the latter remains planned.
 
 The only implemented external provider adapters are OpenAI-based embeddings and text generation. The architecture has interfaces for more providers, but does **not** currently integrate Ollama, Cohere, Voyage, Anthropic, Gemini or OpenRouter.
+
+### SP-12: live retrieval and trace inspection
+
+The authenticated `/retrieval` page calls one of three **exact, allowlisted**
+Next.js POST handlers, each validating a nonempty query (up to 8,000
+characters), `top_k` (1–100), plus hybrid `candidate_k >= top_k` (max 100)
+and `rrf_k` (1–1,000). The handlers reject cross-origin writes and forward
+the backend bearer token only server-side. Retrieval is **not** triggered on
+keystrokes. Keyword queries do not call the embedding provider; vector and
+hybrid require a configured query embedding model and may incur usage costs.
+
+The UI renders raw cosine similarity, PostgreSQL full-text `ts_rank_cd` and
+RRF scores **without mixing their numeric scales**. Every completed search
+returns a persisted trace UUID and actual execution duration. A separate,
+authenticated GET handler fetches the **saved trace detail** with provider,
+model, dimensions and historical ranked results. Full trace-history and
+comparison browsing remain SP-13 work.
 
 ## Evaluation and regression protection
 
@@ -125,6 +143,6 @@ development workflow**, not scalable user identity or tenant authorization.
 
 ## What is planned, not implemented
 
-The frontend has live source/chunk inspection and fixture-based advanced workbench views. The following are **not built**: live retrieval/evaluation/trace/RAG UI, recursive/semantic/token-aware chunking, scanned-PDF OCR, BM25, pgvector ANN/HNSW, metadata filters, rerankers, citation verification, non-OpenAI providers, data-source connectors, Redis-backed background jobs, experiment export and production auth/monitoring.
+The frontend has live source, chunk and retrieval inspection; advanced trace-comparison/evaluation/RAG views use fixtures. The following are **not built**: live trace-history/comparison, evaluation and generated-answer UI, recursive/semantic/token-aware chunking, scanned-PDF OCR, BM25, pgvector ANN/HNSW, metadata filters, rerankers, citation verification, non-OpenAI providers, data-source connectors, Redis-backed background jobs, experiment export and production auth/monitoring.
 
 For the exact implementation order and deliverables, use [SP-01–SP-28 roadmap](roadmap.md).
