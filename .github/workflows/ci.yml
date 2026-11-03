@@ -57,6 +57,7 @@ jobs:
           done < <(git diff --name-only --diff-filter=ACMR -z "$BASE_SHA" HEAD -- backend)
 
           if (( ${#changed_files[@]} > 0 )); then
+            ruff format --diff "${changed_files[@]}"
             ruff format --check "${changed_files[@]}"
           else
             echo "No changed backend Python files to check"
