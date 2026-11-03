@@ -64,7 +64,8 @@ function fakeFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Respon
       }),
     );
   }
-  if (url === endpoint && init?.method === "POST") return Promise.resolve(json(response, responseCode));
+  if (url === endpoint && init?.method === "POST")
+    return Promise.resolve(json(response, responseCode));
   return Promise.resolve(json({ error: "Unexpected test path: " + url }, 500));
 }
 
@@ -82,7 +83,10 @@ describe("SP-15 live RAG answer frontend", () => {
     noBases = false;
     toast.notify.mockClear();
     vi.stubGlobal("fetch", vi.fn(fakeFetch));
-    vi.stubGlobal("confirm", vi.fn(() => true));
+    vi.stubGlobal(
+      "confirm",
+      vi.fn(() => true),
+    );
   });
   afterEach(() => vi.unstubAllGlobals());
 
@@ -92,12 +96,17 @@ describe("SP-15 live RAG answer frontend", () => {
     expect(screen.getByText("No live answer yet")).toBeInTheDocument();
     expect(screen.getByText("Live FastAPI RAG")).toBeInTheDocument();
     expect(screen.queryByText(/sample refund policy/i)).not.toBeInTheDocument();
-    expect(vi.mocked(fetch).mock.calls.every(([, init]) => !init?.method || init.method === "GET")).toBe(true);
+    expect(
+      vi.mocked(fetch).mock.calls.every(([, init]) => !init?.method || init.method === "GET"),
+    ).toBe(true);
     expect(window.confirm).not.toHaveBeenCalled();
   });
 
   it("does not dispatch generation if the user rejects the cost warning", async () => {
-    vi.stubGlobal("confirm", vi.fn(() => false));
+    vi.stubGlobal(
+      "confirm",
+      vi.fn(() => false),
+    );
     render(<LiveRagAnswersPage />);
     await screen.findByRole("option", { name: "Employee handbook" });
     ask();
@@ -111,7 +120,9 @@ describe("SP-15 live RAG answer frontend", () => {
     ask();
 
     expect(await screen.findByRole("button", { name: "Inspect source S1" })).toBeInTheDocument();
-    expect(screen.getByText("The company grants 30 days of annual leave after one year.")).toBeInTheDocument();
+    expect(
+      screen.getByText("The company grants 30 days of annual leave after one year."),
+    ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Inspect saved retrieval trace/ })).toHaveAttribute(
       "href",
       `/traces?kb=${kb}&trace=${traceId}`,
@@ -153,7 +164,9 @@ describe("SP-15 live RAG answer frontend", () => {
     await screen.findByRole("option", { name: "Employee handbook" });
     ask();
     expect(await screen.findByRole("alert")).toHaveTextContent(/invalid evidence response/i);
-    expect(screen.queryByRole("link", { name: /Inspect original document/ })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: /Inspect original document/ }),
+    ).not.toBeInTheDocument();
   });
 
   it("surfaces unavailable generation providers without inserting a demo response", async () => {
@@ -162,7 +175,9 @@ describe("SP-15 live RAG answer frontend", () => {
     render(<LiveRagAnswersPage />);
     await screen.findByRole("option", { name: "Employee handbook" });
     ask();
-    expect(await screen.findByRole("alert")).toHaveTextContent(/RAG service temporarily unavailable/i);
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      /RAG service temporarily unavailable/i,
+    );
     expect(screen.queryByText(/30 days of leave \[S1\]/i)).not.toBeInTheDocument();
   });
 
@@ -174,8 +189,12 @@ describe("SP-15 live RAG answer frontend", () => {
     fireEvent.change(screen.getByRole("textbox", { name: "Question" }), {
       target: { value: "A different question" },
     });
-    expect(screen.getByText(/answer below belongs to the previous submitted request/i)).toBeInTheDocument();
-    expect(vi.mocked(fetch).mock.calls.filter(([, init]) => init?.method === "POST")).toHaveLength(1);
+    expect(
+      screen.getByText(/answer below belongs to the previous submitted request/i),
+    ).toBeInTheDocument();
+    expect(vi.mocked(fetch).mock.calls.filter(([, init]) => init?.method === "POST")).toHaveLength(
+      1,
+    );
   });
 
   it("provides a clear empty state when there is no knowledge base", async () => {

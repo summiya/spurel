@@ -33,7 +33,9 @@ function record(value: unknown): value is Record<string, unknown> {
 }
 
 function integer(value: unknown, minimum: number, maximum: number): value is number {
-  return typeof value === "number" && Number.isInteger(value) && value >= minimum && value <= maximum;
+  return (
+    typeof value === "number" && Number.isInteger(value) && value >= minimum && value <= maximum
+  );
 }
 
 function uuid(value: unknown): value is string {
@@ -46,7 +48,8 @@ export function parseRagAnswerRequest(value: unknown): RagAnswerRequest | null {
   if (
     Object.keys(value).some((key) => !["query", "top_k", "candidate_k", "rrf_k"].includes(key)) ||
     typeof value.query !== "string"
-  ) return null;
+  )
+    return null;
 
   const query = value.query.trim();
   if (
@@ -55,7 +58,8 @@ export function parseRagAnswerRequest(value: unknown): RagAnswerRequest | null {
     !integer(value.top_k, 1, 20) ||
     !integer(value.candidate_k, value.top_k, 100) ||
     !integer(value.rrf_k, 1, 1_000)
-  ) return null;
+  )
+    return null;
 
   return {
     query,
@@ -77,7 +81,8 @@ export function isRagAnswerResponse(value: unknown): value is RagAnswerResponse 
     !(value.generation_model === null || typeof value.generation_model === "string") ||
     !Array.isArray(value.sources) ||
     value.sources.length > value.retrieved_chunk_count
-  ) return false;
+  )
+    return false;
 
   const labels = new Set<string>();
   const ranks = new Set<number>();
@@ -98,16 +103,19 @@ export function isRagAnswerResponse(value: unknown): value is RagAnswerResponse 
       labels.has(item.label) ||
       ranks.has(item.retrieval_rank) ||
       chunkIds.has(item.chunk_id.toLowerCase())
-    ) return false;
+    )
+      return false;
     labels.add(item.label);
     ranks.add(item.retrieval_rank);
     chunkIds.add(item.chunk_id.toLowerCase());
   }
 
   if (value.retrieved_chunk_count === 0) {
-    return value.sources.length === 0 &&
+    return (
+      value.sources.length === 0 &&
       value.generation_provider === null &&
-      value.generation_model === null;
+      value.generation_model === null
+    );
   }
   return value.sources.length > 0;
 }

@@ -43,7 +43,9 @@ function answerWithNavigableCitations(
           type="button"
           aria-label={`Inspect source ${label}`}
           aria-pressed={selectedLabel === label}
-          className={"citation-chip rag-inline-citation " + (selectedLabel === label ? "selected" : "")}
+          className={
+            "citation-chip rag-inline-citation " + (selectedLabel === label ? "selected" : "")
+          }
           onClick={() => selectSource(label)}
         >
           {part}
@@ -75,12 +77,11 @@ export function LiveRagAnswersPage({ initialKnowledgeBaseId }: Props) {
   const selectedSource =
     sources.find((source) => source.label === selectedLabel) ?? sources[0] ?? null;
   const isStale = Boolean(
-    current && (
-      question.trim() !== current.request.query ||
+    current &&
+    (question.trim() !== current.request.query ||
       topK !== current.request.top_k ||
       candidateK !== current.request.candidate_k ||
-      rrfK !== current.request.rrf_k
-    ),
+      rrfK !== current.request.rrf_k),
   );
   const request = parseRagAnswerRequest({
     query: question,
@@ -108,9 +109,12 @@ export function LiveRagAnswersPage({ initialKnowledgeBaseId }: Props) {
     event.preventDefault();
     if (!base || !request || running) return;
 
-    if (!window.confirm(
-      "This request runs hybrid retrieval and may call OpenAI for query embeddings and answer generation. Provider charges may apply. Generate this live answer?",
-    )) return;
+    if (
+      !window.confirm(
+        "This request runs hybrid retrieval and may call OpenAI for query embeddings and answer generation. Provider charges may apply. Generate this live answer?",
+      )
+    )
+      return;
 
     const sequence = ++requestSequence.current;
     const knowledgeBaseId = base.id;
@@ -171,12 +175,15 @@ export function LiveRagAnswersPage({ initialKnowledgeBaseId }: Props) {
       />
       <div className="inline-notice">
         <Icon name="shield" size={16} />
-        Generation is explicit and may use paid OpenAI embedding and text-generation calls.
-        No model is called when loading the page or editing the form. Source labels are model
-        attribution, not independently verified claim citations.
+        Generation is explicit and may use paid OpenAI embedding and text-generation calls. No model
+        is called when loading the page or editing the form. Source labels are model attribution,
+        not independently verified claim citations.
       </div>
 
-      <Panel title="Ask your knowledge base" hint="Uses real indexed chunks and hybrid retrieval (vector + PostgreSQL full-text, fused by RRF)">
+      <Panel
+        title="Ask your knowledge base"
+        hint="Uses real indexed chunks and hybrid retrieval (vector + PostgreSQL full-text, fused by RRF)"
+      >
         {bases.loading ? (
           <LoadingState label="Loading knowledge bases" />
         ) : bases.error ? (
@@ -187,14 +194,18 @@ export function LiveRagAnswersPage({ initialKnowledgeBaseId }: Props) {
             title="No knowledge bases yet"
             description="Create a knowledge base and index at least one document to get grounded answers."
             action={
-              <Link className="button ghost compact" href="/knowledge-bases">Manage sources</Link>
+              <Link className="button ghost compact" href="/knowledge-bases">
+                Manage sources
+              </Link>
             }
           />
         ) : (
           <form onSubmit={(event) => void submit(event)}>
             <div className="rag-live-knowledge-base">
               <div>
-                <label className="field-label" htmlFor="rag-knowledge-base">Knowledge base</label>
+                <label className="field-label" htmlFor="rag-knowledge-base">
+                  Knowledge base
+                </label>
                 <select
                   id="rag-knowledge-base"
                   className="select-control"
@@ -202,7 +213,9 @@ export function LiveRagAnswersPage({ initialKnowledgeBaseId }: Props) {
                   onChange={(event) => changeBase(event.target.value)}
                 >
                   {bases.items.map((item) => (
-                    <option key={item.id} value={item.id}>{item.name}</option>
+                    <option key={item.id} value={item.id}>
+                      {item.name}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -221,7 +234,9 @@ export function LiveRagAnswersPage({ initialKnowledgeBaseId }: Props) {
               </button>
             ) : null}
 
-            <label className="field-label" htmlFor="rag-question">Question</label>
+            <label className="field-label" htmlFor="rag-question">
+              Question
+            </label>
             <textarea
               id="rag-question"
               className="textarea-control"
@@ -235,7 +250,9 @@ export function LiveRagAnswersPage({ initialKnowledgeBaseId }: Props) {
 
             <div className="rag-live-config">
               <div>
-                <label className="field-label" htmlFor="rag-top-k">Top K · final context chunks</label>
+                <label className="field-label" htmlFor="rag-top-k">
+                  Top K · final context chunks
+                </label>
                 <input
                   id="rag-top-k"
                   className="input-control"
@@ -247,7 +264,9 @@ export function LiveRagAnswersPage({ initialKnowledgeBaseId }: Props) {
                 />
               </div>
               <div>
-                <label className="field-label" htmlFor="rag-candidate-k">Candidate K · source pool</label>
+                <label className="field-label" htmlFor="rag-candidate-k">
+                  Candidate K · source pool
+                </label>
                 <input
                   id="rag-candidate-k"
                   className="input-control"
@@ -259,7 +278,9 @@ export function LiveRagAnswersPage({ initialKnowledgeBaseId }: Props) {
                 />
               </div>
               <div>
-                <label className="field-label" htmlFor="rag-rrf-k">RRF K · fusion constant</label>
+                <label className="field-label" htmlFor="rag-rrf-k">
+                  RRF K · fusion constant
+                </label>
                 <input
                   id="rag-rrf-k"
                   className="input-control"
@@ -274,7 +295,8 @@ export function LiveRagAnswersPage({ initialKnowledgeBaseId }: Props) {
 
             <div className="rag-actions">
               <span className="text-hint">
-                Requires configured OpenAI embeddings and generation. Only previously indexed documents can be used as context.
+                Requires configured OpenAI embeddings and generation. Only previously indexed
+                documents can be used as context.
               </span>
               <button type="submit" className="button primary" disabled={!request || running}>
                 <Icon name="sparkles" size={15} />
@@ -283,28 +305,34 @@ export function LiveRagAnswersPage({ initialKnowledgeBaseId }: Props) {
             </div>
             {running ? (
               <p className="muted-panel-note" role="status">
-                Retrieving and generating against the selected knowledge base. This may take time; the request is not streaming.
+                Retrieving and generating against the selected knowledge base. This may take time;
+                the request is not streaming.
               </p>
             ) : null}
           </form>
         )}
       </Panel>
 
-      {error ? (
-        <ErrorState title="Live RAG request failed" description={error} />
-      ) : null}
+      {error ? <ErrorState title="Live RAG request failed" description={error} /> : null}
 
       {answer && base ? (
         <>
           {isStale ? (
             <div className="inline-notice" role="status">
               <Icon name="info" size={16} />
-              You changed the question or retrieval settings. The answer below belongs to the previous submitted request.
+              You changed the question or retrieval settings. The answer below belongs to the
+              previous submitted request.
             </div>
           ) : null}
           <div className="rag-live-summary">
-            <span><small>Retrieved chunks</small><strong>{answer.retrieved_chunk_count}</strong></span>
-            <span><small>Context excerpts</small><strong>{sources.length}</strong></span>
+            <span>
+              <small>Retrieved chunks</small>
+              <strong>{answer.retrieved_chunk_count}</strong>
+            </span>
+            <span>
+              <small>Context excerpts</small>
+              <strong>{sources.length}</strong>
+            </span>
             <span>
               <small>Generation provider</small>
               <strong>{answer.generation_provider ?? "Skipped · no context"}</strong>
@@ -320,7 +348,11 @@ export function LiveRagAnswersPage({ initialKnowledgeBaseId }: Props) {
               title="Live answer"
               hint={`Question: ${current?.request.query ?? ""}`}
               action={
-                <button type="button" className="button ghost compact" onClick={() => void copyAnswer()}>
+                <button
+                  type="button"
+                  className="button ghost compact"
+                  onClick={() => void copyAnswer()}
+                >
                   <Icon name="copy" size={15} /> Copy answer
                 </button>
               }
@@ -346,17 +378,23 @@ export function LiveRagAnswersPage({ initialKnowledgeBaseId }: Props) {
                 </p>
               </div>
               <div className="rag-live-answer-actions">
-                <Link className="button ghost compact" href={`/traces?kb=${base.id}&trace=${answer.trace_id}`}>
+                <Link
+                  className="button ghost compact"
+                  href={`/traces?kb=${base.id}&trace=${answer.trace_id}`}
+                >
                   <Icon name="clock" size={15} /> Inspect saved retrieval trace
                 </Link>
               </div>
               <p className="text-hint">
-                Trace ID · {answer.trace_id}. Text is displayed as plain text;
-                the appearance of a [S1] label alone does not prove that its claim is supported.
+                Trace ID · {answer.trace_id}. Text is displayed as plain text; the appearance of a
+                [S1] label alone does not prove that its claim is supported.
               </p>
             </Panel>
 
-            <Panel title="Source evidence" hint="Exact excerpts passed to the generation model, not fabricated citations">
+            <Panel
+              title="Source evidence"
+              hint="Exact excerpts passed to the generation model, not fabricated citations"
+            >
               {sources.length === 0 ? (
                 <EmptyState
                   title="No source excerpts"
@@ -370,15 +408,21 @@ export function LiveRagAnswersPage({ initialKnowledgeBaseId }: Props) {
                       <button
                         type="button"
                         key={source.label}
-                        className={"source-row " + (selectedSource?.label === source.label ? "active" : "")}
+                        className={
+                          "source-row " + (selectedSource?.label === source.label ? "active" : "")
+                        }
                         onClick={() => setSelectedLabel(source.label)}
                         aria-pressed={selectedSource?.label === source.label}
                       >
                         <span className="result-rank">{source.label}</span>
                         <span>
-                          <strong>Document {source.document_id.slice(0, 8)} · Chunk {source.chunk_index + 1}</strong>
+                          <strong>
+                            Document {source.document_id.slice(0, 8)} · Chunk{" "}
+                            {source.chunk_index + 1}
+                          </strong>
                           <small>
-                            Retrieval rank #{source.retrieval_rank} · offsets {source.start_offset}–{source.end_offset}
+                            Retrieval rank #{source.retrieval_rank} · offsets {source.start_offset}–
+                            {source.end_offset}
                           </small>
                         </span>
                         <Icon name="chevron-right" size={15} />
@@ -391,7 +435,9 @@ export function LiveRagAnswersPage({ initialKnowledgeBaseId }: Props) {
                         <strong>{selectedSource.label} · saved source excerpt</strong>
                         <small>Chunk UUID: {selectedSource.chunk_id}</small>
                         <small>Document UUID: {selectedSource.document_id}</small>
-                        <small>Source offsets: {selectedSource.start_offset}–{selectedSource.end_offset}</small>
+                        <small>
+                          Source offsets: {selectedSource.start_offset}–{selectedSource.end_offset}
+                        </small>
                       </div>
                       <pre className="rag-live-excerpt">{selectedSource.excerpt}</pre>
                       <Link

@@ -254,8 +254,9 @@ export function LiveKnowledgeBasesPage() {
 
       <div className="inline-notice">
         <Icon name="check" size={17} />
-        This screen shows real FastAPI and PostgreSQL data. Retrieval, trace history,
-        evaluations and RAG answers use live backend integrations; the overview still displays illustrative metrics.
+        This screen shows real FastAPI and PostgreSQL data. Retrieval, trace history, evaluations
+        and RAG answers use live backend integrations; the overview still displays illustrative
+        metrics.
       </div>
 
       <Panel

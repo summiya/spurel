@@ -14,36 +14,31 @@ export async function POST(request: NextRequest, context: Context) {
 
   const { knowledgeBaseId } = await context.params;
   if (!validUUID(knowledgeBaseId)) {
-    return noStore(
-      NextResponse.json({ error: "Invalid knowledge base." }, { status: 400 }),
-    );
+    return noStore(NextResponse.json({ error: "Invalid knowledge base." }, { status: 400 }));
   }
   if (Number(request.headers.get("content-length") ?? 0) > MAX_REQUEST_BYTES) {
-    return noStore(
-      NextResponse.json({ error: "RAG request is too large." }, { status: 413 }),
-    );
+    return noStore(NextResponse.json({ error: "RAG request is too large." }, { status: 413 }));
   }
 
   let body: unknown;
   try {
     const raw = await request.text();
     if (new TextEncoder().encode(raw).byteLength > MAX_REQUEST_BYTES) {
-      return noStore(
-        NextResponse.json({ error: "RAG request is too large." }, { status: 413 }),
-      );
+      return noStore(NextResponse.json({ error: "RAG request is too large." }, { status: 413 }));
     }
     body = JSON.parse(raw);
   } catch {
-    return noStore(
-      NextResponse.json({ error: "Invalid JSON request." }, { status: 400 }),
-    );
+    return noStore(NextResponse.json({ error: "Invalid JSON request." }, { status: 400 }));
   }
 
   const payload = parseRagAnswerRequest(body);
   if (!payload) {
     return noStore(
       NextResponse.json(
-        { error: "Question must be 1–8,000 characters; Top K 1–20, Candidate K from Top K to 100, and RRF K 1–1,000." },
+        {
+          error:
+            "Question must be 1–8,000 characters; Top K 1–20, Candidate K from Top K to 100, and RRF K 1–1,000.",
+        },
         { status: 422 },
       ),
     );

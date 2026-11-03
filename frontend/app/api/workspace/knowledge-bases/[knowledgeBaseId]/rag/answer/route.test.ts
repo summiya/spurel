@@ -32,18 +32,15 @@ const payload = {
 };
 
 function request(body: string, headers: Record<string, string> = {}): NextRequest {
-  return new NextRequest(
-    `http://localhost:3000/api/workspace/knowledge-bases/${kb}/rag/answer`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Origin: "http://localhost:3000",
-        ...headers,
-      },
-      body,
+  return new NextRequest(`http://localhost:3000/api/workspace/knowledge-bases/${kb}/rag/answer`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Origin: "http://localhost:3000",
+      ...headers,
     },
-  );
+    body,
+  });
 }
 
 function context(knowledgeBaseId = kb) {
@@ -63,14 +60,11 @@ describe("SP-15 exact RAG frontend API route", () => {
     expect(response.status).toBe(200);
     expect(response.headers.get("Cache-Control")).toBe("no-store");
     expect(mocks.authFailure).toHaveBeenCalledWith(expect.any(NextRequest), true);
-    expect(mocks.backendRequest).toHaveBeenCalledWith(
-      `/knowledge-bases/${kb}/rag/answer`,
-      {
-        method: "POST",
-        body: JSON.stringify(payload),
-        timeoutMs: 180_000,
-      },
-    );
+    expect(mocks.backendRequest).toHaveBeenCalledWith(`/knowledge-bases/${kb}/rag/answer`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+      timeoutMs: 180_000,
+    });
   });
 
   it("rejects unauthenticated and cross-origin sessions before making any upstream call", async () => {
@@ -84,9 +78,12 @@ describe("SP-15 exact RAG frontend API route", () => {
     mocks.authFailure.mockReturnValueOnce(
       NextResponse.json({ error: "Cross-origin modification rejected." }, { status: 403 }),
     );
-    const rejected = await POST(request(JSON.stringify(payload), {
-      Origin: "http://untrusted.example",
-    }), context());
+    const rejected = await POST(
+      request(JSON.stringify(payload), {
+        Origin: "http://untrusted.example",
+      }),
+      context(),
+    );
     expect(rejected.status).toBe(403);
     expect(mocks.backendRequest).not.toHaveBeenCalled();
   });

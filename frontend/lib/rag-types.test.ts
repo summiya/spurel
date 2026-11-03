@@ -31,12 +31,14 @@ const valid = {
 
 describe("SP-15 RAG API contracts", () => {
   it("accepts supported query/configuration with no proxy escapes", () => {
-    expect(parseRagAnswerRequest({
-      query: "  Employee policy  ",
-      top_k: 8,
-      candidate_k: 50,
-      rrf_k: 60,
-    })).toEqual({
+    expect(
+      parseRagAnswerRequest({
+        query: "  Employee policy  ",
+        top_k: 8,
+        candidate_k: 50,
+        rrf_k: 60,
+      }),
+    ).toEqual({
       query: "Employee policy",
       top_k: 8,
       candidate_k: 50,
@@ -67,14 +69,16 @@ describe("SP-15 RAG API contracts", () => {
 
   it("accepts actual grounded answer sources and strict no-context fallback", () => {
     expect(isRagAnswerResponse(valid)).toBe(true);
-    expect(isRagAnswerResponse({
-      trace_id: trace,
-      answer: "No usable knowledge-base context was found.",
-      retrieved_chunk_count: 0,
-      generation_provider: null,
-      generation_model: null,
-      sources: [],
-    })).toBe(true);
+    expect(
+      isRagAnswerResponse({
+        trace_id: trace,
+        answer: "No usable knowledge-base context was found.",
+        retrieved_chunk_count: 0,
+        generation_provider: null,
+        generation_model: null,
+        sources: [],
+      }),
+    ).toBe(true);
   });
 
   it("rejects invented, duplicated, or inconsistent source evidence", () => {
@@ -92,7 +96,8 @@ describe("SP-15 RAG API contracts", () => {
   });
 
   it("makes only backend-provided source labels navigable", () => {
-    expect(knownAnswerCitationLabels("Evidence [S1] but unknown [S2] and [S1].", [source]))
-      .toEqual(["S1", "S1"]);
+    expect(knownAnswerCitationLabels("Evidence [S1] but unknown [S2] and [S1].", [source])).toEqual(
+      ["S1", "S1"],
+    );
   });
 });
