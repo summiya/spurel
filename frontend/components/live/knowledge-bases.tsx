@@ -432,9 +432,9 @@ export function LiveKnowledgeBasesPage() {
             <div>
               <strong>Chunking settings for the next processing run</strong>
               <p className="text-hint">
-                Character and model-token methods remain unchanged. Add recursive,
-                Markdown-heading or sentence-aware splitting when you want to preserve
-                document structure. Nothing is reprocessed until you click Process or Reprocess.
+                Character and model-token methods remain unchanged. Add recursive, Markdown-heading
+                or sentence-aware splitting when you want to preserve document structure. Nothing is
+                reprocessed until you click Process or Reprocess.
               </p>
             </div>
             <div className="live-chunking-controls">
@@ -505,8 +505,8 @@ export function LiveKnowledgeBasesPage() {
                   ? "Prefer paragraph, sentence, then line/word breaks; long spans fall back to character windows."
                   : chunkStrategy === "markdown"
                     ? "Prefer Markdown headings as section boundaries, ignoring heading-like text in fenced code."
-                    : "Prefer complete sentences; oversized sentences fall back to line or word breaks."}
-                {" "}Size and overlap are measured in characters. Overlap may be reduced to keep
+                    : "Prefer complete sentences; oversized sentences fall back to line or word breaks."}{" "}
+                Size and overlap are measured in characters. Overlap may be reduced to keep
                 boundaries intact; previous index versions remain available.
               </p>
             ) : null}

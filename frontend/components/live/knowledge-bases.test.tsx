@@ -153,7 +153,10 @@ describe("live source management", () => {
   });
 
   it("offers all three structured modes without removing existing methods", async () => {
-    vi.stubGlobal("confirm", vi.fn(() => true));
+    vi.stubGlobal(
+      "confirm",
+      vi.fn(() => true),
+    );
     render(<LiveKnowledgeBasesPage />);
     await screen.findByText("readme.txt");
     const select = screen.getByRole("combobox", { name: "Chunking method" });
@@ -165,11 +168,15 @@ describe("live source management", () => {
     expect(screen.getByText(/Prefer Markdown headings as section boundaries/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /^Process$/i }));
     await screen.findByText(/Indexed · version 1/);
-    const call = vi.mocked(fetch).mock.calls.find(([url, init]) =>
-      String(url).endsWith("/process") && init?.method === "POST",
-    );
+    const call = vi
+      .mocked(fetch)
+      .mock.calls.find(
+        ([url, init]) => String(url).endsWith("/process") && init?.method === "POST",
+      );
     expect(JSON.parse(String(call?.[1]?.body))).toEqual({
-      strategy: "markdown", chunk_size: 1000, overlap: 200,
+      strategy: "markdown",
+      chunk_size: 1000,
+      overlap: 200,
     });
     expect(window.confirm).toHaveBeenCalledOnce();
   });

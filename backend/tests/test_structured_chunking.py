@@ -75,7 +75,12 @@ def test_markdown_keeps_heading_with_its_following_section_and_ignores_fences() 
     assert chunks[0].text == first
     assert chunks[1].text.startswith("## Deployment")
 
-    fenced = "# Intro\n\x60\x60\x60python\n# Not a heading\n\x60\x60\x60\n~~~\n## Also code\n~~~\n## Real\nBody."
+    fenced = (
+        "# Intro\n\x60\x60\x60python\n"
+        "# Not a heading\n\x60\x60\x60\n"
+        "~~~\n## Also code\n~~~\n"
+        "## Real\nBody."
+    )
     assert _markdown_headings(fenced) == [0, fenced.index("## Real")]
 
 
