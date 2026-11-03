@@ -25,11 +25,11 @@ These tasks were prioritized first because the rest of the workbench depends on 
 
 ## Phase 2 — Functional frontend (next)
 
-The Next.js app currently contains a placeholder landing page. These features are all **planned**, even where the backend already provides the corresponding API.
+SP-09 replaces the Next.js placeholder with an interactive **sample-only** shell and demo screens. Actual live backend integration remains **planned** in SP-10–SP-15, even where backend API routes already exist.
 
 | Task | Priority | Status | Scope / acceptance target |
 | --- | --- | --- | --- |
-| **SP-09** | **Critical — next** | ☐ Planned | Frontend foundation: app shell, API client boundary, accessible navigation, error/loading states, tests and **server-side** handling of the shared API token |
+| **SP-09** | **Critical — this PR** | ◐ In review | Approved responsive workbench shell, navigation, command palette, theme, demo-only interactive screens, reusable error/loading states and **server-only** backend boundary without exposing the shared API token |
 | SP-10 | High | ☐ Planned | Knowledge-base and document UI: list/create KBs, upload/list documents, processing state and error handling |
 | SP-11 | High | ☐ Planned | Chunk Inspector: display active chunks, offsets, version history, embedding availability and processing status |
 | SP-12 | High | ☐ Planned | Retrieval Playground: issue vector/keyword/hybrid queries and display ranks, scores, traces and configuration |
@@ -77,7 +77,7 @@ These are cross-cutting technical debts, **not completed roadmap tasks**:
 3. **Ingestion execution:** Processing still runs in an HTTP request. Lease renewal occurs between embedding batches, so a single provider call longer than the lease can be reclaimed; stale workers are fenced at promotion.
 4. **Parsing:** No OCR/scanned PDFs; encrypted PDFs are unsupported; fixed-size chunking counts characters, not model tokens.
 5. **Retrieval:** Exact pgvector search only; Postgres keyword scoring is not BM25; no HNSW, filters or reranking.
-6. **Frontend:** Next.js placeholder only. UI mockups do not represent live functionality.
+6. **Frontend:** SP-09 interactive demo screens use fixtures only; there is no browser-to-backend credential flow or real knowledge-base/retrieval/evaluation UI integration yet.
 7. **Dependency reproducibility:** Frontend does not yet commit a `package-lock.json`; `npm install` is used, and Docker image tags are not digest-pinned.
 8. **Deployment:** Compose is intended for localhost development, with example database credentials and hot reload. The project has no hardened production deployment profile.
 

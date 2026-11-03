@@ -2,7 +2,7 @@
 
 [← README](../README.md) · [Architecture](architecture.md) · [Roadmap](roadmap.md) · [Benchmark gates](quality-gate-ci.md)
 
-This guide covers Spurel's **working pre-alpha backend** and **placeholder Next.js frontend**. The Docker Compose configuration is for **localhost development, not production**.
+This guide covers Spurel's **working pre-alpha backend** and **interactive, sample-data Next.js frontend foundation**. The Docker Compose configuration is for **localhost development, not production**.
 
 ## Requirements and startup
 
@@ -23,7 +23,7 @@ make down     # Stop containers and preserve DB/document volumes
 | PostgreSQL 17 + pgvector | 127.0.0.1:5432 | Docker |
 | Alembic migrator | One-shot service; no port | PostgreSQL healthy |
 | FastAPI backend | http://127.0.0.1:8000 | Migrations completed |
-| Next.js placeholder | http://127.0.0.1:3000 | Backend healthy |
+| Next.js sample-data workbench | http://127.0.0.1:3000 | Backend healthy |
 
 The `Makefile` passes your local UID/GID to the frontend container so the Next.js process can safely write bind-mounted source files on Linux. Its `node_modules` and `.next` directories use named volumes.
 
@@ -74,7 +74,7 @@ curl -H "Authorization: Bearer $SPUREL_API_TOKEN" \
 
 Anonymous protected requests return `401`; a missing or weak *server-side* token configuration disables the protected routes with `503`. `SPUREL_ENABLE_DOCS=1` enables `/docs` and `/openapi.json` without protecting the schema itself, so use it only on a trusted interface.
 
-**Never place this token in `NEXT_PUBLIC_*` environment variables or send it from browser JavaScript.** Spurel currently has **no** user/session authentication, RBAC or true tenant authorization. The current frontend is only a placeholder and does not expose an authenticated client flow.
+**Never place this token in `NEXT_PUBLIC_*` environment variables or send it from browser JavaScript.** Spurel currently has **no** user/session authentication, RBAC or true tenant authorization. The frontend currently provides only demo data. SP-09 adds a server-only health boundary but **no protected backend proxy**; a real authenticated client/session flow is required before API-driven screens can be exposed.
 
 ## Run the backend on the host (optional)
 
@@ -93,7 +93,7 @@ alembic upgrade head
 uvicorn spurel.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-The host `DATABASE_URL` uses `localhost`. Do not run another API container on the same host port. The frontend can also run separately with Node 22 and `npm install` / `npm run dev` from `frontend/`.
+The host `DATABASE_URL` uses `localhost`. Do not run another API container on the same host port. The frontend can also run separately with Node 22 and `npm install` / `npm run dev` from `frontend/`. The preview uses local fixture data, not real workspace records.
 
 ## Tests and quality checks
 
