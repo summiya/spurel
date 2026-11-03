@@ -183,12 +183,17 @@ requires an explicitly authorized local manual test.
 
 ## Live Overview dashboard (frontend follow-up)
 
-The landing route `/` no longer displays fictional counts or charts. It reads
+The landing route `/` no longer displays fictional counts or invented trends. It reads
 the existing operator-protected knowledge-base, document, retrieval-trace,
 evaluation-dataset and benchmark-run **GET** endpoints. Unauthenticated
 visitors receive a sign-in prompt and no protected data. Select a knowledge
 base to see loaded document/index readiness, newest saved traces and measured
-benchmark quality from one selected evaluation dataset. No model call is
+benchmark quality from one selected evaluation dataset. The restored quality
+chart plots recorded Recall@K and Precision@K over 7 or 30 days, using the
+selected dataset and one exact retrieval configuration plus case count.
+The chart only connects stored runs, never invents daily values, and indicates
+when the selected period has insufficient data. Load older run-history pages
+explicitly when needed; only loaded history is charted. Model calls are not
 initiated and no global totals, p95 or other unmeasured statistics are invented.
 The overview is intentionally separate from SP-16's unbuilt backend token-aware
 chunking.

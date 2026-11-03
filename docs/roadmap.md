@@ -39,7 +39,7 @@ replaces illustrative Overview values with bounded, real data.
 | SP-14 | High | ✅ Merged | Operator-protected evaluation datasets, relevance judgments, audits, persisted benchmark runs, comparisons, baselines and quality gates. [PR #74](https://github.com/summiya/spurel/pull/74) |
 | SP-15 | Medium | ✅ Merged | Operator-protected live RAG answers, explicit paid-call confirmation, real source excerpts/labels, saved trace links and no-context handling. [PR #75](https://github.com/summiya/spurel/pull/75) |
 
-**Frontend follow-up (separate from SP-16):** Live Overview pulls real knowledge bases, loaded documents/index status, persisted retrieval traces and latest dataset benchmark metrics from existing authenticated endpoints. It never invents a global total, recall trend, p95 latency or pipeline-health statistic. The fixed character-based chunker remains unchanged; SP-16 is not implemented.
+**Frontend follow-ups (separate from SP-16):** Live Overview reads real knowledge bases, loaded documents/index status, persisted traces and evaluation runs via existing authenticated endpoints. The original quality chart is restored using real saved Recall@K/Precision@K measurements (7/30 days, exact retrieval configuration and case-count grouping, explicit pagination). No global totals, invented curves, p95 latency or pipeline-health statistics are fabricated. The fixed character-based chunker remains unchanged; SP-16 is not implemented.
 
 **Frontend security requirement:** Do not place `SPUREL_API_TOKEN` in `NEXT_PUBLIC_*`, browser storage, or client JavaScript. The shared bearer token is not a replacement for user authentication or tenant authorization.
 

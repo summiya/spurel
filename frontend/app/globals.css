@@ -3439,3 +3439,64 @@ html[data-motion="reduce"] *::after {
     flex-wrap: wrap;
   }
 }
+
+/* Restored live quality chart: real saved benchmark measurements only. */
+.quality-real-recall {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.quality-real-precision {
+  fill: none;
+  stroke: var(--violet);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 5 6;
+}
+.quality-chart-config {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+  margin: 10px 0 12px;
+}
+.quality-chart-config > div {
+  display: grid;
+  min-width: 0;
+  gap: 5px;
+}
+.quality-chart-config strong {
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.quality-chart-config .select-control {
+  min-width: 0;
+  max-width: 100%;
+}
+.quality-chart-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 16px;
+}
+.quality-chart-actions .text-hint {
+  margin-left: auto;
+}
+.overview-quick-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+@media (max-width: 640px) {
+  .quality-chart-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .quality-chart-actions .text-hint {
+    margin-left: 0;
+  }
+  .chart-legend {
+    flex-wrap: wrap;
+  }
+}

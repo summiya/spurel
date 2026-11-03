@@ -104,12 +104,17 @@ Open [Overview](http://localhost:3000/) and sign in as the local operator to loa
 real knowledge bases, active indexing status, newest persisted retrieval traces
 and benchmark metrics. Choose a specific knowledge base and, optionally, an evaluation
 dataset. All counts are **loaded-page counts**, never fabricated global totals.
-Benchmark values are taken from the latest loaded persisted run for that dataset;
-no synthetic p95, recall trend, ingestion-health score or percentage is invented.
+The restored **Retrieval quality over time** chart uses real saved benchmark Recall@K
+and Precision@K over the last 7 or 30 days, separated by retrieval configuration
+and case count. Until you create labeled cases and execute benchmarks, the chart
+shows an empty state rather than invented points. The latest-run metrics remain
+visible separately; no synthetic p95 or ingestion-health score is invented.
 
 Overview uses only authenticated existing GET endpoints, so navigating here
-does not call OpenAI or incur embedding/generation usage charges. Additional pages
-can be loaded where supported; link through to the full workbench for more records.
+does not call OpenAI or incur embedding/generation usage charges. The chart shows
+only loaded benchmark pages (50 runs per page) and does not imply identical
+query/judgment sets merely because settings match. Additional pages can be
+loaded where supported; link through to Evaluations for run comparisons.
 No database migrations, new provider adapters or backend changes are required.
 This work is intentionally separate from planned SP-16 token-aware chunking.
 
