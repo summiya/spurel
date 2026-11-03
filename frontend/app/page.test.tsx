@@ -3,13 +3,18 @@ import { describe, expect, it } from "vitest";
 
 import Home from "./page";
 
-describe("Home", () => {
-  it("renders the Spurel product name and tagline", () => {
+describe("Spurel overview", () => {
+  it("introduces the approved retrieval-intelligence demo", () => {
     render(<Home />);
 
-    expect(screen.getByRole("heading", { name: "Spurel" })).toBeInTheDocument();
     expect(
-      screen.getByText("Visual debugging and evaluation for RAG retrieval."),
+      screen.getByRole("heading", { name: "Every retrieval decision. Visible." }),
     ).toBeInTheDocument();
+    expect(screen.getByText("Stop guessing why RAG works.")).toBeInTheDocument();
+    expect(screen.getByText(/Illustrative performance trend/i)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Explore retrieval lab/i })).toHaveAttribute(
+      "href",
+      "/retrieval",
+    );
   });
 });

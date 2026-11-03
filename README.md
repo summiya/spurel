@@ -14,7 +14,7 @@
 </p>
 
 > [!IMPORTANT]
-> **Pre-alpha, not production ready.** The backend has working ingestion, retrieval, RAG and evaluation APIs. The Next.js frontend is currently a **placeholder**. Images below are product **concept designs**, not screenshots of a functioning workbench.
+> **Pre-alpha, not production ready.** The backend has working ingestion, retrieval, RAG and evaluation APIs. The Next.js frontend now has an **interactive design-preview shell** in SP-09 (this PR), using clearly labeled sample data; actual API-backed screens are planned for SP-10–SP-15. Images below are product **concept designs**, not screenshots of a functioning workbench.
 
 [Quick start](#quick-start) · [Implemented today](#implemented-today) · [Architecture](docs/architecture.md) · [Roadmap](docs/roadmap.md) · [Development guide](docs/development.md) · [Benchmark CI](docs/quality-gate-ci.md)
 
@@ -22,7 +22,7 @@
 
 Spurel helps RAG developers understand **which document chunks were retrieved, how they ranked, whether the answer was grounded, and whether a change improved retrieval quality**.
 
-The current backend supports a measurable path from document upload to retrieval traces and persisted benchmark runs. The visual debugging workflows shown in the mockups are **future UI work**.
+The current backend supports a measurable path from document upload to retrieval traces and persisted benchmark runs. The approved design is implemented as an interactive, navigable frontend preview, but its metrics, documents and retrieval results are **illustrative**, not backend data.
 
 ## Quick start
 
@@ -39,7 +39,7 @@ make down     # Stop without deleting the local database or uploaded files
 
 | Local service | URL or port | Status |
 | --- | --- | --- |
-| Next.js placeholder | http://127.0.0.1:3000 | Runs; workbench UI not built |
+| Next.js interactive preview | http://127.0.0.1:3000 | Navigable demo using sample data, not live backend data |
 | FastAPI health | http://127.0.0.1:8000/health | Public |
 | FastAPI business API | http://127.0.0.1:8000/knowledge-bases | Shared bearer token required |
 | PostgreSQL + pgvector | 127.0.0.1:5432 | Local development only |
@@ -56,6 +56,20 @@ curl -H "Authorization: Bearer $SPUREL_API_TOKEN" \
 
 No OpenAI key is required to **start** the stack or manage knowledge bases. Document embedding and generated answers require provider credentials and configuration. See the [development guide](docs/development.md) for environment variables, tests, migrations, alternate ports and data safety.
 
+## Frontend preview (SP-09)
+
+The approved midnight-blue, cyan and violet design is implemented in Next.js as a responsive
+application shell with keyboard command search (**⌘K / Ctrl+K**), theme switching, and eight
+interactive demo views: Overview, Knowledge Bases, Retrieval Lab, Chunk Inspector, Evaluations,
+Trace History, RAG Answers, and Settings. You can change retrieval mode and Top K, inspect
+different sample documents and chunk versions, compare sample runs, and explore cited example
+answers. **Every sample result, metric and document is fabricated for this design preview.**
+
+Frontend protected API calls are deliberately **not** enabled: a shared backend bearer token
+cannot safely be offered to anonymous browser users. The only planned server-only connector
+in SP-09 is a public health-check helper. SP-10–SP-15 will implement live workflows after
+an appropriate frontend authentication/session boundary is introduced.
+
 ## Implemented today
 
 | Capability | Implementation | Where |
@@ -71,11 +85,11 @@ No OpenAI key is required to **start** the stack or manage knowledge bases. Docu
 | Reprocessing | Immutable chunk-set versions, stable UUIDs for unchanged chunks, staged embeddings, fenced retries and atomic activation | [Processing](backend/src/spurel/documents/processing.py) |
 | Local developer tools | Full-stack Docker Compose, Alembic, pytest/PostgreSQL integration checks, Ruff, frontend lint/types/tests/build | [Development](docs/development.md) |
 
-**Security boundary:** Spurel currently authenticates the API with **one shared bearer token**. Knowledge-base scoped queries are not user-specific tenant authorization. Do **not** expose it as a public multi-user service.
+**Security boundary:** The frontend does not expose a protected API proxy or pass the backend token to the browser. Until a real user/session boundary is implemented, every interactive frontend screen uses local demo fixtures. Spurel currently authenticates the backend with **one shared bearer token**. Knowledge-base scoped queries are not user-specific tenant authorization. Do **not** expose it as a public multi-user service.
 
 ## Not implemented yet
 
-The following are roadmap items, **not current capabilities**: a functional web workbench, token-aware/structured chunking, OCR or scanned-PDF support, BM25, HNSW/ANN indexing, metadata retrieval filters, cross-encoder reranking, citation verification, additional hosted/local model adapters, multi-source connectors, experiment export, durable background ingestion and production-grade multi-user authorization.
+The following are roadmap items, **not current capabilities**: API-connected frontend workflows, token-aware/structured chunking, OCR or scanned-PDF support, BM25, HNSW/ANN indexing, metadata retrieval filters, cross-encoder reranking, citation verification, additional hosted/local model adapters, multi-source connectors, experiment export, durable background ingestion and production-grade multi-user authorization.
 
 For task scope and order, see the [maintained roadmap](docs/roadmap.md).
 
@@ -99,7 +113,7 @@ Set `SPUREL_ENABLE_DOCS=1` **only in a trusted local environment** to expose Swa
 ## Architecture at a glance
 
 ```text
-Next.js placeholder (UI planned)
+Next.js interactive demo (backend wiring planned)
           |
           v
  FastAPI + shared bearer authentication
@@ -117,7 +131,7 @@ Backend code is organized into domain/application services, interfaces (ports), 
 
 ## UI vision (concepts only)
 
-These images illustrate the planned interface. The repository currently serves a simple Next.js placeholder, **not** these screens.
+These images illustrate the planned interface. The repository now serves a responsive React implementation of this design with **sample-only data**. These images remain illustrative mockups; they are not screenshots of live Spurel backend results.
 
 <p align="center">
   <img src="./docs/assets/retrieval-playground.svg" alt="Concept only: retrieval playground with candidate scores" width="100%" />
@@ -131,7 +145,7 @@ The future workbench will make source candidates, scoring, chunk boundaries, eva
 
 ## Roadmap and contributing
 
-The [roadmap](docs/roadmap.md) tracks **SP-01–SP-28** by phase, distinguishes merged foundations from upcoming work, and lists priorities and acceptance criteria. The next implementation phase builds the frontend foundation and its knowledge-base, chunk-inspection, retrieval and evaluation screens.
+The [roadmap](docs/roadmap.md) tracks **SP-01–SP-28** by phase, distinguishes merged foundations from upcoming work, and lists priorities and acceptance criteria. SP-09 introduces the interactive frontend shell and demo screens. SP-10–SP-15 will connect those screens to real backend workflows through an authenticated server-only boundary.
 
 Spurel is being built in public. For substantial changes, open an issue first and follow the existing architecture and tests. Good contribution areas include retrieval strategies, parsers, evaluation methods, reliable ingestion, UI, and documentation.
 

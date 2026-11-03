@@ -2,13 +2,13 @@
 
 [← README](../README.md) · [Roadmap](roadmap.md) · [Local development](development.md)
 
-This document describes the **actual pre-alpha implementation**, not the visual product concepts in the README. Spurel has working backend APIs; its Next.js frontend currently serves a placeholder page.
+This document describes the **actual pre-alpha implementation**, not imagined product features. Spurel has working backend APIs; SP-09 introduces an interactive Next.js **demo shell** with fixture data but does not yet wire its UI screens to live backend operations.
 
 ## System boundary
 
 ```text
-                             Next.js placeholder
-                                (UI planned)
+                             Next.js interactive demo
+                            (fixtures, not backend data)
                                       |
                                       v
                           FastAPI business endpoints
@@ -42,7 +42,7 @@ FastAPI runs on Python 3.13 and uses Pydantic schemas, application services, int
 | [`evaluation_datasets/`](../backend/src/spurel/evaluation_datasets/) | Labeled data, benchmarks, baseline history, quality gates and CLI |
 | [`infrastructure/`](../backend/src/spurel/infrastructure/) | PDF/text parsers, fixed character chunker, local storage, OpenAI adapters |
 | [`backend/migrations/`](../backend/migrations/) | PostgreSQL schema migrations |
-| [`frontend/app/`](../frontend/app/) | Placeholder Next.js page; workbench screens not implemented |
+| [`frontend/app/`](../frontend/app/) | Navigable frontend foundation with interactive **fixture-only** demo views; API-connected workbench screens remain future work |
 
 ## Ingestion and versioned indexing
 
@@ -105,6 +105,6 @@ Except for `GET /health`, the business endpoints require a shared `SPUREL_API_TO
 
 ## What is planned, not implemented
 
-The original design diagrams and UI mockups show a wider workbench than currently exists. The following are **not built**: functional debugging UI, recursive/semantic/token-aware chunking, scanned-PDF OCR, BM25, pgvector ANN/HNSW, metadata filters, rerankers, citation verification, non-OpenAI providers, data-source connectors, Redis-backed background jobs, experiment export and production auth/monitoring.
+The approved design now exists as a fixture-based interactive React preview. The following are **not built**: live API-connected debugging UI, recursive/semantic/token-aware chunking, scanned-PDF OCR, BM25, pgvector ANN/HNSW, metadata filters, rerankers, citation verification, non-OpenAI providers, data-source connectors, Redis-backed background jobs, experiment export and production auth/monitoring.
 
 For the exact implementation order and deliverables, use [SP-01–SP-28 roadmap](roadmap.md).

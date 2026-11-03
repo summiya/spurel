@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 
+import { WorkbenchShell } from "@/components/workbench-shell";
+
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Spurel",
-  description: "Visual debugging and evaluation for RAG retrieval.",
+  title: "Spurel | Retrieval Intelligence",
+  description: "Explore retrieval evidence, trace rankings and measure RAG quality.",
 };
 
 export default function RootLayout({
@@ -13,8 +15,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body>{children}</body>
+    <html lang="en" data-theme="dark">
+      <body>
+        <WorkbenchShell>{children}</WorkbenchShell>
+      </body>
     </html>
   );
 }
