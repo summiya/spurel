@@ -48,7 +48,7 @@ export function pageOffset(value: string | null): number | null {
 
 export async function backendRequest(
   path: string,
-  init: { method?: "GET" | "POST"; body?: BodyInit; timeoutMs?: number } = {},
+  init: { method?: "GET" | "POST" | "PUT"; body?: BodyInit; timeoutMs?: number } = {},
 ): Promise<{ status: number; payload: unknown }> {
   // Every caller constructs a fixed path from validated UUIDs / bounded pagination.
   if (!path.startsWith("/") || path.startsWith("//") || /[#\\]/.test(path)) {

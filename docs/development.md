@@ -2,7 +2,7 @@
 
 [← README](../README.md) · [Architecture](architecture.md) · [Roadmap](roadmap.md) · [Benchmark gates](quality-gate-ci.md)
 
-This guide covers Spurel's **working pre-alpha backend** and its Next.js frontend, including live source, chunk, retrieval and trace-comparison views plus demo-only evaluation/answer views. The Docker Compose configuration is for **localhost development, not production**.
+This guide covers Spurel's **working pre-alpha backend** and its Next.js frontend, including live source, chunk, retrieval and trace-comparison views plus a live evaluation dashboard (SP-14 in review) and demo-only RAG answers. The Docker Compose configuration is for **localhost development, not production**.
 
 ## Requirements and startup
 
@@ -74,7 +74,7 @@ a same-origin `Origin` header; unknown paths and identifiers are not forwarded
 via a generic proxy. Signing out clears the cookie. This simple single-operator
 access is **not a production login or multi-tenant authorization system**.
 
-**Evaluations and RAG answers remain interactive demos**, with clearly labeled
+**RAG answers remain an interactive demo**, with clearly labeled
 illustrative evidence and metrics. Do not mistake their results for saved
 database records.
 
@@ -126,6 +126,31 @@ Two exact server-side Next.js endpoints implement the feature: operator
 authenticated `GET /.../retrieval/traces` with bounded pagination and
 authenticated, same-origin `POST /.../retrieval/trace-comparisons` with
 two validated distinct UUIDs. Existing secrets and DB migrations suffice.
+
+## SP-14: live evaluation workbench (in review)
+
+The `/evaluations` page requires the existing local operator session and reads actual
+FastAPI/PostgreSQL evaluation datasets and saved benchmark runs. Select a knowledge base,
+create a dataset, choose active chunks from an indexed document, assign relevance grades
+0–3 (at least one relevant judgment), and save a labeled query. Run the judgment audit
+before benchmarking. Stale labels block evaluation until corrected.
+
+Keyword is the default benchmark and avoids query-time embedding calls. Vector and Hybrid
+run only when explicitly requested and confirmed, and may use paid embedding APIs. The
+backend runs datasets synchronously and accepts at most 100 cases per benchmark.
+Only persisted metrics are displayed: mean Precision@K, Recall@K, MRR@K, NDCG@K,
+judgment coverage and latency. Loading and comparing saved runs are read-only;
+comparisons flag differing case/query sets and retrieval configurations.
+Quality gates use explicit Recall drop thresholds; promoting a baseline is an
+intentional, separately confirmed write.
+
+The new Next.js routes under `/api/workspace/knowledge-bases/{id}/evaluation-datasets`
+authenticate the operator session and enforce exact path, HTTP method and JSON
+payload allowlists before forwarding the server-only bearer token. No new migrations
+or secrets are required. Local frontend smoke: create an indexed document, create
+a labeled case, audit, run Keyword twice, inspect both persisted runs, compare, and
+check a quality gate. Do not claim successful live verification until this flow
+has been tested in a running Spurel stack.
 
 ## Environment and secrets
 
