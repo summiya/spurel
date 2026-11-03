@@ -46,7 +46,6 @@ def _is_abbreviation_period(text: str, position: int) -> bool:
     return term in _COMMON_ABBREVIATIONS or (len(term) == 1 and term.isalpha())
 
 
-
 def _markdown_headings(text: str) -> list[int]:
     """Find real Markdown headings, ignoring heading-like text inside code fences."""
     starts: list[int] = []
@@ -67,9 +66,7 @@ def _markdown_headings(text: str) -> list[int]:
     return starts
 
 
-def _last_separator(
-    pattern: re.Pattern[str], text: str, start: int, limit: int
-) -> int | None:
+def _last_separator(pattern: re.Pattern[str], text: str, start: int, limit: int) -> int | None:
     """Return the rightmost complete separator in the bounded window."""
     first_text = _NON_SPACE.search(text, start, limit)
     if first_text is None:
@@ -175,9 +172,7 @@ class StructuredDocumentChunker:
             raise DocumentChunkingError("document text did not produce any usable chunks")
         return tuple(chunks)
 
-    def _preferred_end(
-        self, text: str, start: int, limit: int, headings: list[int]
-    ) -> int:
+    def _preferred_end(self, text: str, start: int, limit: int, headings: list[int]) -> int:
         if headings:
             index = bisect_right(headings, limit) - 1
             if index >= 0:
@@ -196,9 +191,7 @@ class StructuredDocumentChunker:
                 return end
         return limit
 
-    def _next_start(
-        self, text: str, start: int, end: int, headings: list[int]
-    ) -> int:
+    def _next_start(self, text: str, start: int, end: int, headings: list[int]) -> int:
         if self._overlap == 0 or (headings and end in headings):
             return end
 

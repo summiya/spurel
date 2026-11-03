@@ -156,7 +156,6 @@ def test_processing_rejects_unsafe_token_settings_before_running_pipeline() -> N
     assert service.last_call is None
 
 
-
 def test_sp17_structured_strategies_are_explicit_and_do_not_change_legacy_requests() -> None:
     knowledge_base_id = uuid4()
     document_id = uuid4()

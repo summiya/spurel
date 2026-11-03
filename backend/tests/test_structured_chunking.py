@@ -173,9 +173,9 @@ def test_structured_chunk_cap_handles_pathological_configuration(
 
     monkeypatch.setattr(structured_module, "MAX_CHUNKS_PER_DOCUMENT", 3)
     with pytest.raises(DocumentChunkLimitError):
-        StructuredDocumentChunker(
-            strategy=ChunkStrategy.RECURSIVE, chunk_size=1, overlap=0
-        ).chunk(text="hello world")
+        StructuredDocumentChunker(strategy=ChunkStrategy.RECURSIVE, chunk_size=1, overlap=0).chunk(
+            text="hello world"
+        )
 
 
 def test_factory_keeps_both_previous_modes_and_adds_three_opt_in_modes() -> None:
