@@ -1,5 +1,9 @@
 # CI quality gates
 
+[← README](../README.md) · [Roadmap](roadmap.md) · [Development](development.md)
+
+> This page documents the **manual or reusable** RAG benchmark/quality-gate workflows. They are not run automatically on every pull request. The [automatic CI](../.github/workflows/ci.yml) checks the backend, PostgreSQL, frontend and local Compose setup.
+
 Spurel can turn a persisted benchmark comparison into a CI process result through the
 `spurel-quality-gate` command.
 
@@ -59,9 +63,9 @@ For machine-readable logs:
 spurel-quality-gate ... --json
 ```
 
-## Optional bearer token
+## Bearer authentication
 
-If the deployed Spurel API is protected by bearer authentication, set:
+The current Spurel API **requires** a shared bearer token on business endpoints, including quality-gate endpoints. Set:
 
 ```bash
 export SPUREL_API_TOKEN="..."
@@ -69,7 +73,8 @@ export SPUREL_API_TOKEN="..."
 
 The CLI reads the token from the environment and sends it as an Authorization header.
 The token is never accepted as a command-line argument, which avoids placing it directly
-in the process argument list.
+in the process argument list. Protect the token as a server-side secret; it does
+not provide per-user permissions or tenant authorization.
 
 ## GitHub Actions
 
@@ -147,6 +152,12 @@ The CLI fails closed:
 - structurally non-comparable runs → exit `2`
 
 This keeps CI behavior explicit instead of allowing ambiguous benchmark results to pass.
+
+Live dataset evaluation now rejects **stale relevance labels** (labels pointing at
+inactive, missing or out-of-scope chunks). Audit and relabel the active index
+before starting a new benchmark; previously persisted historical run snapshots
+are preserved. See the [architecture](architecture.md) for the current
+consistency guarantees and remaining race window.
 
 
 ## One-command benchmark + gate
