@@ -17,7 +17,7 @@ describe("workbench shell", () => {
     document.documentElement.dataset.theme = "dark";
   });
 
-  it("has responsive navigation with labeled demo boundaries", () => {
+  it("has responsive navigation with a live home status", () => {
     render(
       <WorkbenchShell>
         <p>Workspace content</p>
@@ -28,7 +28,8 @@ describe("workbench shell", () => {
       "href",
       "/retrieval",
     );
-    expect(screen.getByText(/INTERACTIVE DEMO/)).toBeInTheDocument();
+    expect(screen.getByText(/LIVE WORKSPACE/)).toBeInTheDocument();
+    expect(screen.queryByText("58%")).not.toBeInTheDocument();
   });
 
   it("opens command search and navigates with keyboard", () => {

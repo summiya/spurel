@@ -128,21 +128,11 @@ export function WorkbenchShell({ children }: { children: ReactNode }) {
               ))}
             </nav>
             <div className="sidebar-bottom">
-              <div className="usage-card">
-                <div className="usage-head">
-                  <strong>Workspace usage</strong>
-                  <span>58%</span>
-                </div>
-                <div className="usage-track">
-                  <i />
-                </div>
-                <p>Illustrative metrics · not live</p>
-              </div>
               <div className="sidebar-profile">
                 <span className="profile-avatar">SP</span>
                 <span>
-                  <strong>Demo workspace</strong>
-                  <small>Design preview · local only</small>
+                  <strong>Spurel · local</strong>
+                  <small>Single-operator development</small>
                 </span>
               </div>
             </div>
@@ -179,7 +169,8 @@ export function WorkbenchShell({ children }: { children: ReactNode }) {
                 </button>
                 <span className="top-demo-pill">
                   <span />{" "}
-                  {pathname === "/knowledge-bases" ||
+                  {pathname === "/" ||
+                  pathname === "/knowledge-bases" ||
                   pathname === "/chunks" ||
                   pathname === "/retrieval" ||
                   pathname === "/traces" ||
@@ -206,7 +197,8 @@ export function WorkbenchShell({ children }: { children: ReactNode }) {
             <main id="main-content" className="page-content" tabIndex={-1}>
               {children}
               <footer className="page-footer">
-                {pathname === "/knowledge-bases" ||
+                {pathname === "/" ||
+                pathname === "/knowledge-bases" ||
                 pathname === "/chunks" ||
                 pathname === "/retrieval" ||
                 pathname === "/traces" ||
