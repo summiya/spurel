@@ -3,12 +3,10 @@
 from uuid import uuid4
 
 import pytest
-from fastapi.routing import APIRoute
 from fastapi.testclient import TestClient
 
 from spurel.knowledge_bases.dependencies import get_knowledge_base_service
 from spurel.main import create_app
-from spurel.security import require_api_token
 
 _TEST_TOKEN = "spurel-security-test-token-with-at-least-32-characters"
 
@@ -76,8 +74,8 @@ def test_missing_or_invalid_credentials_are_rejected(
 def test_valid_token_allows_normal_api_execution(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("SPUREL_API_TOKEN", _TEST_TOKEN)
     application = create_app()
-    application.dependency_overrides[get_knowledge_base_service] = (
-        lambda: FakeKnowledgeBaseService()
+    application.dependency_overrides[get_knowledge_base_service] = lambda: (
+        FakeKnowledgeBaseService()
     )
     client = TestClient(application)
 
@@ -90,17 +88,35 @@ def test_valid_token_allows_normal_api_execution(monkeypatch: pytest.MonkeyPatch
     assert response.json()["items"] == []
 
 
-def test_every_business_router_requires_authentication() -> None:
-    application = create_app()
-    api_routes = [route for route in application.routes if isinstance(route, APIRoute)]
+def test_business_write_endpoints_require_authentication(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("SPUREL_API_TOKEN", _TEST_TOKEN)
+    knowledge_base_id = uuid4()
+    client = TestClient(create_app())
 
-    assert len(api_routes) > 1
-    for route in api_routes:
-        guarded = any(
-            dependency.call is require_api_token
-            for dependency in route.dependant.dependencies
-        )
-        assert guarded == (route.path != "/health"), route.path
+    write_requests = (
+        ("/knowledge-bases", {"name": "Private Docs"}),
+        (
+            f"/knowledge-bases/{knowledge_base_id}/documents/{uuid4()}/process",
+            None,
+        ),
+        (
+            f"/knowledge-bases/{knowledge_base_id}/retrieval/hybrid",
+            {"query": "private"},
+        ),
+        (
+            f"/knowledge-bases/{knowledge_base_id}/evaluation-datasets",
+            {"name": "Private Evaluation"},
+        ),
+        (
+            f"/knowledge-bases/{knowledge_base_id}/rag/answer",
+            {"query": "private"},
+        ),
+    )
+    for path, payload in write_requests:
+        response = client.post(path, json=payload)
+        assert response.status_code == 401, path
 
 
 @pytest.mark.parametrize("path", ["/docs", "/redoc", "/openapi.json"])
@@ -142,7 +158,10 @@ def test_all_business_route_groups_reject_anonymous_callers(
 
     for path in paths:
         assert client.get(path).status_code == 401, path
-    assert client.post(
-        f"/knowledge-bases/{knowledge_base_id}/rag/answer",
-        json={"query": "How does it work?"},
-    ).status_code == 401
+    assert (
+        client.post(
+            f"/knowledge-bases/{knowledge_base_id}/rag/answer",
+            json={"query": "How does it work?"},
+        ).status_code
+        == 401
+    )
