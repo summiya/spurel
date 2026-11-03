@@ -122,7 +122,7 @@ export function LiveChunkInspectorPage({ initialKnowledgeBaseId, initialDocument
       <PageHeading
         eyebrow="LIVE DOCUMENT INTELLIGENCE"
         title="Chunk inspector"
-        description="Inspect actual indexed text, source offsets, embedding availability and immutable processing history."
+        description="Inspect actual indexed text, tokenizer-specific token counts, source offsets, embeddings and immutable processing history."
         badge="Live PostgreSQL data"
         action={
           <Link href="/knowledge-bases" className="button ghost compact">
@@ -441,6 +441,9 @@ export function LiveChunkInspectorPage({ initialKnowledgeBaseId, initialDocument
                         <p>{item.text}</p>
                         <small className="text-hint">
                           Source offsets {item.start_offset}–{item.end_offset}
+                          {item.token_count !== null && item.token_count !== undefined
+                            ? ` · ${item.token_count} tokens (${item.tokenizer_encoding})`
+                            : ""}
                         </small>
                       </button>
                     ))}
@@ -494,9 +497,26 @@ export function LiveChunkInspectorPage({ initialKnowledgeBaseId, initialDocument
                       Excerpt characters <strong>{selectedChunk.text.length}</strong>
                     </span>
                     <span>
+                      Token count
+                      <strong>
+                        {selectedChunk.token_count === undefined || selectedChunk.token_count === null
+                          ? "Unavailable"
+                          : selectedChunk.token_count}
+                      </strong>
+                    </span>
+                    <span>
+                      Tokenizer encoding
+                      <strong>{selectedChunk.tokenizer_encoding ?? "Unavailable"}</strong>
+                    </span>
+                    <span>
                       Embedding records <strong>{selectedChunk.embedding_count}</strong>
                     </span>
                   </div>
+                  <p className="text-hint">
+                    Token counts are calculated for the currently configured embedding-model
+                    tokenizer, including historical chunks. If the model changes, an older
+                    version's displayed count is recalculated, not its original tokenizer metadata.
+                  </p>
                 </Panel>
               ) : null}
             </>

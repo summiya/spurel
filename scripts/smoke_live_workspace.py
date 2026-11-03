@@ -273,11 +273,34 @@ def run(root: Path) -> None:
         origin=base,
     )[0] == 400
 
+    # SP-16: validate opt-in token settings without running paid embedding.
+    process_endpoint = f"{document_path}/{doc_id}/process"
+    opt_in = json.dumps(
+        {"strategy": "tokens", "chunk_size": 512, "overlap": 64}
+    ).encode("utf-8")
+    assert _request(
+        opener, base, process_endpoint, method="POST", data=opt_in,
+        content_type="application/json", origin="http://untrusted.example",
+    )[0] == 403
+    assert _request(
+        opener, base, process_endpoint, method="POST",
+        data=b'{"strategy":"tokens","chunk_size":512,"overlap":512}',
+        content_type="application/json", origin=base,
+    )[0] == 422
+    assert _request(
+        opener, base, process_endpoint, method="POST", data=b'not-json',
+        content_type="application/json", origin=base,
+    )[0] == 400
+
     status, _ = _request(opener, base, "/api/operator/logout", method="POST", data=b"", origin=base)
     assert status == 200
     assert _request(opener, base, endpoint)[0] == 401
     assert _request(opener, base, versions_path)[0] == 401
     assert _request(opener, base, chunks_path)[0] == 401
+    assert _request(
+        opener, base, process_endpoint, method="POST", data=opt_in,
+        content_type="application/json", origin=base,
+    )[0] == 401
     assert _request(opener, base, trace_path)[0] == 401
     assert _request(opener, base, keyword_endpoint, method="POST", data=keyword_payload,
                     content_type="application/json", origin=base)[0] == 401

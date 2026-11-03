@@ -63,6 +63,8 @@ const activeChunks = [
     end_offset: 170,
     has_embeddings: true,
     embedding_count: 2,
+    token_count: 12,
+    tokenizer_encoding: "cl100k_base",
   },
   {
     id: "6c92bd03-bba3-44f0-a7d0-b17e5728c590",
@@ -126,10 +128,12 @@ describe("live chunk inspector", () => {
     render(<LiveChunkInspectorPage />);
     expect((await screen.findAllByText(/Current live excerpt/)).length).toBeGreaterThan(0);
     expect(screen.getByText(/Source offsets 120–170/)).toBeInTheDocument();
+    expect(screen.getByText(/12 tokens \(cl100k_base\)/)).toBeInTheDocument();
     expect(screen.getByText(/2 embeddings/)).toBeInTheDocument();
     expect(screen.getByText(/No embeddings/)).toBeInTheDocument();
     expect(screen.getByRole("combobox", { name: "Chunk set to inspect" })).toHaveValue("active");
     expect(screen.getByText(/Active v2/)).toBeInTheDocument();
+    expect(screen.getByText("Tokenizer encoding")).toBeInTheDocument();
     expect(screen.queryByText("security-guidelines.md")).not.toBeInTheDocument();
   });
 

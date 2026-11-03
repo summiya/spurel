@@ -4,6 +4,7 @@ from fastapi.testclient import TestClient
 
 from spurel.documents.ingestion_service import DocumentNotFoundError
 from spurel.documents.parsing import DocumentTextContentError
+from spurel.documents.chunk_options import ChunkStrategy, DocumentChunkOptions
 from spurel.documents.processing import DocumentProcessingResult
 from spurel.documents.processing_dependencies import (
     get_document_processing_service,
@@ -18,14 +19,17 @@ class FakeDocumentProcessingService:
         self.result: DocumentProcessingResult | None = None
         self.error: Exception | None = None
         self.last_call: tuple[UUID, UUID] | None = None
+        self.last_options: DocumentChunkOptions | None = None
 
     async def process(
         self,
         *,
         knowledge_base_id: UUID,
         document_id: UUID,
+        chunk_options: DocumentChunkOptions | None = None,
     ) -> DocumentProcessingResult:
         self.last_call = (knowledge_base_id, document_id)
+        self.last_options = chunk_options
         if self.error is not None:
             raise self.error
         assert self.result is not None
@@ -106,3 +110,48 @@ def test_process_document_returns_unprocessable_for_invalid_content() -> None:
     assert response.status_code == 422
     assert response.json() == {"detail": "document cannot be processed"}
     assert "raw parser detail" not in response.text
+
+
+
+def test_process_document_accepts_explicit_token_chunking_without_changing_legacy_post() -> None:
+    kb_id = uuid4()
+    doc_id = uuid4()
+    service = FakeDocumentProcessingService()
+    service.result = DocumentProcessingResult(
+        document_id=doc_id,
+        knowledge_base_id=kb_id,
+        chunk_count=2,
+        embedded_chunk_count=2,
+        embedding_provider="openai",
+        embedding_model="text-embedding-3-small",
+        embedding_dimensions=1536,
+    )
+    client = _client(service)
+    endpoint = f"/knowledge-bases/{kb_id}/documents/{doc_id}/process"
+
+    response = client.post(endpoint, json={"strategy": "tokens", "chunk_size": 512, "overlap": 64})
+    assert response.status_code == 200
+    assert service.last_options == DocumentChunkOptions(
+        strategy=ChunkStrategy.TOKENS, chunk_size=512, overlap=64
+    )
+
+    response = client.post(endpoint)
+    assert response.status_code == 200
+    assert service.last_options is None
+
+
+def test_processing_rejects_unsafe_token_settings_before_running_pipeline() -> None:
+    service = FakeDocumentProcessingService()
+    client = _client(service)
+    endpoint = f"/knowledge-bases/{uuid4()}/documents/{uuid4()}/process"
+    invalid = [
+        {"strategy": "tokens", "chunk_size": 2001, "overlap": 10},
+        {"strategy": "tokens", "chunk_size": 512, "overlap": 512},
+        {"strategy": "unknown", "chunk_size": 100, "overlap": 10},
+        {"strategy": "characters", "chunk_size": 20001, "overlap": 100},
+        {"strategy": "tokens", "chunk_size": True, "overlap": 0},
+        {"strategy": "tokens", "chunk_size": 512, "overlap": 32, "extra": "not allowed"},
+    ]
+    for body in invalid:
+        assert client.post(endpoint, json=body).status_code == 422
+    assert service.last_call is None

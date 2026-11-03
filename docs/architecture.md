@@ -46,6 +46,19 @@ FastAPI runs on Python 3.13 and uses Pydantic schemas, application services, int
 | [`backend/migrations/`](../backend/migrations/) | PostgreSQL schema migrations |
 | [`frontend/app/`](../frontend/app/) | Operator-protected source management, chunks, retrieval, traces and evaluations; RAG answers connected by SP-15 branch |
 
+### SP-16 token-aware chunking (in review)
+
+Existing fixed-size **character** chunking remains unchanged by default.
+An optional processing payload selects bounded `tiktoken` model-token
+windows with source-character offsets. The new chunker is an infrastructure
+adapter selected by the document processing service; existing document
+chunk-set staging, embeddings, version comparison and fenced atomic activation
+are reused, so old active/historical chunks are not removed. This does not
+introduce a new token-count database column: Chunk Inspector computes
+token counts on demand using the currently configured embedding-model
+encoding, and explicitly names it in the response. Historic counts are
+recomputed, rather than represented as original version provenance.
+
 ## Ingestion and versioned indexing
 
 1. Upload a text, Markdown or **unencrypted, text-extractable PDF** to a knowledge base. File metadata is stored in PostgreSQL and source bytes in local blob storage.

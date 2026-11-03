@@ -8,6 +8,7 @@ from spurel.documents.chunk_inspector import (
     ChunkInspectionPersistenceError,
 )
 from spurel.documents.dependencies import get_chunk_inspector_service
+from spurel.documents.token_inspection import measured_tokens
 from spurel.main import create_app
 from spurel.security import require_api_token
 
@@ -117,3 +118,25 @@ def test_chunk_inspector_hides_persistence_errors() -> None:
         "detail": "chunk inspector temporarily unavailable"
     }
     assert "secret details" not in response.text
+
+
+
+def test_chunk_inspector_adds_exact_current_tokenizer_measurements(
+    monkeypatch,
+) -> None:
+    monkeypatch.setenv("SPUREL_EMBEDDING_MODEL", "text-embedding-3-small")
+    kb_id, doc_id = uuid4(), uuid4()
+    service = FakeChunkInspectorService()
+    service.items = (
+        ChunkInspectionItem(
+            id=uuid4(), document_id=doc_id, index=0,
+            text="The café has a robot 🤖", start_offset=0, end_offset=22, embedding_count=1,
+        ),
+    )
+    result = _client(service).get(
+        f"/knowledge-bases/{kb_id}/documents/{doc_id}/chunks"
+    )
+    assert result.status_code == 200
+    item = result.json()["items"][0]
+    assert item["token_count"] == measured_tokens(service.items[0].text)[0]
+    assert item["tokenizer_encoding"] == "cl100k_base"

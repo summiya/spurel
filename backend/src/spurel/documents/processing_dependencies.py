@@ -9,6 +9,7 @@ from openai import AsyncOpenAI
 
 from spurel.db import async_session_factory
 from spurel.documents.chunk_pipeline import DocumentChunkPipeline
+from spurel.infrastructure.chunking.factory import build_document_chunker
 from spurel.documents.chunk_service import DocumentChunkService
 from spurel.documents.domain import DocumentMediaType
 from spurel.documents.ingestion_service import DocumentIngestionService
@@ -91,6 +92,7 @@ async def get_document_processing_service() -> AsyncIterator[DocumentProcessingS
         yield DocumentProcessingService(
             chunk_pipeline=chunk_pipeline,
             embedding_pipeline=embedding_pipeline,
+            chunker_factory=lambda options: build_document_chunker(options=options, model=config.model),
         )
     finally:
         await client.close()

@@ -49,7 +49,7 @@ replaces illustrative Overview values with bounded, real data.
 
 | Task | Priority | Status | Scope / acceptance target |
 | --- | --- | --- | --- |
-| SP-16 | High | ☐ Planned | Model-token-aware chunking and accurate token counts/overlap |
+| SP-16 | High | ◐ In review | Opt-in tokenizer-aware processing with exact model-token size/overlap, preservation of legacy character processing and versions, token counts in Chunk Inspector and protected frontend settings. Feature branch `feat/sp16-token-aware-chunking`; awaiting CI/review. |
 | SP-17 | High | ☐ Planned | Recursive, heading/Markdown-aware and sentence-aware chunking strategies |
 | SP-18 | High | ☐ Planned | PDF page references, structured extraction and an explicitly configured OCR fallback |
 | SP-19 | High | ☐ Planned | Consistent knowledge-base metadata filters across retrieval modes, with tests |
@@ -57,7 +57,7 @@ replaces illustrative Overview values with bounded, real data.
 | SP-21 | High | ☐ Planned | Pluggable cross-encoder reranking with candidate/rerank/final ranks |
 | SP-22 | Medium | ☐ Planned | Per-stage timing and retrieval observability in API traces and workbench |
 
-**Current baseline:** fixed-size **character** chunks, unencrypted text-extractable PDFs, exact pgvector cosine ranking, PostgreSQL **full-text `ts_rank_cd`** keyword ranking, and RRF. There is **no BM25 implementation** even though PostgreSQL keyword search already exists.
+**Current `main` baseline:** fixed-size **character** chunks, unencrypted text-extractable PDFs, exact pgvector cosine ranking, PostgreSQL **full-text `ts_rank_cd`** keyword ranking, and RRF. There is **no BM25 implementation** even though PostgreSQL keyword search already exists.
 
 ## Phase 4 — Quality, extensibility and release
 
