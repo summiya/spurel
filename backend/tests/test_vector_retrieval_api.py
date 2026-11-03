@@ -10,6 +10,7 @@ from spurel.retrieval.ports import VectorRetrievalRepositoryError
 from spurel.retrieval.traced import TracedRetrievalResult
 from spurel.security import require_api_token
 
+
 class FakeVectorRetrievalService:
     def __init__(self) -> None:
         self.results: Sequence[VectorRetrievalMatch] = ()

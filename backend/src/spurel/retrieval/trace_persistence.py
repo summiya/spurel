@@ -20,7 +20,6 @@ from sqlalchemy.orm import Mapped, mapped_column
 from spurel.db import Base
 from spurel.retrieval.tracing import (
     RetrievalTrace,
-    RetrievalTraceMode,
     RetrievalTraceResult,
 )
 

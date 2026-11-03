@@ -139,10 +139,8 @@ def test_baseline_history_hides_persistence_errors() -> None:
     client = _client(service)
 
     response = client.get(
-        (
-            f"/knowledge-bases/{uuid4()}/evaluation-datasets/"
-            f"{uuid4()}/baselines/history"
-        )
+        f"/knowledge-bases/{uuid4()}/evaluation-datasets/"
+        f"{uuid4()}/baselines/history"
     )
 
     assert response.status_code == 503

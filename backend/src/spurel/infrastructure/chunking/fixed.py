@@ -3,8 +3,8 @@
 from math import ceil
 
 from spurel.documents.chunking import (
-    MAX_CHUNKS_PER_DOCUMENT,
     MAX_CHUNK_SIZE_CHARACTERS,
+    MAX_CHUNKS_PER_DOCUMENT,
     DocumentChunk,
     DocumentChunkingConfigError,
     DocumentChunkingError,

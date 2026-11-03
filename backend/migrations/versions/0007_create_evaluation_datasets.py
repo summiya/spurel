@@ -7,8 +7,8 @@ Create Date: 2026-09-23
 
 from collections.abc import Sequence
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
 revision: str = "0007_create_evaluation_datasets"
 down_revision: str | Sequence[str] | None = "0006_create_retrieval_traces"

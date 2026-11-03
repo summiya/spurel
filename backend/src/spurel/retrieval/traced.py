@@ -3,7 +3,7 @@
 from collections.abc import Sequence
 from dataclasses import dataclass
 from time import perf_counter
-from typing import Generic, Protocol, TypeVar
+from typing import Protocol
 from uuid import UUID
 
 from spurel.retrieval.domain import VectorRetrievalMatch
@@ -15,9 +15,6 @@ from spurel.retrieval.tracing import (
     RetrievalTraceMode,
     RetrievalTraceResult,
 )
-
-T = TypeVar("T")
-
 
 class VectorRetrievalRunner(Protocol):
     """Vector retrieval capability consumed by the tracing decorator."""
@@ -64,7 +61,7 @@ class HybridRetrievalRunner(Protocol):
 
 
 @dataclass(frozen=True, slots=True)
-class TracedRetrievalResult(Generic[T]):
+class TracedRetrievalResult[T]:
     """Successful retrieval output plus its durable trace identity."""
 
     trace_id: UUID

@@ -8,10 +8,10 @@ from spurel.evaluation_datasets.dependencies import (
 )
 from spurel.evaluation_datasets.execution import DatasetEvaluationMode
 from spurel.evaluation_datasets.run_comparison import (
-    EvaluationRunComparison,
-    EvaluationRunComparisonSide,
     EvaluationRunCaseComparison,
     EvaluationRunCasePresence,
+    EvaluationRunComparison,
+    EvaluationRunComparisonSide,
 )
 from spurel.evaluation_datasets.run_ports import EvaluationRunPersistenceError
 from spurel.evaluation_datasets.run_service import EvaluationRunNotFoundError

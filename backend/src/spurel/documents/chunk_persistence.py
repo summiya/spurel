@@ -17,8 +17,8 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from spurel.db import Base
 from spurel.documents.chunking import (
-    MAX_CHUNKS_PER_DOCUMENT,
     MAX_CHUNK_SIZE_CHARACTERS,
+    MAX_CHUNKS_PER_DOCUMENT,
     DocumentChunk,
 )
 

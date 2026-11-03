@@ -7,8 +7,8 @@ from sqlalchemy import delete, select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from spurel.documents.chunk_persistence import DocumentChunkRecord
 from spurel.documents.chunk_models import StoredDocumentChunk
+from spurel.documents.chunk_persistence import DocumentChunkRecord
 from spurel.documents.chunk_ports import DocumentChunkPersistenceError
 from spurel.documents.chunking import DocumentChunk
 

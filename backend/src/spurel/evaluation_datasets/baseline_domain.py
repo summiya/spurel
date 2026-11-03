@@ -31,7 +31,7 @@ class EvaluationBaselineConfiguration:
     embedding_dimensions: int | None
 
     @classmethod
-    def from_run(cls, run: EvaluationRun) -> "EvaluationBaselineConfiguration":
+    def from_run(cls, run: EvaluationRun) -> EvaluationBaselineConfiguration:
         """Capture the exact persisted retrieval configuration from a run."""
         return cls(
             mode=run.mode,
@@ -149,7 +149,7 @@ class EvaluationBaseline:
         run: EvaluationRun,
         baseline_id: UUID | None = None,
         promoted_at: datetime | None = None,
-    ) -> "EvaluationBaseline":
+    ) -> EvaluationBaseline:
         """Create a promoted baseline snapshot from one persisted run."""
         configuration = EvaluationBaselineConfiguration.from_run(run)
         return cls(
@@ -161,7 +161,6 @@ class EvaluationBaseline:
             configuration_fingerprint=configuration.fingerprint,
             promoted_at=promoted_at or datetime.now(UTC),
         )
-
 
 
 @dataclass(frozen=True, slots=True)
@@ -183,7 +182,7 @@ class EvaluationBaselinePromotion:
         *,
         baseline: EvaluationBaseline,
         promotion_id: UUID | None = None,
-    ) -> "EvaluationBaselinePromotion":
+    ) -> EvaluationBaselinePromotion:
         """Snapshot one completed baseline promotion."""
         return cls(
             id=promotion_id or uuid4(),

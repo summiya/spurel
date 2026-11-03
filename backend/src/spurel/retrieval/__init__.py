@@ -39,6 +39,10 @@ from spurel.retrieval.ports import (
     VectorRetrievalRepository,
     VectorRetrievalRepositoryError,
 )
+from spurel.retrieval.service import (
+    VectorRetrievalProviderContractError,
+    VectorRetrievalService,
+)
 from spurel.retrieval.trace_comparison import (
     RetrievalTraceComparison,
     RetrievalTraceComparisonIntegrityError,
@@ -69,10 +73,6 @@ from spurel.retrieval.tracing import (
     RetrievalTraceResult,
     RetrievalTraceSummary,
     RetrievalTraceValidationError,
-)
-from spurel.retrieval.service import (
-    VectorRetrievalProviderContractError,
-    VectorRetrievalService,
 )
 
 __all__ = [
