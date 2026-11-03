@@ -15,6 +15,9 @@ export interface RetrievalMatch {
   text: string;
   start_offset: number;
   end_offset: number;
+  page_start?: number | null;
+  page_end?: number | null;
+  ocr_used?: boolean;
   cosine_similarity?: number | null;
   keyword_score?: number | null;
   rrf_score?: number | null;

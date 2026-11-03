@@ -5,7 +5,6 @@ from uuid import UUID, uuid4
 from sqlalchemy import (
     Boolean,
     CheckConstraint,
-    false,
     Computed,
     ForeignKey,
     ForeignKeyConstraint,
@@ -14,6 +13,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
     Uuid,
+    false,
     text,
 )
 from sqlalchemy.dialects.postgresql import TSVECTOR
