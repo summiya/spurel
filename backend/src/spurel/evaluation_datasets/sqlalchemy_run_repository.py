@@ -33,6 +33,9 @@ class SqlAlchemyEvaluationRunRepository:
             async with self._session_factory() as session:
                 async with session.begin():
                     session.add(run_record)
+                    # No ORM relationship links these models; flush the parent
+                    # before inserting child snapshots with run_id foreign keys.
+                    await session.flush()
                     session.add_all(case_records)
         except SQLAlchemyError as exc:
             raise EvaluationRunPersistenceError(

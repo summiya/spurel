@@ -54,7 +54,10 @@ from spurel.evaluation_datasets.quality_gate import (
     EvaluationQualityGateThresholds,
 )
 from spurel.evaluation_datasets.run_comparison import EvaluationRunComparisonService
-from spurel.evaluation_datasets.run_service import EvaluationRunService, PersistedDatasetEvaluationService
+from spurel.evaluation_datasets.run_service import (
+    EvaluationRunService,
+    PersistedDatasetEvaluationService,
+)
 from spurel.evaluation_datasets.service import EvaluationDatasetService
 from spurel.evaluation_datasets.sqlalchemy_baseline_repository import (
     SqlAlchemyEvaluationBaselineRepository,
