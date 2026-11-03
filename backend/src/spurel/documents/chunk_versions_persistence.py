@@ -45,13 +45,9 @@ class DocumentChunkVersionRecord(Base):
     version: Mapped[int] = mapped_column(Integer, primary_key=True)
     chunk_count: Mapped[int] = mapped_column(Integer, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    status: Mapped[str] = mapped_column(
-        String(16), nullable=False, server_default=text("'ready'")
-    )
+    status: Mapped[str] = mapped_column(String(16), nullable=False, server_default=text("'ready'"))
     attempt_id: Mapped[UUID | None] = mapped_column(Uuid, nullable=True)
     lease_expires_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
-    attempt_count: Mapped[int] = mapped_column(
-        Integer, nullable=False, server_default=text("0")
-    )
+    attempt_count: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"))

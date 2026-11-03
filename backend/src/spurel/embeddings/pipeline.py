@@ -92,14 +92,10 @@ class DocumentEmbeddingPipeline:
 
             if not chunks:
                 if embedded_chunk_count == 0:
-                    raise DocumentEmbeddingNoChunksError(
-                        "document has no persisted chunks"
-                    )
+                    raise DocumentEmbeddingNoChunksError("document has no persisted chunks")
                 break
 
-            batch = await self._provider.embed(
-                [stored.chunk.text for stored in chunks]
-            )
+            batch = await self._provider.embed([stored.chunk.text for stored in chunks])
             self._validate_provider_contract(
                 batch_model=batch.model,
                 batch_dimensions=batch.dimensions,

@@ -724,7 +724,6 @@ async def _version_round_trip(postgres_url: str, tmp_path: Path) -> None:
         )
 
 
-
 class _FailAfterOneBatch(_DeterministicEmbeddings):
     """Simulate failure after one committed embedding batch."""
 
@@ -765,9 +764,7 @@ async def _failed_embeddings_and_retry(postgres_url: str, tmp_path: Path) -> Non
         )
         documents = SqlAlchemyDocumentRepository(database.sessions)
         chunks = SqlAlchemyDocumentChunkRepository(database.sessions)
-        versions = DocumentVersionService(
-            SqlAlchemyDocumentVersionRepository(database.sessions)
-        )
+        versions = DocumentVersionService(SqlAlchemyDocumentVersionRepository(database.sessions))
         await _processor(database, storage, provider).process(
             knowledge_base_id=kb_id, document_id=document_id
         )
@@ -777,9 +774,9 @@ async def _failed_embeddings_and_retry(postgres_url: str, tmp_path: Path) -> Non
 
         failing = _FailAfterOneBatch()
         with pytest.raises(EmbeddingProviderError, match="simulated"):
-            await _processor(
-                database, storage, failing, chunk_size=42, batch_size=1
-            ).process(knowledge_base_id=kb_id, document_id=document_id)
+            await _processor(database, storage, failing, chunk_size=42, batch_size=1).process(
+                knowledge_base_id=kb_id, document_id=document_id
+            )
         assert failing.calls == 2
         latest_document = await documents.get_by_id(
             knowledge_base_id=kb_id, document_id=document_id
@@ -804,9 +801,12 @@ async def _failed_embeddings_and_retry(postgres_url: str, tmp_path: Path) -> Non
         vectors, keywords, hybrid, _ = _retrievers(database, provider)
         old_matches = await keywords.search(knowledge_base_id=kb_id, query="refund", limit=10)
         assert [match.chunk_id for match in old_matches] == [old_id]
-        assert [row.id for row in await chunks.list_stored_by_document(
-            document_id=document_id, limit=50, offset=0
-        )] == [old_id]
+        assert [
+            row.id
+            for row in await chunks.list_stored_by_document(
+                document_id=document_id, limit=50, offset=0
+            )
+        ] == [old_id]
 
         retry = await _processor(
             database, storage, _DeterministicEmbeddings(), chunk_size=42, batch_size=1
@@ -839,9 +839,11 @@ async def _failed_embeddings_and_retry(postgres_url: str, tmp_path: Path) -> Non
             assert old_id not in {row.chunk_id for row in results}
             assert {row.chunk_id for row in results} <= failed_ids
 
-        assert (await versions.list_version_chunks(
-            knowledge_base_id=kb_id, document_id=document_id, version=1, limit=50, offset=0
-        ))[0].id == old_id
+        assert (
+            await versions.list_version_chunks(
+                knowledge_base_id=kb_id, document_id=document_id, version=1, limit=50, offset=0
+            )
+        )[0].id == old_id
 
 
 def test_staged_version_cannot_publish_without_all_embeddings_and_is_fenced(
@@ -884,9 +886,7 @@ async def _staging_fencing_and_expiration(postgres_url: str, tmp_path: Path) -> 
             )
 
         with pytest.raises(DocumentProcessingConflictError):
-            await repository.replace_for_document(
-                document_id=document_id, chunks=version_chunks
-            )
+            await repository.replace_for_document(document_id=document_id, chunks=version_chunks)
 
         # Simulate a worker disappearing: recovery can reclaim after lease expiry.
         async with database.sessions() as session:

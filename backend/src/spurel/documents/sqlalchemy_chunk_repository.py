@@ -49,8 +49,7 @@ class SqlAlchemyDocumentChunkRepository:
                     now = datetime.now(UTC)
 
                     in_progress = await session.scalar(
-                        select(DocumentChunkVersionRecord)
-                        .where(
+                        select(DocumentChunkVersionRecord).where(
                             DocumentChunkVersionRecord.document_id == document_id,
                             DocumentChunkVersionRecord.status == "processing",
                         )
@@ -201,10 +200,7 @@ class SqlAlchemyDocumentChunkRepository:
                             ChunkEmbeddingRecord.dimensions == dimensions,
                         )
                     )
-                    if (
-                        total_chunks != staged.chunk_count
-                        or embedded_chunks != staged.chunk_count
-                    ):
+                    if total_chunks != staged.chunk_count or embedded_chunks != staged.chunk_count:
                         raise DocumentChunkVersionIncompleteError(
                             "staged document version has incomplete embeddings"
                         )
@@ -256,10 +252,14 @@ class SqlAlchemyDocumentChunkRepository:
         chunk_version: int | None = None,
     ) -> Sequence[StoredDocumentChunk]:
         """Read an explicit staging version or the active one by default."""
-        statement = _chunks_for_document(
-            document_id=document_id,
-            chunk_version=chunk_version,
-        ).limit(limit).offset(offset)
+        statement = (
+            _chunks_for_document(
+                document_id=document_id,
+                chunk_version=chunk_version,
+            )
+            .limit(limit)
+            .offset(offset)
+        )
         try:
             async with self._session_factory() as session:
                 records = (await session.scalars(statement)).all()
@@ -282,9 +282,11 @@ class SqlAlchemyDocumentChunkRepository:
         offset: int,
     ) -> Sequence[DocumentChunk]:
         """List the active document chunk set in source order."""
-        statement = _chunks_for_document(
-            document_id=document_id, chunk_version=None
-        ).limit(limit).offset(offset)
+        statement = (
+            _chunks_for_document(document_id=document_id, chunk_version=None)
+            .limit(limit)
+            .offset(offset)
+        )
         try:
             async with self._session_factory() as session:
                 records = (await session.scalars(statement)).all()
@@ -336,8 +338,7 @@ async def _chunks_match(
         )
     ).all()
     return len(records) == len(chunks) and all(
-        record.to_domain() == chunk
-        for record, chunk in zip(records, chunks, strict=True)
+        record.to_domain() == chunk for record, chunk in zip(records, chunks, strict=True)
     )
 
 
@@ -354,10 +355,6 @@ async def _get_processing_version(
             DocumentChunkVersionRecord.version == version,
         )
     )
-    if (
-        staged is None
-        or staged.status != "processing"
-        or staged.attempt_id != attempt_id
-    ):
+    if staged is None or staged.status != "processing" or staged.attempt_id != attempt_id:
         raise DocumentProcessingConflictError("processing attempt was superseded")
     return staged

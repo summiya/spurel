@@ -28,10 +28,7 @@ class FakeDocumentRepository(DocumentRepository):
         knowledge_base_id: UUID,
         document_id: UUID,
     ) -> Document | None:
-        if (
-            self.document.knowledge_base_id == knowledge_base_id
-            and self.document.id == document_id
-        ):
+        if self.document.knowledge_base_id == knowledge_base_id and self.document.id == document_id:
             return self.document
         return None
 
@@ -123,9 +120,7 @@ def _build_pipeline(
     chunk_repository: FakeChunkRepository,
     chunker: DocumentChunker,
 ) -> DocumentChunkPipeline:
-    parsers: Mapping[DocumentMediaType, DocumentParser] = {
-        DocumentMediaType.TEXT: FakeParser()
-    }
+    parsers: Mapping[DocumentMediaType, DocumentParser] = {DocumentMediaType.TEXT: FakeParser()}
     ingestion_service = DocumentIngestionService(
         repository=FakeDocumentRepository(document),
         storage=FakeBlobStorage(

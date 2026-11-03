@@ -21,9 +21,7 @@ class FakeChunkPipeline:
         self.calls = []
         self.events = []
 
-    async def renew_version(
-        self, *, document_id: UUID, version: int, attempt_id: UUID
-    ) -> None:
+    async def renew_version(self, *, document_id: UUID, version: int, attempt_id: UUID) -> None:
         assert self.events is not None
         self.events.append("renew")
 
@@ -40,9 +38,7 @@ class FakeChunkPipeline:
         assert self.events is not None
         self.events.append("promote")
 
-    async def fail_version(
-        self, *, document_id: UUID, version: int, attempt_id: UUID
-    ) -> None:
+    async def fail_version(self, *, document_id: UUID, version: int, attempt_id: UUID) -> None:
         assert self.events is not None
         self.events.append("fail")
 
@@ -162,7 +158,6 @@ def test_processing_does_not_embed_when_chunking_fails() -> None:
     assert embedding_pipeline.calls == []
 
 
-
 def test_staged_processing_promotes_only_after_embedding() -> None:
     knowledge_base_id = uuid4()
     document_id = uuid4()
@@ -229,9 +224,7 @@ def test_staged_processing_records_failure_without_promotion() -> None:
         embedding_pipeline=embedding_pipeline,  # type: ignore[arg-type]
     )
     with pytest.raises(RuntimeError, match="provider down"):
-        asyncio.run(
-            service.process(knowledge_base_id=knowledge_base_id, document_id=document_id)
-        )
+        asyncio.run(service.process(knowledge_base_id=knowledge_base_id, document_id=document_id))
 
     assert embedding_pipeline.calls == [(document_id, 5)]
     assert chunk_pipeline.events == ["renew", "fail"]

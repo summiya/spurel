@@ -35,9 +35,7 @@ class FakeDocumentProcessingService:
 def _client(service: FakeDocumentProcessingService) -> TestClient:
     application = create_app()
     application.dependency_overrides[require_api_token] = lambda: None
-    application.dependency_overrides[get_document_processing_service] = (
-        lambda: service
-    )
+    application.dependency_overrides[get_document_processing_service] = lambda: service
     return TestClient(application)
 
 
@@ -56,9 +54,7 @@ def test_process_document_returns_complete_pipeline_summary() -> None:
     )
     client = _client(service)
 
-    response = client.post(
-        f"/knowledge-bases/{knowledge_base_id}/documents/{document_id}/process"
-    )
+    response = client.post(f"/knowledge-bases/{knowledge_base_id}/documents/{document_id}/process")
 
     assert response.status_code == 200
     assert response.json() == {
@@ -81,9 +77,7 @@ def test_process_document_returns_not_found_for_scoped_missing_document() -> Non
     service.error = DocumentNotFoundError("internal lookup detail")
     client = _client(service)
 
-    response = client.post(
-        f"/knowledge-bases/{uuid4()}/documents/{uuid4()}/process"
-    )
+    response = client.post(f"/knowledge-bases/{uuid4()}/documents/{uuid4()}/process")
 
     assert response.status_code == 404
     assert response.json() == {"detail": "document was not found"}
@@ -95,14 +89,10 @@ def test_process_document_hides_provider_failures() -> None:
     service.error = EmbeddingProviderError("secret provider detail")
     client = _client(service)
 
-    response = client.post(
-        f"/knowledge-bases/{uuid4()}/documents/{uuid4()}/process"
-    )
+    response = client.post(f"/knowledge-bases/{uuid4()}/documents/{uuid4()}/process")
 
     assert response.status_code == 503
-    assert response.json() == {
-        "detail": "document processing service temporarily unavailable"
-    }
+    assert response.json() == {"detail": "document processing service temporarily unavailable"}
     assert "secret provider detail" not in response.text
 
 
@@ -111,9 +101,7 @@ def test_process_document_returns_unprocessable_for_invalid_content() -> None:
     service.error = DocumentTextContentError("raw parser detail")
     client = _client(service)
 
-    response = client.post(
-        f"/knowledge-bases/{uuid4()}/documents/{uuid4()}/process"
-    )
+    response = client.post(f"/knowledge-bases/{uuid4()}/documents/{uuid4()}/process")
 
     assert response.status_code == 422
     assert response.json() == {"detail": "document cannot be processed"}
