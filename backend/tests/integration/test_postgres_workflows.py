@@ -36,8 +36,8 @@ from spurel.documents.dependencies import (
     get_document_version_service,
 )
 from spurel.documents.domain import DocumentMediaType
-from spurel.documents.persistence import DocumentRecord
 from spurel.documents.ingestion_service import DocumentIngestionService
+from spurel.documents.persistence import DocumentRecord
 from spurel.documents.processing import DocumentProcessingService
 from spurel.documents.processing_dependencies import get_document_processing_service
 from spurel.documents.sqlalchemy_chunk_inspector_repository import (

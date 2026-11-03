@@ -4,13 +4,13 @@ from collections.abc import Sequence
 from typing import Protocol
 from uuid import UUID
 
-from spurel.evaluation_datasets.judgment_integrity import EvaluationJudgmentAudit
 from spurel.evaluation_datasets.domain import (
     EvaluationCase,
     EvaluationCaseSummary,
     EvaluationDataset,
     EvaluationDatasetSummary,
 )
+from spurel.evaluation_datasets.judgment_integrity import EvaluationJudgmentAudit
 
 
 class EvaluationDatasetPersistenceError(RuntimeError):

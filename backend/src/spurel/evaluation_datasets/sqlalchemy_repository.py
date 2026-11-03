@@ -9,7 +9,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from spurel.documents.chunk_persistence import DocumentChunkRecord
 from spurel.documents.persistence import DocumentRecord
-
 from spurel.evaluation_datasets.domain import (
     EvaluationCase,
     EvaluationCaseSummary,
