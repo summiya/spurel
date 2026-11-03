@@ -6,7 +6,7 @@ from collections.abc import AsyncIterator
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, Path, Query, UploadFile, status
 
 from spurel.documents.chunk_inspector import (
     ChunkInspectionPersistenceError,
@@ -265,7 +265,7 @@ async def list_document_versions(
 async def inspect_document_version_chunks(
     knowledge_base_id: UUID,
     document_id: UUID,
-    version: int,
+    version: Annotated[int, Path(ge=1)],
     service: DocumentVersionServiceDependency,
     limit: Annotated[int, Query(ge=1, le=100)] = 50,
     offset: Annotated[int, Query(ge=0)] = 0,

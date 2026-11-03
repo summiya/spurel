@@ -39,9 +39,9 @@ from spurel.documents.sqlalchemy_chunk_inspector_repository import (
 from spurel.documents.sqlalchemy_chunk_repository import SqlAlchemyDocumentChunkRepository
 from spurel.documents.sqlalchemy_repository import SqlAlchemyDocumentRepository
 from spurel.documents.sqlalchemy_version_repository import SqlAlchemyDocumentVersionRepository
-from spurel.documents.versions import DocumentVersionService
 from spurel.documents.storage import document_object_key
 from spurel.documents.upload_service import DocumentUploadService
+from spurel.documents.versions import DocumentVersionService
 from spurel.embeddings.chunk import ChunkEmbedding
 from spurel.embeddings.domain import EmbeddingBatch, EmbeddingVector
 from spurel.embeddings.pipeline import DocumentEmbeddingPipeline
