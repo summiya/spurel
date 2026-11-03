@@ -6,10 +6,7 @@ const SESSION_VERSION = "v1";
 
 export function validOperatorSecret(secret: string | undefined): secret is string {
   return Boolean(
-    secret &&
-      secret.length >= 32 &&
-      secret.length <= 512 &&
-      /^[\x21-\x7e]+$/.test(secret),
+    secret && secret.length >= 32 && secret.length <= 512 && /^[\x21-\x7e]+$/.test(secret),
   );
 }
 
@@ -44,7 +41,11 @@ export function verifySession(
   if (!/^[A-Za-z0-9_-]{43}$/.test(signature)) return false;
   const current = Math.floor(nowMs / 1000);
   const expires = Number(exp);
-  if (!Number.isSafeInteger(expires) || expires <= current || expires > current + SESSION_TTL_SECONDS)
+  if (
+    !Number.isSafeInteger(expires) ||
+    expires <= current ||
+    expires > current + SESSION_TTL_SECONDS
+  )
     return false;
   const expected = Buffer.from(mac(secret, parts.slice(0, 3).join(".")));
   const actual = Buffer.from(signature);

@@ -15,9 +15,9 @@ describe("operator sign-in", () => {
 
   it("never writes the operator password to browser storage", async () => {
     localStorage.clear();
-    const fetcher = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify({ authenticated: true }), { status: 200 }),
-    );
+    const fetcher = vi
+      .fn()
+      .mockResolvedValue(new Response(JSON.stringify({ authenticated: true }), { status: 200 }));
     vi.stubGlobal("fetch", fetcher);
     render(<OperatorLogin />);
     fireEvent.change(screen.getByLabelText("Local operator password"), {
@@ -35,9 +35,14 @@ describe("operator sign-in", () => {
   });
 
   it("shows a generic auth error without redirecting", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(
-      new Response(JSON.stringify({ error: "Invalid operator credentials." }), { status: 401 }),
-    ));
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValue(
+          new Response(JSON.stringify({ error: "Invalid operator credentials." }), { status: 401 }),
+        ),
+    );
     render(<OperatorLogin />);
     fireEvent.change(screen.getByLabelText("Local operator password"), {
       target: { value: "invalid-".repeat(6) },

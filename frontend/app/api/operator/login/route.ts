@@ -13,7 +13,9 @@ export async function POST(request: NextRequest) {
     return noStore(NextResponse.json({ error: "Cross-origin sign-in rejected." }, { status: 403 }));
   }
   if (!operatorConfigured()) {
-    return noStore(NextResponse.json({ error: "Operator sign-in is not configured." }, { status: 503 }));
+    return noStore(
+      NextResponse.json({ error: "Operator sign-in is not configured." }, { status: 503 }),
+    );
   }
   if (Number(request.headers.get("content-length") ?? 0) > 4096) {
     return noStore(NextResponse.json({ error: "Sign-in request is too large." }, { status: 413 }));

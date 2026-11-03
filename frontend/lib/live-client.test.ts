@@ -4,9 +4,11 @@ import { isPage, liveError, WorkspaceError, workspaceFetch } from "./live-client
 
 describe("workspace request handling", () => {
   it("uses same-origin cookies and disables caching", async () => {
-    const backend = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify({ items: [], offset: 0, limit: 50 }), { status: 200 }),
-    );
+    const backend = vi
+      .fn()
+      .mockResolvedValue(
+        new Response(JSON.stringify({ items: [], offset: 0, limit: 50 }), { status: 200 }),
+      );
     vi.stubGlobal("fetch", backend);
     try {
       const page = await workspaceFetch<{ items: []; offset: number; limit: number }>(

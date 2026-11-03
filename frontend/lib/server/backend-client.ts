@@ -14,7 +14,8 @@ export class UpstreamFailure extends Error {
 function upstreamSettings() {
   const raw = process.env.SPUREL_BACKEND_URL;
   const token = process.env.SPUREL_API_TOKEN;
-  if (!raw || !token || token.length < 32) throw new UpstreamFailure(503, "Backend not configured.");
+  if (!raw || !token || token.length < 32)
+    throw new UpstreamFailure(503, "Backend not configured.");
   let url: URL;
   try {
     url = new URL(raw);
@@ -35,9 +36,7 @@ function upstreamSettings() {
 }
 
 export function validUUID(value: string): boolean {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-    value,
-  );
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 }
 
 export function pageOffset(value: string | null): number | null {
@@ -52,12 +51,15 @@ export async function backendRequest(
   init: { method?: "GET" | "POST"; body?: BodyInit; timeoutMs?: number } = {},
 ): Promise<{ status: number; payload: unknown }> {
   // Every caller constructs a fixed path from validated UUIDs / bounded pagination.
-  if (!path.startsWith("/") || path.startsWith("//") || /[?#]/.test(path)) {
+  if (!path.startsWith("/") || path.startsWith("//") || /[#\\]/.test(path)) {
     throw new UpstreamFailure(500, "Invalid upstream path.");
   }
   const { url, token } = upstreamSettings();
   const method = init.method ?? "GET";
-  const headers: Record<string, string> = { Authorization: `Bearer ${token}`, Accept: "application/json" };
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${token}`,
+    Accept: "application/json",
+  };
   if (typeof init.body === "string") headers["Content-Type"] = "application/json";
   let response: Response;
   try {

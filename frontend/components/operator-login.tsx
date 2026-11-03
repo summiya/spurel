@@ -27,7 +27,9 @@ export function OperatorLogin() {
       if (!response.ok) {
         const payload: unknown = await response.json();
         const message =
-          payload && typeof payload === "object" && "error" in payload &&
+          payload &&
+          typeof payload === "object" &&
+          "error" in payload &&
           typeof payload.error === "string"
             ? payload.error
             : "Sign-in failed.";
@@ -46,16 +48,20 @@ export function OperatorLogin() {
   return (
     <div className="operator-container">
       <div className="operator-head">
-        <span className="kb-card-icon"><Icon name="shield" size={26} /></span>
+        <span className="kb-card-icon">
+          <Icon name="shield" size={26} />
+        </span>
         <span className="status-badge">LOCAL OPERATOR ACCESS</span>
       </div>
       <h1>Connect to your Spurel workspace</h1>
       <p>
-        Sign in to manage real knowledge bases and documents. Retrieval and evaluation
-        screens remain clearly labeled demos for now.
+        Sign in to manage real knowledge bases and documents. Retrieval and evaluation screens
+        remain clearly labeled demos for now.
       </p>
       <form onSubmit={submit} className="operator-form">
-        <label htmlFor="operator-password" className="field-label">Local operator password</label>
+        <label htmlFor="operator-password" className="field-label">
+          Local operator password
+        </label>
         <input
           id="operator-password"
           type="password"
@@ -67,7 +73,11 @@ export function OperatorLogin() {
           value={password}
           onChange={(event) => setPassword(event.target.value)}
         />
-        {error ? <p className="operator-error" role="alert">{error}</p> : null}
+        {error ? (
+          <p className="operator-error" role="alert">
+            {error}
+          </p>
+        ) : null}
         <button type="submit" className="button primary" disabled={busy || password.length < 32}>
           <Icon name="shield" size={15} />
           {busy ? "Signing in…" : "Unlock live workspace"}
@@ -76,8 +86,8 @@ export function OperatorLogin() {
       <div className="inline-notice">
         <Icon name="info" size={17} />
         From your Spurel root directory, view your local password with
-        <code>{"grep '^SPUREL_FRONTEND_OPERATOR_PASSWORD=' .env"}</code>.
-        Keep it private. Your backend API token never enters the browser.
+        <code>{"grep '^SPUREL_FRONTEND_OPERATOR_PASSWORD=' .env"}</code>. Keep it private. Your
+        backend API token never enters the browser.
       </div>
       <p className="text-hint">A signed, HTTP-only operator session expires after eight hours.</p>
     </div>

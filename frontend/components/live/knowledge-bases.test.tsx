@@ -35,39 +35,48 @@ function fakeFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Respon
     return Promise.resolve(json({ items: [kb], limit: 50, offset: 0 }));
   }
   if (url.endsWith("/documents?offset=0")) {
-    return Promise.resolve(json({
-      items: [
-        {
-          id: "d73b06d7-a20e-4ddf-9859-242d69d4372f",
-          knowledge_base_id: kb.id,
-          filename: "readme.txt",
-          media_type: "text/plain",
-          size_bytes: 84,
-          created_at: "2026-11-03T10:00:00Z",
-          active_chunk_version: 0,
-        },
-      ],
-      limit: 50,
-      offset: 0,
-    }));
+    return Promise.resolve(
+      json({
+        items: [
+          {
+            id: "d73b06d7-a20e-4ddf-9859-242d69d4372f",
+            knowledge_base_id: kb.id,
+            filename: "readme.txt",
+            media_type: "text/plain",
+            size_bytes: 84,
+            created_at: "2026-11-03T10:00:00Z",
+            active_chunk_version: 0,
+          },
+        ],
+        limit: 50,
+        offset: 0,
+      }),
+    );
   }
   if (url.endsWith("/process")) {
-    return Promise.resolve(json({
-      status: "processed",
-      document_id: "d73b06d7-a20e-4ddf-9859-242d69d4372f",
-      knowledge_base_id: kb.id,
-      chunk_count: 3,
-      embedded_chunk_count: 3,
-      chunk_version: 1,
-      reused_active_version: false,
-    }));
+    return Promise.resolve(
+      json({
+        status: "processed",
+        document_id: "d73b06d7-a20e-4ddf-9859-242d69d4372f",
+        knowledge_base_id: kb.id,
+        chunk_count: 3,
+        embedded_chunk_count: 3,
+        chunk_version: 1,
+        reused_active_version: false,
+      }),
+    );
   }
   if (url === "/api/workspace/knowledge-bases" && init?.method === "POST") {
-    return Promise.resolve(json({
-      id: "2b20838d-e1b5-4623-b5bf-b430bbab43f6",
-      name: "Operations notes",
-      created_at: "2026-11-03T11:00:00Z",
-    }, 201));
+    return Promise.resolve(
+      json(
+        {
+          id: "2b20838d-e1b5-4623-b5bf-b430bbab43f6",
+          name: "Operations notes",
+          created_at: "2026-11-03T11:00:00Z",
+        },
+        201,
+      ),
+    );
   }
   return Promise.resolve(json({ error: "Unexpected test request" }, 500));
 }
@@ -104,10 +113,12 @@ describe("live source management", () => {
     await waitFor(() => {
       expect(screen.getAllByText("Operations notes").length).toBeGreaterThan(0);
     });
-    const called = vi.mocked(fetch).mock.calls.find(
-      ([path, init]) => String(path) === "/api/workspace/knowledge-bases" &&
-        init?.method === "POST",
-    );
+    const called = vi
+      .mocked(fetch)
+      .mock.calls.find(
+        ([path, init]) =>
+          String(path) === "/api/workspace/knowledge-bases" && init?.method === "POST",
+      );
     expect(called).toBeDefined();
     expect(called?.[1]?.body).toBe(JSON.stringify({ name: "Operations notes" }));
     expect(mocks.notify).toHaveBeenCalledWith("Knowledge base created in PostgreSQL.");

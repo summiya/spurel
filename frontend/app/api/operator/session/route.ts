@@ -1,10 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 
-import {
-  authorizedRequest,
-  noStore,
-  operatorConfigured,
-} from "@/lib/server/operator-session";
+import { authorizedRequest, noStore, operatorConfigured } from "@/lib/server/operator-session";
 
 export async function GET(request: NextRequest) {
   return noStore(

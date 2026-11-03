@@ -1,15 +1,15 @@
 import type { Page } from "@/lib/live-types";
 
 export class WorkspaceError extends Error {
-  constructor(public readonly status: number, message: string) {
+  constructor(
+    public readonly status: number,
+    message: string,
+  ) {
     super(message);
   }
 }
 
-export async function workspaceFetch<T>(
-  path: string,
-  init: RequestInit = {},
-): Promise<T> {
+export async function workspaceFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
   const response = await fetch(path, {
     ...init,
     credentials: "same-origin",
@@ -23,7 +23,9 @@ export async function workspaceFetch<T>(
   }
   if (!response.ok) {
     const error =
-      payload && typeof payload === "object" && "error" in payload &&
+      payload &&
+      typeof payload === "object" &&
+      "error" in payload &&
       typeof payload.error === "string"
         ? payload.error
         : "The operation failed.";

@@ -28,16 +28,18 @@ describe("local operator session cryptography", () => {
     expect(verifySession(issued, secret, start + SESSION_TTL_SECONDS * 1000)).toBe(false);
     expect(verifySession(issued, secret, start - 1_000)).toBe(false);
     expect(verifySession(issued, "another-" + "X".repeat(48), start)).toBe(false);
-    expect(verifySession(issued.slice(0, -1) + (issued.endsWith("a") ? "b" : "a"), secret, start))
-      .toBe(false);
+    expect(
+      verifySession(issued.slice(0, -1) + (issued.endsWith("a") ? "b" : "a"), secret, start),
+    ).toBe(false);
     expect(verifySession("garbage", secret, start)).toBe(false);
   });
 
   it("rejects malformed expiration and unsigned payloads", () => {
     const issued = issueSession(secret);
     const parts = issued.split(".");
-    expect(verifySession([parts[0], "0000000000", parts[2], parts[3]].join("."), secret))
-      .toBe(false);
+    expect(verifySession([parts[0], "0000000000", parts[2], parts[3]].join("."), secret)).toBe(
+      false,
+    );
     expect(verifySession(parts.slice(0, 3).join("."), secret)).toBe(false);
     expect(verifySession("X".repeat(400), secret)).toBe(false);
   });

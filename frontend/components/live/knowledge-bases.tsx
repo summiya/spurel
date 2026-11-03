@@ -20,8 +20,11 @@ function documentDate(value: string): string {
 }
 
 function readableSize(bytes: number): string {
-  return bytes < 1024 ? `${bytes} B` : bytes < 1024 * 1024
-    ? `${(bytes / 1024).toFixed(1)} KB` : `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  return bytes < 1024
+    ? `${bytes} B`
+    : bytes < 1024 * 1024
+      ? `${(bytes / 1024).toFixed(1)} KB`
+      : `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 function appendDistinct<T extends { id: string }>(original: T[], incoming: T[]): T[] {
@@ -34,7 +37,9 @@ export function LiveKnowledgeBasesPage() {
   const notify = useDemoToast();
   const [bases, setBases] = useState<LiveKnowledgeBase[]>([]);
   const [preferredId, setPreferredId] = useState<string | null>(null);
-  const selectedId = bases.some((base) => base.id === preferredId) ? preferredId : bases[0]?.id ?? null;
+  const selectedId = bases.some((base) => base.id === preferredId)
+    ? preferredId
+    : (bases[0]?.id ?? null);
   const selected = bases.find((base) => base.id === selectedId) ?? null;
 
   const [basesLoading, setBasesLoading] = useState(true);
@@ -71,7 +76,7 @@ export function LiveKnowledgeBasesPage() {
         `/api/workspace/knowledge-bases?offset=${offset}`,
       );
       if (!isPage<LiveKnowledgeBase>(page)) throw new Error("Unexpected knowledge-base response.");
-      setBases((current) => replace ? page.items : appendDistinct(current, page.items));
+      setBases((current) => (replace ? page.items : appendDistinct(current, page.items)));
       setBasesMore(page.items.length === PAGE_SIZE);
     } catch (cause) {
       setBasesError(liveError(cause));
@@ -92,7 +97,7 @@ export function LiveKnowledgeBasesPage() {
       );
       if (!isPage<LiveDocument>(page)) throw new Error("Unexpected document response.");
       if (token !== requestSequence.current) return;
-      setDocuments((current) => replace ? page.items : appendDistinct(current, page.items));
+      setDocuments((current) => (replace ? page.items : appendDistinct(current, page.items)));
       setDocumentsMore(page.items.length === PAGE_SIZE);
     } catch (cause) {
       if (token === requestSequence.current) setDocumentsError(liveError(cause));
@@ -192,9 +197,11 @@ export function LiveKnowledgeBasesPage() {
         `/api/workspace/knowledge-bases/${selectedId}/documents/${document.id}/process`,
         { method: "POST" },
       );
-      setDocuments((current) => current.map((item) =>
-        item.id === document.id ? { ...item, active_chunk_version: result.chunk_version } : item,
-      ));
+      setDocuments((current) =>
+        current.map((item) =>
+          item.id === document.id ? { ...item, active_chunk_version: result.chunk_version } : item,
+        ),
+      );
       notify(`Indexed ${result.chunk_count} chunks in version ${result.chunk_version}.`);
     } catch (cause) {
       setActionError(
@@ -230,7 +237,12 @@ export function LiveKnowledgeBasesPage() {
         badge="Live backend"
         action={
           <>
-            <button type="button" className="button ghost" onClick={() => void logout()} disabled={loggingOut}>
+            <button
+              type="button"
+              className="button ghost"
+              onClick={() => void logout()}
+              disabled={loggingOut}
+            >
               <Icon name="shield" size={15} /> Sign out
             </button>
             <button type="button" className="button primary" onClick={() => setCreating(true)}>
@@ -250,16 +262,27 @@ export function LiveKnowledgeBasesPage() {
         title="Source collections"
         hint="Real knowledge-base records · showing loaded pages"
         action={
-          <button type="button" className="button ghost compact" disabled={basesLoading || basesBusy}
-            onClick={() => void loadBases(0, true)}>
+          <button
+            type="button"
+            className="button ghost compact"
+            disabled={basesLoading || basesBusy}
+            onClick={() => void loadBases(0, true)}
+          >
             <Icon name="refresh" size={14} /> Refresh
           </button>
         }
       >
-        <label className="field-label" htmlFor="live-kb-search">Filter collections</label>
-        <input id="live-kb-search" type="search" className="input-control"
-          value={search} onChange={(event) => setSearch(event.target.value)}
-          placeholder="Search loaded knowledge bases..." />
+        <label className="field-label" htmlFor="live-kb-search">
+          Filter collections
+        </label>
+        <input
+          id="live-kb-search"
+          type="search"
+          className="input-control"
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          placeholder="Search loaded knowledge bases..."
+        />
         {basesError ? (
           <ErrorState description={basesError} onRetry={() => void loadBases(0, true)} />
         ) : null}
@@ -270,9 +293,11 @@ export function LiveKnowledgeBasesPage() {
             title="No knowledge bases yet"
             description="Create your first collection to organize documents and indexed evidence."
             icon="database"
-            action={<button type="button" className="button primary" onClick={() => setCreating(true)}>
-              Create knowledge base
-            </button>}
+            action={
+              <button type="button" className="button primary" onClick={() => setCreating(true)}>
+                Create knowledge base
+              </button>
+            }
           />
         ) : (
           <>
@@ -281,15 +306,21 @@ export function LiveKnowledgeBasesPage() {
             ) : (
               <div className="kb-grid live-grid">
                 {visibleBases.map((base) => (
-                  <button key={base.id} type="button" aria-pressed={base.id === selectedId}
+                  <button
+                    key={base.id}
+                    type="button"
+                    aria-pressed={base.id === selectedId}
                     className={"knowledge-card " + (base.id === selectedId ? "selected" : "")}
                     onClick={() => {
                       setDocuments([]);
                       setDocumentsMore(false);
                       setActionError("");
                       setPreferredId(base.id);
-                    }}>
-                    <span className="kb-card-icon"><Icon name="database" size={22} /></span>
+                    }}
+                  >
+                    <span className="kb-card-icon">
+                      <Icon name="database" size={22} />
+                    </span>
                     <strong>{base.name}</strong>
                     <p>Knowledge base created {documentDate(base.created_at)}.</p>
                     <span className="kb-category">Live collection · {base.id.slice(0, 8)}</span>
@@ -299,8 +330,12 @@ export function LiveKnowledgeBasesPage() {
               </div>
             )}
             {basesMore ? (
-              <button type="button" className="button ghost live-load-more" disabled={basesBusy}
-                onClick={() => void loadBases(bases.length)}>
+              <button
+                type="button"
+                className="button ghost live-load-more"
+                disabled={basesBusy}
+                onClick={() => void loadBases(bases.length)}
+              >
                 {basesBusy ? "Loading…" : "Load more collections"}
               </button>
             ) : null}
@@ -313,100 +348,183 @@ export function LiveKnowledgeBasesPage() {
           title={selected.name + " · Documents"}
           hint="Live upload, indexed versions and processing"
           action={
-            <button type="button" className="button ghost compact"
+            <button
+              type="button"
+              className="button ghost compact"
               disabled={documentsLoading || documentsBusy}
-              onClick={() => void loadDocuments(selected.id, 0, true)}>
+              onClick={() => void loadDocuments(selected.id, 0, true)}
+            >
               <Icon name="refresh" size={14} /> Refresh docs
             </button>
           }
         >
           <div className="live-summary-grid">
-            <span><strong>{documents.length}</strong><small>Loaded documents</small></span>
-            <span><strong>{indexed}</strong><small>Indexed in loaded page</small></span>
-            <span><strong>{documents.length - indexed}</strong><small>Not indexed yet</small></span>
+            <span>
+              <strong>{documents.length}</strong>
+              <small>Loaded documents</small>
+            </span>
+            <span>
+              <strong>{indexed}</strong>
+              <small>Indexed in loaded page</small>
+            </span>
+            <span>
+              <strong>{documents.length - indexed}</strong>
+              <small>Not indexed yet</small>
+            </span>
           </div>
           <form className="live-upload-form" onSubmit={uploadFile}>
             <div>
-              <label htmlFor="live-upload" className="field-label">Upload PDF, Markdown or text</label>
-              <input id="live-upload" className="input-control" name="document" type="file"
-                accept=".pdf,.txt,.md,.markdown,application/pdf,text/plain,text/markdown" required />
-              <p className="text-hint">Up to 25 MB. Upload stores the file; processing creates searchable embeddings.</p>
+              <label htmlFor="live-upload" className="field-label">
+                Upload PDF, Markdown or text
+              </label>
+              <input
+                id="live-upload"
+                className="input-control"
+                name="document"
+                type="file"
+                accept=".pdf,.txt,.md,.markdown,application/pdf,text/plain,text/markdown"
+                required
+              />
+              <p className="text-hint">
+                Up to 25 MB. Upload stores the file; processing creates searchable embeddings.
+              </p>
             </div>
             <button type="submit" className="button primary" disabled={uploadBusy}>
               <Icon name="upload" size={15} /> {uploadBusy ? "Uploading…" : "Upload document"}
             </button>
           </form>
-          {actionError ? <div className="inline-notice live-error" role="alert">{actionError}</div> : null}
+          {actionError ? (
+            <div className="inline-notice live-error" role="alert">
+              {actionError}
+            </div>
+          ) : null}
           {documentsError ? (
-            <ErrorState description={documentsError}
-              onRetry={() => void loadDocuments(selected.id, 0, true)} />
+            <ErrorState
+              description={documentsError}
+              onRetry={() => void loadDocuments(selected.id, 0, true)}
+            />
           ) : null}
           {documentsLoading ? (
             <LoadingState label="Loading saved documents" />
           ) : documents.length === 0 && !documentsError ? (
-            <EmptyState title="No documents uploaded" icon="file"
-              description="Upload a supported file to start indexing this knowledge base." />
+            <EmptyState
+              title="No documents uploaded"
+              icon="file"
+              description="Upload a supported file to start indexing this knowledge base."
+            />
           ) : (
             <div className="live-doc-list">
               {documents.map((document) => (
                 <div className="live-doc-item" key={document.id}>
-                  <span className="recent-icon"><Icon name="file" size={18} /></span>
+                  <span className="recent-icon">
+                    <Icon name="file" size={18} />
+                  </span>
                   <div className="live-doc-info">
                     <strong title={document.filename}>{document.filename}</strong>
-                    <small>{readableSize(document.size_bytes)} · {documentDate(document.created_at)}</small>
-                    <span className={"status-badge " + (document.active_chunk_version ? "success" : "warn")}>
+                    <small>
+                      {readableSize(document.size_bytes)} · {documentDate(document.created_at)}
+                    </small>
+                    <span
+                      className={
+                        "status-badge " + (document.active_chunk_version ? "success" : "warn")
+                      }
+                    >
                       {document.active_chunk_version
                         ? `Indexed · version ${document.active_chunk_version}`
                         : "Uploaded · not indexed"}
                     </span>
                   </div>
-                  <button type="button" className="button ghost compact" disabled={Boolean(processingId)}
-                    onClick={() => void processDocument(document)}>
+                  <button
+                    type="button"
+                    className="button ghost compact"
+                    disabled={Boolean(processingId)}
+                    onClick={() => void processDocument(document)}
+                  >
                     <Icon name="zap" size={14} />
-                    {processingId === document.id ? "Processing…" : document.active_chunk_version ? "Reprocess" : "Process"}
+                    {processingId === document.id
+                      ? "Processing…"
+                      : document.active_chunk_version
+                        ? "Reprocess"
+                        : "Process"}
                   </button>
                 </div>
               ))}
             </div>
           )}
           {documentsMore ? (
-            <button type="button" className="button ghost live-load-more" disabled={documentsBusy}
-              onClick={() => void loadDocuments(selected.id, documents.length)}>
+            <button
+              type="button"
+              className="button ghost live-load-more"
+              disabled={documentsBusy}
+              onClick={() => void loadDocuments(selected.id, documents.length)}
+            >
               {documentsBusy ? "Loading…" : "Load more documents"}
             </button>
           ) : null}
           <p className="muted-panel-note">
-            Processing requires <code>OPENAI_API_KEY</code> in your server environment.
-            Historical chunk inspection is the next workbench integration.
+            Processing requires <code>OPENAI_API_KEY</code> in your server environment. Historical
+            chunk inspection is the next workbench integration.
           </p>
         </Panel>
       ) : null}
 
       {creating ? (
         <div className="dialog-backdrop" onMouseDown={() => !creatingBusy && setCreating(false)}>
-          <section className="simple-dialog" role="dialog" aria-modal="true" aria-label="New knowledge base"
-            onMouseDown={(event) => event.stopPropagation()}>
+          <section
+            className="simple-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-label="New knowledge base"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
             <div className="dialog-heading">
               <div>
                 <h2>Create knowledge base</h2>
                 <p>This collection will be saved in your Spurel PostgreSQL database.</p>
               </div>
-              <button type="button" className="icon-button" aria-label="Close dialog"
-                onClick={() => setCreating(false)} disabled={creatingBusy}>
+              <button
+                type="button"
+                className="icon-button"
+                aria-label="Close dialog"
+                onClick={() => setCreating(false)}
+                disabled={creatingBusy}
+              >
                 <Icon name="x" size={16} />
               </button>
             </div>
             <form onSubmit={createBase}>
-              <label className="field-label" htmlFor="new-live-kb-name">Knowledge-base name</label>
-              <input id="new-live-kb-name" autoFocus className="input-control" maxLength={120}
-                required placeholder="e.g. Product engineering" value={newName}
-                onChange={(event) => setNewName(event.target.value)} />
-              {submittingError ? <p className="operator-error" role="alert">{submittingError}</p> : null}
+              <label className="field-label" htmlFor="new-live-kb-name">
+                Knowledge-base name
+              </label>
+              <input
+                id="new-live-kb-name"
+                autoFocus
+                className="input-control"
+                maxLength={120}
+                required
+                placeholder="e.g. Product engineering"
+                value={newName}
+                onChange={(event) => setNewName(event.target.value)}
+              />
+              {submittingError ? (
+                <p className="operator-error" role="alert">
+                  {submittingError}
+                </p>
+              ) : null}
               <div className="dialog-actions">
-                <button type="button" className="button ghost" disabled={creatingBusy}
-                  onClick={() => setCreating(false)}>Cancel</button>
-                <button type="submit" className="button primary"
-                  disabled={creatingBusy || !newName.trim()}>
+                <button
+                  type="button"
+                  className="button ghost"
+                  disabled={creatingBusy}
+                  onClick={() => setCreating(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="button primary"
+                  disabled={creatingBusy || !newName.trim()}
+                >
                   {creatingBusy ? "Creating…" : "Create collection"}
                 </button>
               </div>

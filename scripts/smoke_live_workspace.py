@@ -77,7 +77,8 @@ def run(root: Path) -> None:
         content_type="application/json", origin=base,
     )
     assert status == 200
-    assert _request(opener, base, endpoint)[0] == 200
+    list_status, listed_bases = _request(opener, base, endpoint)
+    assert list_status == 200, ("Authenticated KB list", list_status, listed_bases)
 
     kb_name = "SP-10 smoke " + uuid4().hex[:8]
     status, kb = _request(

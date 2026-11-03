@@ -7,7 +7,8 @@ export async function GET(request: NextRequest) {
   const failure = authFailure(request);
   if (failure) return noStore(failure);
   const offset = pageOffset(request.nextUrl.searchParams.get("offset"));
-  if (offset === null) return noStore(NextResponse.json({ error: "Invalid page offset." }, { status: 400 }));
+  if (offset === null)
+    return noStore(NextResponse.json({ error: "Invalid page offset." }, { status: 400 }));
   try {
     const result = await backendRequest(`/knowledge-bases?limit=50&offset=${offset}`);
     return noStore(NextResponse.json(result.payload, { status: result.status }));
@@ -35,7 +36,10 @@ export async function POST(request: NextRequest) {
       : "";
   if (!name || name.length > 120) {
     return noStore(
-      NextResponse.json({ error: "Knowledge base name must be 1–120 characters." }, { status: 422 }),
+      NextResponse.json(
+        { error: "Knowledge base name must be 1–120 characters." },
+        { status: 422 },
+      ),
     );
   }
   try {
