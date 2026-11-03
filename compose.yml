@@ -87,6 +87,10 @@ services:
       HOME: /tmp
       NEXT_TELEMETRY_DISABLED: "1"
       WATCHPACK_POLLING: "true"
+      SPUREL_BACKEND_URL: http://backend:8000
+      SPUREL_API_TOKEN: ${SPUREL_API_TOKEN:?Run 'make init' to set the backend token}
+      SPUREL_FRONTEND_OPERATOR_PASSWORD: ${SPUREL_FRONTEND_OPERATOR_PASSWORD:?Run 'make init' to create the operator password}
+      SPUREL_FRONTEND_SESSION_SECRET: ${SPUREL_FRONTEND_SESSION_SECRET:?Run 'make init' to create the session secret}
     ports:
       - "127.0.0.1:${SPUREL_FRONTEND_PORT:-3000}:3000"
     volumes:
