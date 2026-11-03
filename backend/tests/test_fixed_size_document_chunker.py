@@ -14,7 +14,9 @@ def test_chunk_returns_deterministic_offsets_and_overlap() -> None:
 
     chunks = chunker.chunk(text="abcdefghij")
 
-    assert [(chunk.index, chunk.text, chunk.start_offset, chunk.end_offset) for chunk in chunks] == [
+    assert [
+        (chunk.index, chunk.text, chunk.start_offset, chunk.end_offset) for chunk in chunks
+    ] == [
         (0, "abcde", 0, 5),
         (1, "defgh", 3, 8),
         (2, "ghij", 6, 10),

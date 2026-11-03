@@ -1,5 +1,6 @@
-from sqlalchemy import CheckConstraint
 from uuid import uuid4
+
+from sqlalchemy import CheckConstraint
 
 from spurel.documents import Document
 from spurel.documents.persistence import DocumentRecord

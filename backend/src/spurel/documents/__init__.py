@@ -17,8 +17,8 @@ from spurel.documents.chunk_ports import (
 )
 from spurel.documents.chunk_service import DocumentChunkService, DocumentChunkSetError
 from spurel.documents.chunking import (
-    MAX_CHUNKS_PER_DOCUMENT,
     MAX_CHUNK_SIZE_CHARACTERS,
+    MAX_CHUNKS_PER_DOCUMENT,
     DocumentChunk,
     DocumentChunker,
     DocumentChunkingConfigError,

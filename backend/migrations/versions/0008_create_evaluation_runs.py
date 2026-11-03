@@ -7,8 +7,8 @@ Create Date: 2026-09-23
 
 from collections.abc import Sequence
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
 revision: str = "0008_create_evaluation_runs"
 down_revision: str | Sequence[str] | None = "0007_create_evaluation_datasets"
@@ -53,8 +53,7 @@ def upgrade() -> None:
             name="ck_evaluation_runs_case_count",
         ),
         sa.CheckConstraint(
-            "judgment_coverage_case_count >= 0 "
-            "AND judgment_coverage_case_count <= case_count",
+            "judgment_coverage_case_count >= 0 AND judgment_coverage_case_count <= case_count",
             name="ck_evaluation_runs_coverage_case_count",
         ),
         sa.CheckConstraint(
@@ -160,8 +159,7 @@ def upgrade() -> None:
             name="ck_evaluation_run_cases_duration",
         ),
         sa.CheckConstraint(
-            "judged_count >= 1 AND relevant_count >= 1 "
-            "AND relevant_count <= judged_count",
+            "judged_count >= 1 AND relevant_count >= 1 AND relevant_count <= judged_count",
             name="ck_evaluation_run_cases_judgments",
         ),
         sa.CheckConstraint(

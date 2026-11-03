@@ -80,6 +80,37 @@ The example includes the configuration currently used by Spurel:
 > Never commit your real `.env` file or API keys. Only `.env.example` belongs in Git.
 
 
+## ✅ Continuous integration
+
+The [CI workflow](.github/workflows/ci.yml) runs automatically on every pull request and push to `main`. All three jobs must pass:
+
+- **Backend checks:** Python 3.13, repository-wide `ruff check .`, `ruff format --check` for Python files changed by the PR/push, and `pytest`.
+- **PostgreSQL migrations:** start `pgvector/pgvector:pg17`, apply Alembic migrations, verify required tables/pgvector and that a repeated upgrade is safe.
+- **Frontend checks:** Node.js 22, ESLint, Prettier, TypeScript, Vitest, and a Next.js production build.
+
+These checks use no OpenAI keys and keep the existing manual [RAG quality-gate workflows](docs/quality-gate-ci.md) separate.
+
+Run the corresponding commands locally:
+
+```bash
+cd backend
+python -m pip install -e ".[dev]"
+ruff check .
+# Check formatting of the Python files you changed (example):
+ruff format --check src/spurel/retrieval/traced.py
+python -m pytest -q
+
+cd ../frontend
+npm install --no-audit --no-fund
+npm run lint
+npm run format:check
+npm run typecheck
+npm test
+npm run build
+```
+
+**Current limitation:** existing Python files have significant pre-existing Ruff formatting drift, so CI enforces formatting on **changed backend Python files**, not the entire historical tree. Clean up remaining legacy formatting separately. Also, `frontend/package-lock.json` is not committed, so CI currently uses `npm install`, not a reproducible `npm ci`. Add the lockfile in a follow-up. Migration checks are smoke tests of the database schema, not end-to-end PostgreSQL integration tests; those are tracked separately. Configure the three CI job names as required status checks in GitHub branch protection if you want to prevent merging red PRs.
+
 ## ✨ What is Spurel?
 
 **Spurel** is an open-source RAG engineering workbench for developers who want to understand **why** a retrieval pipeline succeeds or fails.
@@ -277,7 +308,7 @@ Workspace
 - [ ] Backend + frontend applications
 - [ ] PostgreSQL + pgvector
 - [ ] Docker Compose
-- [ ] CI
+- [x] CI
 - [ ] Configuration and environment management
 
 ### Phase 1 — Ingestion

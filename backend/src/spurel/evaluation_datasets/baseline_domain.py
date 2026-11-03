@@ -31,7 +31,7 @@ class EvaluationBaselineConfiguration:
     embedding_dimensions: int | None
 
     @classmethod
-    def from_run(cls, run: EvaluationRun) -> "EvaluationBaselineConfiguration":
+    def from_run(cls, run: EvaluationRun) -> EvaluationBaselineConfiguration:
         """Capture the exact persisted retrieval configuration from a run."""
         return cls(
             mode=run.mode,
@@ -62,18 +62,14 @@ class EvaluationBaselineConfiguration:
                 or self.candidate_k < self.top_k
                 or self.candidate_k > 100
             ):
-                raise EvaluationBaselineConfigurationError(
-                    "hybrid baseline candidate_k is invalid"
-                )
+                raise EvaluationBaselineConfigurationError("hybrid baseline candidate_k is invalid")
             if (
                 isinstance(self.rrf_k, bool)
                 or not isinstance(self.rrf_k, int)
                 or self.rrf_k < 1
                 or self.rrf_k > 1_000
             ):
-                raise EvaluationBaselineConfigurationError(
-                    "hybrid baseline rrf_k is invalid"
-                )
+                raise EvaluationBaselineConfigurationError("hybrid baseline rrf_k is invalid")
         elif self.candidate_k is not None or self.rrf_k is not None:
             raise EvaluationBaselineConfigurationError(
                 "non-hybrid baseline cannot contain hybrid configuration"
@@ -149,7 +145,7 @@ class EvaluationBaseline:
         run: EvaluationRun,
         baseline_id: UUID | None = None,
         promoted_at: datetime | None = None,
-    ) -> "EvaluationBaseline":
+    ) -> EvaluationBaseline:
         """Create a promoted baseline snapshot from one persisted run."""
         configuration = EvaluationBaselineConfiguration.from_run(run)
         return cls(
@@ -161,7 +157,6 @@ class EvaluationBaseline:
             configuration_fingerprint=configuration.fingerprint,
             promoted_at=promoted_at or datetime.now(UTC),
         )
-
 
 
 @dataclass(frozen=True, slots=True)
@@ -183,7 +178,7 @@ class EvaluationBaselinePromotion:
         *,
         baseline: EvaluationBaseline,
         promotion_id: UUID | None = None,
-    ) -> "EvaluationBaselinePromotion":
+    ) -> EvaluationBaselinePromotion:
         """Snapshot one completed baseline promotion."""
         return cls(
             id=promotion_id or uuid4(),

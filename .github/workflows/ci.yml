@@ -1,0 +1,198 @@
+name: CI
+
+# Keep these checks separate from the manual/reusable RAG benchmark workflows.
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v7.0.0
+        with:
+          python-version: "3.13"
+
+      - name: Install backend and development dependencies
+        run: python -m pip install -e ".[dev]"
+
+      - name: Ruff lint
+        run: ruff check .
+
+      - name: Ruff format (changed Python files)
+        working-directory: .
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          set -euo pipefail
+          if [[ -z "$BASE_SHA" || "$BASE_SHA" =~ ^0+$ ]]; then
+            BASE_SHA="$(git rev-list --max-parents=0 HEAD)"
+          fi
+
+          changed_files=()
+          while IFS= read -r -d '' path; do
+            if [[ "$path" == backend/* && "$path" == *.py ]]; then
+              changed_files+=("$path")
+            fi
+          done < <(git diff --name-only --diff-filter=ACMR -z "$BASE_SHA" HEAD -- backend)
+
+          if (( ${#changed_files[@]} > 0 )); then
+            ruff format --check "${changed_files[@]}"
+          else
+            echo "No changed backend Python files to check"
+          fi
+
+      - name: Pytest
+        run: python -m pytest -q
+
+  migrations:
+    name: PostgreSQL migrations
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_DB: spurel
+          POSTGRES_USER: spurel
+          POSTGRES_PASSWORD: spurel
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U spurel -d spurel"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql+asyncpg://spurel:spurel@localhost:5432/spurel
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7.0.1
+
+      - name: Set up Python
+        uses: actions/setup-python@v7.0.0
+        with:
+          python-version: "3.13"
+
+      - name: Install backend
+        run: python -m pip install -e .
+
+      - name: Apply all Alembic migrations
+        run: alembic upgrade head
+
+      - name: Verify database migration state and pgvector
+        run: |
+          python - <<'PY'
+          import asyncio
+          import os
+
+          from alembic.config import Config
+          from alembic.script import ScriptDirectory
+          from sqlalchemy import text
+          from sqlalchemy.ext.asyncio import create_async_engine
+
+
+          async def verify_database() -> None:
+              engine = create_async_engine(os.environ["DATABASE_URL"])
+              try:
+                  async with engine.connect() as connection:
+                      version = await connection.scalar(text("SELECT version_num FROM alembic_version"))
+                      expected_revision = ScriptDirectory.from_config(
+                          Config("alembic.ini")
+                      ).get_current_head()
+                      assert version == expected_revision, (version, expected_revision)
+
+                      extension = await connection.scalar(
+                          text("SELECT extversion FROM pg_extension WHERE extname = 'vector'")
+                      )
+                      assert extension is not None, "pgvector extension missing"
+
+                      expected_tables = {
+                          "knowledge_bases",
+                          "documents",
+                          "document_chunks",
+                          "chunk_embeddings",
+                          "retrieval_traces",
+                          "evaluation_datasets",
+                          "evaluation_runs",
+                          "evaluation_baselines",
+                          "evaluation_baseline_promotions",
+                      }
+                      rows = await connection.execute(
+                          text("SELECT tablename FROM pg_tables WHERE schemaname = 'public'")
+                      )
+                      actual_tables = {row[0] for row in rows}
+                      assert expected_tables <= actual_tables, expected_tables - actual_tables
+
+                      distance = await connection.scalar(
+                          text("SELECT '[1,0,0]'::vector <=> '[1,0,0]'::vector")
+                      )
+                      assert distance == 0, distance
+              finally:
+                  await engine.dispose()
+
+
+          asyncio.run(verify_database())
+          PY
+
+      - name: Verify repeatable migration upgrade
+        run: alembic upgrade head
+
+  frontend:
+    name: Frontend checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7.0.1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7.1.0
+        with:
+          node-version: "22"
+          package-manager-cache: false
+
+      # A frontend lockfile is not committed yet. Switch to npm ci after adding it.
+      - name: Install frontend dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: ESLint
+        run: npm run lint
+
+      - name: Prettier
+        run: npm run format:check
+
+      - name: TypeScript typecheck
+        run: npm run typecheck
+
+      - name: Vitest
+        run: npm test
+
+      - name: Production build
+        run: npm run build
