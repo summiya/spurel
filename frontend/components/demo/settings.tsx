@@ -105,7 +105,7 @@ export function SettingsPage() {
             <span className="status-badge success">Not in browser</span>
           </div>
           <div className="pipeline-detail last">
-            <span>Knowledge bases and documents</span>
+            <span>Knowledge bases, documents and chunks</span>
             <span className="status-badge success">Live · SP-10</span>
           </div>
           <p className="muted-panel-note">

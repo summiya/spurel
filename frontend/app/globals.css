@@ -2607,3 +2607,119 @@ html[data-motion="reduce"] *::after {
     margin-left: auto;
   }
 }
+
+/* SP-11: persisted chunk history and exact stored evidence inspection. */
+.live-inspector-grid {
+  display: grid;
+  grid-template-columns: minmax(235px, 0.7fr) minmax(0, 1.6fr);
+  align-items: start;
+  gap: 14px;
+}
+.live-inspector-main {
+  display: grid;
+  min-width: 0;
+  gap: 14px;
+}
+.live-inspector-documents {
+  max-height: 480px;
+  overflow-y: auto;
+  margin-top: 13px;
+}
+.live-inspector-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 0 11px;
+  margin-top: 9px;
+  font-size: 12px;
+}
+.live-version-controls {
+  display: flex;
+  align-items: flex-end;
+  gap: 13px;
+}
+.live-version-controls > div {
+  min-width: 0;
+  flex: 1;
+}
+.live-chunk-facts {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 9px;
+  margin: 14px 0 15px;
+}
+.live-chunk-facts > span {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  padding: 13px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--panel-alt);
+}
+.live-chunk-facts strong {
+  font-size: 16px;
+}
+.live-chunk-facts small {
+  color: var(--subtle);
+  font-size: 10px;
+}
+.live-inspector-chunks {
+  max-height: 570px;
+  overflow-y: auto;
+  margin-top: 12px;
+}
+.live-inspector-chunks .chunk-entry p {
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.live-chunk-preview {
+  max-height: 360px;
+  overflow: auto;
+  padding: 17px;
+  border: 1px solid var(--border-strong);
+  border-radius: 9px;
+  margin: 0 0 18px;
+  background: var(--panel-inset);
+  color: var(--text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.8;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.live-chunk-details {
+  display: grid;
+  gap: 8px;
+  border-top: 1px solid var(--border);
+  padding-top: 15px;
+}
+.live-chunk-details span {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: space-between;
+  color: var(--muted);
+  font-size: 11px;
+}
+.live-chunk-details strong {
+  color: var(--text);
+  font-weight: 650;
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+@media (max-width: 1040px) {
+  .live-inspector-grid {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 580px) {
+  .live-chunk-facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .live-version-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

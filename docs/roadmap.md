@@ -2,9 +2,9 @@
 
 [← README](../README.md) · [Development](development.md) · [Architecture](architecture.md)
 
-**Stage:** pre-alpha. The backend API and development infrastructure are functional; the end-user debugging UI remains a placeholder. This roadmap tracks the original **SP-01–SP-28** implementation plan, not a claim of a released product.
+**Stage:** pre-alpha. The backend API and development infrastructure are functional; the frontend includes real source/chunk inspection with several advanced debugging views still in demo mode. This roadmap tracks the original **SP-01–SP-28** implementation plan, not a claim of a released product.
 
-**Status convention:** Checked = implemented in the linked pull request. A checked item is available on `main` only after its PR merges. Unchecked = planned, not an existing feature. SP-08 is completed by the documentation PR that introduces this file.
+**Status convention:** ✅ Merged = implemented in `main`; ◐ In review = open PR, not yet available on `main`; ☐ Planned = not implemented.
 
 ## Phase 1 — Critical foundations
 
@@ -19,21 +19,21 @@ These tasks were prioritized first because the rest of the workbench depends on 
 | SP-05 | ✅ Merged | Staged embeddings, failure recovery, leases and atomic index activation | [PR #65](https://github.com/summiya/spurel/pull/65) |
 | SP-06 | ✅ Merged | Validate and audit evaluation judgments against active chunk versions | [PR #66](https://github.com/summiya/spurel/pull/66) |
 | SP-07 | ✅ Merged | One-command local Compose environment, token bootstrap and full-stack smoke | [PR #67](https://github.com/summiya/spurel/pull/67) |
-| SP-08 | ✅ This PR | Align README, architecture, dev guide and roadmap with actual code | Documentation PR |
+| SP-08 | ✅ Merged | Align README, architecture, dev guide and roadmap with actual code | [PR #68](https://github.com/summiya/spurel/pull/68) |
 
 **Result:** A working backend foundation with secure local development, PostgreSQL-backed document processing/retrieval, version history, and benchmark metrics. **Not** production-ready and **not** a finished graphical workbench.
 
-## Phase 2 — Functional frontend (next)
+## Phase 2 — Functional frontend
 
-SP-09 replaces the Next.js placeholder with an interactive shell and demo screens.
-SP-10 connects real knowledge bases and documents using a local operator session;
-retrieval/inspection/evaluation and RAG integrations remain **planned** in SP-11–SP-15, even where backend API routes already exist.
+SP-09 adds the interactive shell; SP-10 connects real knowledge bases and
+documents; SP-11 adds the live Chunk Inspector. Retrieval, evaluation, trace
+comparison and RAG screens remain planned for SP-12–SP-15.
 
 | Task | Priority | Status | Scope / acceptance target |
 | --- | --- | --- | --- |
-| **SP-09** | **Critical — this PR** | ◐ In review | Approved responsive workbench shell, navigation, command palette, theme, demo-only interactive screens, reusable error/loading states and **server-only** backend boundary without exposing the shared API token |
-| SP-10 | High | ◐ In review | Operator session and server-only bearer proxy; live KB create/list, document upload/list, indexing, errors and pagination. [PR pending] |
-| SP-11 | High | ☐ Planned | Chunk Inspector: display active chunks, offsets, version history, embedding availability and processing status |
+| SP-09 | Critical | ✅ Merged | Responsive workbench, keyboard command palette, theme and demo-only initial screens. [PR #69](https://github.com/summiya/spurel/pull/69) |
+| SP-10 | High | ✅ Merged | Local operator session and server-only FastAPI calls; live KB/document create/list/upload/index and pagination. [PR #70](https://github.com/summiya/spurel/pull/70) |
+| SP-11 | High | ◐ In review | Operator-protected live Chunk Inspector: source selection, active/historical versions, real persisted text and offsets, embedding status, pagination, empty/error states and tests |
 | SP-12 | High | ☐ Planned | Retrieval Playground: issue vector/keyword/hybrid queries and display ranks, scores, traces and configuration |
 | SP-13 | High | ☐ Planned | Trace Comparison UI: compare saved retrieval traces and explain candidate/ranking differences |
 | SP-14 | High | ☐ Planned | Evaluation Dashboard: label datasets, inspect judgment audits, run benchmarks, compare runs and quality gates |
@@ -79,7 +79,7 @@ These are cross-cutting technical debts, **not completed roadmap tasks**:
 3. **Ingestion execution:** Processing still runs in an HTTP request. Lease renewal occurs between embedding batches, so a single provider call longer than the lease can be reclaimed; stale workers are fenced at promotion.
 4. **Parsing:** No OCR/scanned PDFs; encrypted PDFs are unsupported; fixed-size chunking counts characters, not model tokens.
 5. **Retrieval:** Exact pgvector search only; Postgres keyword scoring is not BM25; no HNSW, filters or reranking.
-6. **Frontend:** SP-09 interactive demo screens use fixtures only; there is no browser-to-backend credential flow or real knowledge-base/retrieval/evaluation UI integration yet.
+6. **Frontend:** Live source and chunk inspection use the single-operator local session, but retrieval/evaluation/trace/RAG views still use fixtures. The session is not production identity, RBAC or multi-tenant authorization.
 7. **Dependency reproducibility:** Frontend does not yet commit a `package-lock.json`; `npm install` is used, and Docker image tags are not digest-pinned.
 8. **Deployment:** Compose is intended for localhost development, with example database credentials and hot reload. The project has no hardened production deployment profile.
 

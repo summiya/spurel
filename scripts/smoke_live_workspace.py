@@ -1,4 +1,4 @@
-"""CI-only end-to-end check of local operator auth, knowledge bases and upload."""
+"""CI-only end-to-end check of operator auth, sources and read-only chunk inspection."""
 
 import http.cookiejar
 import json
@@ -117,15 +117,38 @@ def run(root: Path) -> None:
     assert status == 200
     assert any(item["id"] == document["id"] for item in listed["items"])
 
+    # SP-11: unprocessed documents have no active chunks or saved versions.
+    # Verify the real read-only routes without spending on an embedding provider.
+    doc_id = str(UUID(document["id"]))
+    versions_path = f"{document_path}/{doc_id}/versions"
+    chunks_path = f"{document_path}/{doc_id}/chunks"
+    version_status, version_data = _request(opener, base, versions_path)
+    assert version_status == 200, ("Version history", version_status, version_data)
+    assert version_data["items"] == [], version_data
+
+    active_status, active_data = _request(opener, base, chunks_path)
+    assert active_status == 200, ("Current chunks", active_status, active_data)
+    assert active_data["items"] == [], active_data
+
+    assert _request(opener, base, chunks_path + "?version=0")[0] == 400
+    assert _request(opener, base, chunks_path + "?offset=-1")[0] == 400
+    assert _request(opener, base, f"{document_path}/invalid-id/versions")[0] == 400
+    assert _request(opener, base, chunks_path + "?version=1")[0] == 404
+
     status, _ = _request(opener, base, "/api/operator/logout", method="POST", data=b"", origin=base)
     assert status == 200
     assert _request(opener, base, endpoint)[0] == 401
-    print("SP-10 operator session, CSRF, real KB creation and document upload: PASS")
+    assert _request(opener, base, versions_path)[0] == 401
+    assert _request(opener, base, chunks_path)[0] == 401
+    print(
+        "SP-11 operator session, KB/document workflow, read-only chunk/version "
+        "inspection and authorization: PASS"
+    )
 
 
 if __name__ == "__main__":
     try:
         run(Path(__file__).resolve().parents[1])
     except Exception as exc:
-        print(f"SP-10 smoke failed: {exc}", file=sys.stderr)
+        print(f"Spurel workspace smoke failed: {exc}", file=sys.stderr)
         raise SystemExit(1) from exc
