@@ -1,599 +1,142 @@
 <p align="center">
-  <img src="./docs/assets/spurel-hero.svg" alt="Spurel — open-source RAG observability, debugging and evaluation" width="100%" />
+  <img src="./docs/assets/spurel-hero.svg" alt="Spurel — RAG retrieval observability, debugging and evaluation" width="100%" />
 </p>
 
 <p align="center">
-  <strong>Open-source observability, debugging, experimentation, and evaluation for RAG systems.</strong>
+  <strong>An open-source workbench for inspecting, testing and improving RAG retrieval.</strong>
 </p>
 
 <p align="center">
-  <img alt="Python" src="https://img.shields.io/badge/Python-3.13-3776AB?style=for-the-badge&logo=python&logoColor=white">
-  <img alt="FastAPI" src="https://img.shields.io/badge/FastAPI-Backend-009688?style=for-the-badge&logo=fastapi&logoColor=white">
-  <img alt="Next.js" src="https://img.shields.io/badge/Next.js-Frontend-000000?style=for-the-badge&logo=nextdotjs&logoColor=white">
-  <img alt="PostgreSQL" src="https://img.shields.io/badge/PostgreSQL-pgvector-4169E1?style=for-the-badge&logo=postgresql&logoColor=white">
-</p>
-
-<p align="center">
-  <a href="#-why-spurel">Why Spurel</a> ·
-  <a href="#-planned-features">Features</a> ·
-  <a href="#-concept-ui">Concept UI</a> ·
-  <a href="#-architecture">Architecture</a> ·
-  <a href="#-roadmap">Roadmap</a> ·
-  <a href="#-contributing">Contributing</a>
+  <img alt="Python 3.13" src="https://img.shields.io/badge/Python-3.13-3776AB?style=flat-square&logo=python&logoColor=white">
+  <img alt="FastAPI" src="https://img.shields.io/badge/FastAPI-backend-009688?style=flat-square&logo=fastapi&logoColor=white">
+  <img alt="Next.js" src="https://img.shields.io/badge/Next.js-frontend-000000?style=flat-square&logo=nextdotjs&logoColor=white">
+  <img alt="PostgreSQL and pgvector" src="https://img.shields.io/badge/PostgreSQL-pgvector-4169E1?style=flat-square&logo=postgresql&logoColor=white">
 </p>
 
 > [!IMPORTANT]
-> **Spurel is currently in early-stage design / pre-alpha.**  
-> The screenshots below are product concept mockups, not screenshots of a finished implementation. The repository is being built in public.
+> **Pre-alpha, not production ready.** The backend has working ingestion, retrieval, RAG and evaluation APIs. The Next.js frontend is currently a **placeholder**. Images below are product **concept designs**, not screenshots of a functioning workbench.
 
-## 🔐 API authentication
+[Quick start](#quick-start) · [Implemented today](#implemented-today) · [Architecture](docs/architecture.md) · [Roadmap](docs/roadmap.md) · [Development guide](docs/development.md) · [Benchmark CI](docs/quality-gate-ci.md)
 
-All Spurel business endpoints require a **shared bearer token**. The liveness endpoint `GET /health` remains unauthenticated. This first security boundary is suitable for a single trusted service/operator; it is **not** user login, organization isolation, or permission-aware multi-tenancy.
+## What Spurel does
 
-1. Generate a long, random token:
+Spurel helps RAG developers understand **which document chunks were retrieved, how they ranked, whether the answer was grounded, and whether a change improved retrieval quality**.
 
-   ```bash
-   python -c 'import secrets; print(secrets.token_urlsafe(32))'
-   ```
+The current backend supports a measurable path from document upload to retrieval traces and persisted benchmark runs. The visual debugging workflows shown in the mockups are **future UI work**.
 
-2. Set `SPUREL_API_TOKEN` in your local `.env` file (do not commit it). The token must contain at least 32 printable, non-whitespace ASCII characters.
+## Quick start
 
-3. Include it when calling protected endpoints:
+**Requirements:** Docker with Compose v2, Python 3 and Make. You do not need to install Node or the Python backend packages on your host.
 
-   ```bash
-   curl -H "Authorization: Bearer $SPUREL_API_TOKEN" http://localhost:8000/knowledge-bases
-   ```
-
-A missing or invalid server-side token configuration returns **503** for all protected API routes (fail closed). Missing, malformed, or incorrect bearer credentials return **401** with `WWW-Authenticate: Bearer`. The same `SPUREL_API_TOKEN` environment variable is already understood by Spurel's benchmark/quality-gate CLI.
-
-**API documentation:** Swagger UI (`/docs`), ReDoc, and OpenAPI JSON (`/openapi.json`) are disabled by default. For trusted local development only, set `SPUREL_ENABLE_DOCS=1` before starting the API. This exposes Swagger UI and its OpenAPI schema without authentication, but business endpoints still require the bearer token (use **Authorize** in Swagger). Do not enable public docs unless this metadata exposure is intentional.
-
-**Security boundaries:** Use HTTPS when accessing the API remotely. Do not embed `SPUREL_API_TOKEN` in a browser application or ship it to end users. A future frontend should use a server-side gateway/session model, and publicly hosted multi-user deployments additionally require user authentication, tenant authorization, and role-based access control.
-
-## ⚙️ Local development with Docker Compose
-
-Spurel now has a **single-command, localhost-only** development environment
-for PostgreSQL 17 + pgvector, Alembic migrations, FastAPI, and the existing
-Next.js frontend. It supports API hot reload and Next.js development reload.
-
-**Requirements:** Docker Desktop (or Docker Engine + Compose v2), Python 3,
-and `make`. A Git clone of the repository is sufficient; you do not need
-Python or Node.js dependencies installed on the host for the Compose path.
+From the repository root:
 
 ```bash
-# From the repository root:
-make up       # initialize .env, build images, migrate and start all services
-make status   # check API health, bearer authentication, database and frontend
-make logs     # follow service logs
-make down     # stop containers WITHOUT deleting database or uploaded documents
+make up       # Create .env safely, build, migrate, start and wait for healthy services
+make status   # Check PostgreSQL-backed API, bearer authentication and frontend
+make logs     # Follow container logs
+make down     # Stop without deleting the local database or uploaded files
 ```
 
-Once healthy:
-
-| Component | Local address | Notes |
+| Local service | URL or port | Status |
 | --- | --- | --- |
-| Frontend | http://127.0.0.1:3000 | Existing Next.js pre-alpha placeholder UI |
-| FastAPI health | http://127.0.0.1:8000/health | Public liveness endpoint |
-| FastAPI business endpoints | http://127.0.0.1:8000/knowledge-bases | Bearer authentication required |
-| PostgreSQL + pgvector | 127.0.0.1:5432 | Local development credentials only |
+| Next.js placeholder | http://127.0.0.1:3000 | Runs; workbench UI not built |
+| FastAPI health | http://127.0.0.1:8000/health | Public |
+| FastAPI business API | http://127.0.0.1:8000/knowledge-bases | Shared bearer token required |
+| PostgreSQL + pgvector | 127.0.0.1:5432 | Local development only |
 
-`make init` creates an ignored `.env` from `.env.example` and generates a
-strong random `SPUREL_API_TOKEN` without displaying it. Re-running it does
-**not** replace an existing token or OpenAI key. The local `.env` is
-restricted to owner read/write permissions on POSIX systems. You can update
-the environment file before calling `make up` if you prefer custom settings.
-
-Useful commands: `make ps` to view containers, `make migrate` to re-run
-Alembic safely after pulling newer migrations, and `make backend` /
-`make frontend` to stream one service's logs. To enable Swagger locally,
-set `SPUREL_ENABLE_DOCS=1` in `.env` and restart via `make up`; it is
-disabled by default.
-
-**Host file permissions:** `make up` passes your UID/GID to the
-frontend container so Next.js can update bind-mounted TypeScript files
-without taking ownership as root. Prefer the Make targets instead of
-running `docker compose up` manually; direct Compose users may need to
-set `SPUREL_HOST_UID` and `SPUREL_HOST_GID` themselves.
-
-**Environment behavior:** Compose loads `.env`, then overrides the
-backend's `DATABASE_URL` to use the service hostname `postgres`.
-`DATABASE_URL` in `.env.example` uses `localhost` for optional host-based
-Python/Alembic commands. Set `SPUREL_POSTGRES_PORT`, `SPUREL_API_PORT`
-or `SPUREL_FRONTEND_PORT` if a host port is occupied. If changing the
-development PostgreSQL password, update the host `DATABASE_URL` too.
-Container document uploads persist in a named Docker volume; the host
-`SPUREL_LOCAL_STORAGE_ROOT` is used only by direct, non-Compose runs.
-
-**OpenAI is optional for startup.** Health, knowledge-base operations and
-the placeholder frontend work with an empty `OPENAI_API_KEY`; embedding,
-document-processing and model-backed RAG routes require their provider
-configuration. The shared API token is **server-side only** and must never
-be added to `NEXT_PUBLIC_*` variables or frontend JavaScript.
-
-**Data safety:** `make down` preserves the named PostgreSQL and document
-volumes. `docker compose down --volumes` destroys local database content
-and uploaded files; use it only when you explicitly intend a reset.
-This stack is a **development configuration, not production deployment**:
-it uses hot reload, developer database credentials and HTTP loopback ports.
-The database and API are **not** exposed on public interfaces.
-
-### Running the backend outside Docker (optional)
-
-You can still use the previous host-based workflow. Start the database via
-`docker compose up -d postgres`, then load `.env` into your shell:
+The initializer writes a strong random `SPUREL_API_TOKEN` to the ignored `.env` without displaying it. **Never commit that file or put the token into frontend/client-side code.** To try an authenticated endpoint from a trusted local shell:
 
 ```bash
-make init
 set -a
 source .env
 set +a
-
-cd backend
-python3.13 -m pip install -e ".[dev]"
-alembic upgrade head
-uvicorn spurel.main:app --reload --host 127.0.0.1 --port 8000
+curl -H "Authorization: Bearer $SPUREL_API_TOKEN" \
+  http://127.0.0.1:8000/knowledge-bases
 ```
 
-For host-based integration testing, use a **separate database ending in
-`_test`** as described below; do not run destructive tests against the
-development `spurel` database.
+No OpenAI key is required to **start** the stack or manage knowledge bases. Document embedding and generated answers require provider credentials and configuration. See the [development guide](docs/development.md) for environment variables, tests, migrations, alternate ports and data safety.
 
-> [!WARNING]
-> Never commit `.env`, real provider keys, or Docker volume data. Only
-> `.env.example` belongs in Git. The frontend is still a placeholder;
-> SP-09 will build the actual application UI.
+## Implemented today
 
-## ✅ Continuous integration
+| Capability | Implementation | Where |
+| --- | --- | --- |
+| Knowledge bases and documents | FastAPI CRUD subset: create/list knowledge bases; upload/list documents; text, Markdown and text-extractable PDF parsing | [Documents](backend/src/spurel/documents/) |
+| Chunk inspection | Fixed-size **character** windows with overlap, persisted offsets and UUIDs; read-only version history | [Chunking](backend/src/spurel/infrastructure/chunking/fixed.py) |
+| Embeddings | OpenAI embedding adapter; persisted pgvector embeddings keyed by provider/model/dimensions | [Embeddings](backend/src/spurel/embeddings/) |
+| Retrieval | Exact pgvector cosine search; PostgreSQL full-text keyword scoring (`ts_rank_cd`, **not BM25**); hybrid Reciprocal Rank Fusion | [Retrieval](backend/src/spurel/retrieval/) |
+| Inspectable retrieval | Saved retrieval traces, trace comparisons and graded retrieval metrics | [Retrieval API](backend/src/spurel/retrieval/api.py) |
+| Evaluation | Labeled datasets, precision/recall@k, MRR, nDCG, coverage, persisted runs, comparisons, promoted baselines and regression gates | [Evaluation](backend/src/spurel/evaluation_datasets/) |
+| Label consistency | Reject new judgments for inactive or foreign chunks; detect stale historical labels before live evaluations; judgment audit endpoint | [Judgment audit](backend/src/spurel/evaluation_datasets/judgment_integrity.py) |
+| RAG answers | Hybrid retrieval plus OpenAI text generation, bounded source excerpts and model-requested source labels | [RAG](backend/src/spurel/rag/) |
+| Reprocessing | Immutable chunk-set versions, stable UUIDs for unchanged chunks, staged embeddings, fenced retries and atomic activation | [Processing](backend/src/spurel/documents/processing.py) |
+| Local developer tools | Full-stack Docker Compose, Alembic, pytest/PostgreSQL integration checks, Ruff, frontend lint/types/tests/build | [Development](docs/development.md) |
 
-The [CI workflow](.github/workflows/ci.yml) runs automatically on every pull request and push to `main`. All five jobs must pass:
+**Security boundary:** Spurel currently authenticates the API with **one shared bearer token**. Knowledge-base scoped queries are not user-specific tenant authorization. Do **not** expose it as a public multi-user service.
 
-- **Backend checks:** Python 3.13, repository-wide `ruff check .`, `ruff format --check` for Python files changed by the PR/push, and `pytest`.
-- **PostgreSQL migrations:** start `pgvector/pgvector:pg17`, apply Alembic migrations, verify required tables/pgvector and that a repeated upgrade is safe.
-- **PostgreSQL integration:** exercise real persistence, retrieval, and evaluations in a separate disposable test database.
-- **Frontend checks:** Node.js 22, ESLint, Prettier, TypeScript, Vitest, and a Next.js production build.
-- **Docker Compose smoke:** build and start the full localhost development stack, check migration completion, API authentication, and frontend HTTP.
+## Not implemented yet
 
-These checks use no OpenAI keys and keep the existing manual [RAG quality-gate workflows](docs/quality-gate-ci.md) separate.
+The following are roadmap items, **not current capabilities**: a functional web workbench, token-aware/structured chunking, OCR or scanned-PDF support, BM25, HNSW/ANN indexing, metadata retrieval filters, cross-encoder reranking, citation verification, additional hosted/local model adapters, multi-source connectors, experiment export, durable background ingestion and production-grade multi-user authorization.
 
-Run the corresponding commands locally:
+For task scope and order, see the [maintained roadmap](docs/roadmap.md).
 
-```bash
-cd backend
-python -m pip install -e ".[dev]"
-ruff check .
-# Check formatting of the Python files you changed (example):
-ruff format --check src/spurel/retrieval/traced.py
-python -m pytest -q
+## API overview
 
-cd ../frontend
-npm install --no-audit --no-fund
-npm run lint
-npm run format:check
-npm run typecheck
-npm test
-npm run build
-```
+All routes below except `GET /health` require `Authorization: Bearer <token>`.
 
-**Current limitation:** existing Python files have significant pre-existing Ruff formatting drift, so CI enforces formatting on **changed backend Python files**, not the entire historical tree. Clean up remaining legacy formatting separately. Also, `frontend/package-lock.json` is not committed, so CI currently uses `npm install`, not a reproducible `npm ci`. Add the lockfile in a follow-up. Migration smoke checks and dedicated real PostgreSQL integration tests are separate jobs. Configure all five CI job names as required checks in GitHub branch protection if you want to prevent merging red PRs.
+| Workflow | Example endpoint |
+| --- | --- |
+| Create/list knowledge bases | `/knowledge-bases` |
+| Upload/list/process documents | `/knowledge-bases/{knowledge_base_id}/documents` |
+| Inspect active or historical chunks | `/knowledge-bases/{knowledge_base_id}/documents/{document_id}/chunks` and `.../versions` |
+| Query vector, keyword or hybrid search | `/knowledge-bases/{knowledge_base_id}/retrieval/{mode}` (`vector`, `keyword` or `hybrid`) |
+| Browse retrieval traces | `/knowledge-bases/{knowledge_base_id}/retrieval/traces` |
+| Manage evaluation datasets and runs | `/knowledge-bases/{knowledge_base_id}/evaluation-datasets` |
+| Audit stale evaluation labels | `/knowledge-bases/{knowledge_base_id}/evaluation-datasets/{dataset_id}/judgment-audit` |
+| Generate a retrieved-context answer | `/knowledge-bases/{knowledge_base_id}/rag/answer` |
 
-## 🧪 Real PostgreSQL integration tests
+Set `SPUREL_ENABLE_DOCS=1` **only in a trusted local environment** to expose Swagger at `/docs`. Protected routes still require the bearer token; the docs and schema themselves are publicly readable on the bound server when enabled.
 
-The automatic CI includes a dedicated **PostgreSQL integration** job using a fresh
-`pgvector/pgvector:pg17` test database. It runs Alembic migrations before executing
-the `postgres`-marked tests.
-
-The integration suite uses the real async SQLAlchemy repositories and local filesystem
-storage, with a deterministic 3-dimensional embedding fixture. It tests:
-
-- Authenticated HTTP upload, document processing and chunk inspection
-- Exact vector retrieval, PostgreSQL full-text search, hybrid RRF, and persisted traces
-- Knowledge-base scoped access to document chunks and retrieval results
-- Persisted evaluation datasets, benchmarks, run comparisons, baselines, and audit history
-- Atomic chunk replacement rollback and embedding upsert against actual DB constraints
-
-No OpenAI API key or external inference request is needed.
-
-To run locally, use a **disposable database whose name ends in `_test`**:
-
-```bash
-# From the repo root; ensure the isolated test database already exists:
-export DATABASE_URL=postgresql+asyncpg://spurel:spurel@localhost:5432/spurel_test
-export SPUREL_TEST_DATABASE_URL="$DATABASE_URL"
-cd backend
-python -m pip install -e ".[dev]"
-alembic upgrade head
-python -m pytest -q -m postgres
-```
-
-The tests refuse non-`_test` PostgreSQL database names and clean up only the
-knowledge bases they create. Without `SPUREL_TEST_DATABASE_URL`, they skip;
-the CI job sets it explicitly so missing configuration cannot produce a false pass.
-Regular unit tests run with `python -m pytest -q -m "not postgres"`.
-
-## 📖 Document chunk-set versioning
-
-Spurel retains **immutable indexing snapshots** when a document is reprocessed.
-This is versioning of the *derived chunks*, not replacement of the uploaded source
-file; existing document uploads remain immutable.
-
-- Uploading a document begins with `active_chunk_version = 0` (not indexed yet).
-- First processing **stages** version `1`, generates all its embeddings, then
-  atomically publishes it. Until then, `active_chunk_version = 0`.
-- Reprocessing with **identical chunk texts, indexes and offsets** reuses the
-  active version and existing UUIDs, preserving related embeddings and judgments.
-- Changed chunks get a new `processing` version without altering the old active
-  index. Only after all expected embeddings are stored is the new version published.
-- Failed embedding/indexing leaves the old active version searchable. Failed
-  versions retain partial embeddings and chunk IDs, and retrying the same chunk
-  set reclaims the failed version rather than creating duplicate versions.
-- Old version rows, embeddings, UUIDs and relevance labels remain available.
-- Vector/keyword/hybrid retrieval and the standard Chunk Inspector see **only
-  the active version**, preventing duplicate or stale results.
-
-Authenticated read-only history endpoints:
+## Architecture at a glance
 
 ```text
-GET /knowledge-bases/{knowledge_base_id}/documents/{document_id}/versions
-GET /knowledge-bases/{knowledge_base_id}/documents/{document_id}/versions/{version}/chunks
+Next.js placeholder (UI planned)
+          |
+          v
+ FastAPI + shared bearer authentication
+          |
+          +-- Documents -> parse -> chunk-set versions -> staged embeddings -> activate
+          +-- Retrieval -> exact vector / Postgres FTS -> RRF -> saved traces
+          +-- RAG -> traced retrieval -> provider-backed answer + source excerpts
+          +-- Evaluation -> labeled cases -> runs -> comparisons / baselines / gates
+          |
+          v
+ PostgreSQL 17 + pgvector, local document blob storage
 ```
 
-The document list response exposes `active_chunk_version`. The processing
-response returns `chunk_version` and `reused_active_version`. Version history
-reports `status` (`processing`, `failed`, `ready`) and `attempt_count`, and
-the historical inspector retains chunk IDs and embedding availability.
-Knowledge-base scoping applies to both history endpoints.
+Backend code is organized into domain/application services, interfaces (ports), and SQLAlchemy/provider adapters. Ingestion currently runs synchronously in an HTTP request; it is **not** a durable job pipeline. See [architecture and design limitations](docs/architecture.md).
 
-**Upgrade:** The PostgreSQL migration CI job seeds a legacy document and embedding, then verifies they survive the schema change unchanged. Migration `0011_version_document_chunks` backfills existing
-documents with indexed chunks as version `1`, preserving **their original UUIDs,
-embeddings, and evaluation judgment references**. Existing uploaded-but-
-unprocessed documents remain at version `0`. Rollback from a database with
-multiple versions **discards inactive historical chunk rows and their embeddings**;
-back up the database first.
+## UI vision (concepts only)
 
-### Safe staged processing (SP-05)
-
-Processing uses **stage → embed → verify coverage → publish**. A staged version
-is never returned by normal retrieval; it is visible only through explicit
-read-only history inspection. Promotion checks that the persisted chunk count
-matches the version and that every chunk has an embedding in the requested
-provider/model/dimension space. The version pointer is updated in the same
-transaction as marking the new version `ready`.
-
-Only one processing attempt per document may own a non-expired **30-minute lease**.
-Active embedding workers renew it before each batch. Competing attempts receive
-HTTP **409 Conflict**. If a process terminates unexpectedly, its lease expires;
-a later request can reclaim the staged version (if its chunks match) or create
-the next version. An attempt UUID fences stale workers from publishing or
-overwriting the state of a reclaimed attempt. New `0012_stage_chunk_processing`
-migration marks existing versions `ready` without changing their chunk IDs.
-
-A failed provider call returns the existing generic 503 response. The previous
-active index is still searchable. Retried partial embeddings are upserted
-idempotently; old historical snapshots and evaluation judgments are retained.
-The long-running process is still synchronous per HTTP request; persistent
-background work and stronger multi-tenant authorization are separate tasks.
-
-### Evaluation judgment consistency (SP-06)
-
-Historical relevance judgments deliberately keep their original chunk UUIDs,
-even when reprocessing publishes a newer version or a document is removed.
-Those labels remain available in saved cases and **historical evaluation runs
-are never rewritten**.
-
-For **new** evaluation cases, every judged `chunk_id` must belong to an
-**active chunk within the selected knowledge base**. Unknown IDs, deleted
-chunks, inactive versions and other knowledge bases are rejected with
-**HTTP 409 Conflict**. The original case is not created on failure.
-
-Before vector, keyword or hybrid dataset evaluation, Spurel checks **all**
-persisted labels against the current active chunk versions. If any label is
-stale or missing, the entire evaluation fails with **HTTP 409** before
-retrieval begins; no misleading benchmark run or baseline promotion is
-recorded. The labels are checked again after retrieval, so a document
-activation during a long-running benchmark does not silently produce a
-new persisted run.
-
-To inspect a dataset without modifying it, call:
-
-```text
-GET /knowledge-bases/{knowledge_base_id}/evaluation-datasets/{dataset_id}/judgment-audit
-```
-
-The result includes `is_usable`, total labels, invalid/inactive/missing
-counts, and up to **100** affected `case_id` and `chunk_id` pairs.
-For inactive in-scope chunks, it also includes their source document ID,
-old chunk version and current active version. Missing or out-of-scope
-references are not resolved to foreign document IDs. Audits use the
-existing synchronous limits (100 cases and 50,000 labels).
-
-**Remediation:** inspect the version history and current chunks, create
-a new evaluation dataset with judgments against the active chunk IDs,
-then run the benchmark on that new dataset. Keeping prior datasets and
-runs immutable preserves historical experiment evidence and prevents
-comparisons from treating changed labels as equivalent.
-
-
-## ✨ What is Spurel?
-
-**Spurel** is an open-source RAG engineering workbench for developers who want to understand **why** a retrieval pipeline succeeds or fails.
-
-Most RAG demos stop here:
-
-```text
-Question → Retrieve chunks → LLM → Answer
-```
-
-Spurel focuses on everything that happens in the middle:
-
-```text
-What was retrieved?
-Why did it rank?
-Which chunking strategy worked better?
-Did hybrid search improve recall?
-Did reranking help?
-Which queries consistently fail?
-What changed between experiment A and B?
-```
-
-> **Make RAG retrieval visible, measurable, reproducible, and easier to improve.**
-
-## 🎯 Why Spurel?
-
-| Problem | What Spurel helps you inspect |
-|---|---|
-| 🧩 Bad chunking | Boundaries, token counts, overlap, lost context |
-| 🔎 Weak retrieval | Retrieved candidates, similarity scores, missed evidence |
-| ⚖️ Poor ranking | Vector vs. keyword vs. reranker scores |
-| 🧠 Wrong context | What was actually passed to the LLM |
-| 🧪 No measurement | Recall@K, MRR, hit rate, context precision |
-| 🔁 Hard-to-reproduce tuning | Saved experiments and configuration snapshots |
-| 🕵️ Silent regressions | Evaluation runs across versions |
-
-## 🚀 Planned features
-
-### 🔍 Retrieval Playground
-- Vector search
-- BM25 / keyword retrieval
-- Hybrid retrieval
-- Reciprocal Rank Fusion
-- Metadata filters
-- Configurable `top_k`
-- Reranking
-- Per-stage scores
-- Candidate → final-rank trace
-
-### 🧩 Chunk Inspector
-- Fixed-size chunking
-- Recursive chunking
-- Markdown / heading-aware chunking
-- Sentence-aware chunking
-- Semantic chunking
-- Token counts
-- Overlap visualization
-- Metadata preview
-
-### 🧪 Experiment Comparison
-
-```text
-Experiment A                       Experiment B
-────────────────────────          ────────────────────────
-500-token chunks                  1,000-token chunks
-Hybrid retrieval                  Vector-only retrieval
-RRF                               No fusion
-Cross-encoder reranker            No reranker
-top_k = 10                        top_k = 10
-```
-
-### 📊 Evaluation
-- Recall@K
-- Precision@K
-- Hit Rate
-- Mean Reciprocal Rank (MRR)
-- NDCG
-- Context precision
-- Context recall
-- Retrieval latency
-
-### 📚 Knowledge Bases
-- Documents
-- Chunks
-- Embeddings
-- Metadata
-- Ingestion runs
-- Retrieval configurations
-- Evaluation datasets
-
-### 🔌 Provider-independent design
-
-**Embeddings:** `OpenAI` · `Cohere` · `Voyage` · `SentenceTransformers` · `Ollama`
-
-**LLMs:** `OpenAI` · `Anthropic` · `Gemini` · `Ollama` · `OpenRouter`
-
-Spurel starts with **PostgreSQL + pgvector** for vector storage.
-
-## 🖥️ Concept UI
-
-### Retrieval Playground
+These images illustrate the planned interface. The repository currently serves a simple Next.js placeholder, **not** these screens.
 
 <p align="center">
-  <img src="./docs/assets/retrieval-playground.svg" alt="Spurel retrieval playground concept" width="100%" />
-</p>
-
-Inspect why chunks were retrieved, how they scored, what reranking changed, and what evidence reached generation.
-
-### Experiment Comparison
-
-<p align="center">
-  <img src="./docs/assets/experiment-comparison.svg" alt="Spurel experiment comparison concept" width="100%" />
-</p>
-
-> Mockup values are illustrative only. Real experiment metrics will come from evaluation runs.
-
-## 🏗️ Architecture
-
-<p align="center">
-  <img src="./docs/assets/rag-pipeline.svg" alt="Spurel RAG pipeline" width="100%" />
-</p>
-
-```text
-                    ┌──────────────────────┐
-                    │       Next.js        │
-                    │    Debugging UI      │
-                    └──────────┬───────────┘
-                               │
-                               ▼
-                    ┌──────────────────────┐
-                    │       FastAPI        │
-                    │      REST API        │
-                    └──────────┬───────────┘
-                               │
-          ┌────────────────────┼────────────────────┐
-          │                    │                    │
-          ▼                    ▼                    ▼
- ┌────────────────┐   ┌────────────────┐   ┌────────────────┐
- │   Ingestion    │   │   Retrieval    │   │   Evaluation   │
- │ parse          │   │ vector         │   │ datasets       │
- │ normalize      │   │ BM25           │   │ metrics        │
- │ chunk          │   │ hybrid         │   │ experiments    │
- │ embed          │   │ rerank         │   │ comparisons    │
- └───────┬────────┘   └───────┬────────┘   └───────┬────────┘
-         └────────────────────┼────────────────────┘
-                              ▼
-                    ┌──────────────────────┐
-                    │ PostgreSQL + pgvector│
-                    └──────────────────────┘
-```
-
-## 🧰 Planned stack
-
-| Layer | Technology |
-|---|---|
-| Frontend | Next.js + TypeScript |
-| Backend | Python 3.13 + FastAPI |
-| Validation | Pydantic v2 |
-| ORM | SQLAlchemy 2 |
-| Migrations | Alembic |
-| Database | PostgreSQL |
-| Vector search | pgvector |
-| Cache / jobs | Redis |
-| Containers | Docker / Docker Compose |
-| Testing | Pytest |
-| CI | GitHub Actions |
-
-## 🧠 Core domain
-
-```text
-Workspace
-  ├── Knowledge Base
-  │     ├── Documents
-  │     ├── Chunks
-  │     ├── Embeddings
-  │     └── Ingestion Runs
-  ├── Retrieval Configuration
-  │     ├── Retriever
-  │     ├── Fusion
-  │     ├── Reranker
-  │     └── Filters
-  ├── Evaluation Dataset
-  │     ├── Questions
-  │     └── Expected Evidence
-  └── Experiment
-        ├── Configuration Snapshot
-        ├── Retrieval Traces
-        └── Metrics
-```
-
-## 🛣️ Roadmap
-
-### Phase 0 — Foundation
-- [ ] Repository structure
-- [ ] Backend + frontend applications
-- [ ] PostgreSQL + pgvector
-- [ ] Docker Compose
-- [x] CI
-- [ ] Configuration and environment management
-
-### Phase 1 — Ingestion
-- [ ] Knowledge bases
-- [ ] PDF / Markdown / text ingestion
-- [ ] Chunking pipeline
-- [ ] Embeddings
-- [ ] Chunk Inspector
-- [ ] Metadata
-
-### Phase 2 — Retrieval
-- [ ] Vector search
-- [ ] Keyword / BM25 retrieval
-- [ ] Hybrid retrieval
-- [ ] Metadata filtering
-- [ ] Retrieval Playground
-- [ ] Retrieval traces
-
-### Phase 3 — Reranking
-- [ ] Reranker interface
-- [ ] Cross-encoder reranking
-- [ ] Ranking comparison
-- [ ] Per-stage score visualization
-
-### Phase 4 — Evaluation
-- [ ] Evaluation datasets
-- [ ] Recall@K
-- [ ] Precision@K
-- [ ] Hit rate
-- [ ] MRR
-- [ ] NDCG
-- [ ] Experiment runs
-- [ ] Side-by-side comparison
-
-### Phase 5 — Open-source extensibility
-- [ ] Embedding provider adapters
-- [ ] LLM provider adapters
-- [ ] Pluggable retrieval strategies
-- [ ] Exportable experiment results
-- [ ] Public extension documentation
-
-## 🧭 What Spurel is not
-
-Spurel is intentionally **not**:
-- a general-purpose AI agent platform
-- an MCP client
-- a workflow automation engine
-- a generic ChatGPT clone
-- another basic “chat with your PDF” demo
-
-Spurel is about **retrieval engineering**.
-
-## 🤝 Contributing
-
-Spurel is being built in public. Contributions will be welcome as the foundation lands.
-
-Good contribution areas:
-- chunking strategies
-- retriever adapters
-- rerankers
-- evaluation metrics
-- parsers
-- visualization improvements
-- documentation
-- reproducible RAG benchmarks
-
-Before a large change, please open an issue describing the proposal so the design can stay coherent.
-
-## 🌱 Project philosophy
-
-1. **Retrieval first** — optimize evidence before generation.
-2. **Inspectable by default** — important decisions should be visible.
-3. **Measure before tuning** — improvements need evaluation.
-4. **Provider-independent boundaries** — infrastructure should be replaceable.
-5. **Reproducible experiments** — configurations and results should be traceable.
-6. **Simple before clever** — add complexity only when it solves a demonstrated problem.
-7. **Open by design** — useful primitives should be reusable outside the UI.
-
-<p align="center">
-  <strong>Spurel</strong><br/>
-  <sub>See what your RAG pipeline is really doing.</sub>
+  <img src="./docs/assets/retrieval-playground.svg" alt="Concept only: retrieval playground with candidate scores" width="100%" />
 </p>
 
 <p align="center">
-  ⭐ Star the repository if you want to follow the build.
+  <img src="./docs/assets/experiment-comparison.svg" alt="Concept only: side-by-side retrieval experiment comparison" width="100%" />
 </p>
+
+The future workbench will make source candidates, scoring, chunk boundaries, evaluation runs and experiments visually explorable. The backend primitives exist for several of these features, but their UI has not been implemented.
+
+## Roadmap and contributing
+
+The [roadmap](docs/roadmap.md) tracks **SP-01–SP-28** by phase, distinguishes merged foundations from upcoming work, and lists priorities and acceptance criteria. The next implementation phase builds the frontend foundation and its knowledge-base, chunk-inspection, retrieval and evaluation screens.
+
+Spurel is being built in public. For substantial changes, open an issue first and follow the existing architecture and tests. Good contribution areas include retrieval strategies, parsers, evaluation methods, reliable ingestion, UI, and documentation.
+
+Project principles: **retrieval first**, **inspectable by default**, **measure before tuning**, **provider boundaries**, **reproducible experiments**, and **simple before clever**.
+
+---
+
+<p align="center"><strong>Spurel</strong> — See what your RAG pipeline is really doing.</p>
