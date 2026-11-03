@@ -12,8 +12,7 @@ from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from spurel.db import Base
-from spurel.documents import chunk_persistence
-from spurel.documents import chunk_versions_persistence
+from spurel.documents import chunk_persistence, chunk_versions_persistence
 from spurel.documents import persistence as document_persistence
 from spurel.embeddings import persistence as embedding_persistence
 from spurel.evaluation_datasets import baseline_persistence as baseline_persistence

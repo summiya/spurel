@@ -48,15 +48,15 @@ from spurel.documents.schemas import (
     VersionedChunkInspectionListResponse,
 )
 from spurel.documents.service import DocumentService
-from spurel.documents.versions import (
-    DocumentVersionNotFoundError,
-    DocumentVersionPersistenceError,
-    DocumentVersionService,
-)
 from spurel.documents.upload_service import (
     DocumentUploadError,
     DocumentUploadService,
     DocumentUploadSizeMismatchError,
+)
+from spurel.documents.versions import (
+    DocumentVersionNotFoundError,
+    DocumentVersionPersistenceError,
+    DocumentVersionService,
 )
 from spurel.embeddings.domain import EmbeddingError
 from spurel.embeddings.pipeline import DocumentEmbeddingPipelineError

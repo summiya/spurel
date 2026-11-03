@@ -701,3 +701,19 @@ async def _version_round_trip(postgres_url: str, tmp_path: Path) -> None:
                 knowledge_base_id=kb_id, document_id=doc_id, limit=50, offset=0
             )
         ) == 2
+
+        # Concurrent identical writes are serialized by the parent document lock.
+        concurrent_chunks = tuple(row.chunk for row in again)
+        await asyncio.gather(
+            chunks_repo.replace_for_document(document_id=doc_id, chunks=concurrent_chunks),
+            chunks_repo.replace_for_document(document_id=doc_id, chunks=concurrent_chunks),
+        )
+        after_concurrent = await chunks_repo.list_stored_by_document(
+            document_id=doc_id, limit=50, offset=0
+        )
+        assert [row.id for row in after_concurrent] == [row.id for row in again]
+        assert len(
+            await versions.list_versions(
+                knowledge_base_id=kb_id, document_id=doc_id, limit=50, offset=0
+            )
+        ) == 2

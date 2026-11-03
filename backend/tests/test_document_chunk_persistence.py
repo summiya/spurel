@@ -28,10 +28,25 @@ def test_document_chunk_record_round_trip() -> None:
 
 def test_document_chunk_foreign_key_cascades_with_document() -> None:
     foreign_key = next(
-        iter(DocumentChunkRecord.__table__.c.document_id.foreign_keys)
+        key
+        for key in DocumentChunkRecord.__table__.c.document_id.foreign_keys
+        if key.target_fullname == "documents.id"
     )
 
-    assert foreign_key.target_fullname == "documents.id"
+    assert foreign_key.ondelete == "CASCADE"
+
+
+def test_chunk_version_foreign_key_preserves_version_identity() -> None:
+    foreign_key = next(
+        constraint
+        for constraint in DocumentChunkRecord.__table__.foreign_key_constraints
+        if constraint.name == "fk_document_chunks_version"
+    )
+
+    assert {element.target_fullname for element in foreign_key.elements} == {
+        "document_chunk_versions.document_id",
+        "document_chunk_versions.version",
+    }
     assert foreign_key.ondelete == "CASCADE"
 
 

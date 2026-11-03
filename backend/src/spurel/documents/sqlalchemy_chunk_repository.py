@@ -10,8 +10,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from spurel.documents.chunk_models import StoredDocumentChunk
 from spurel.documents.chunk_persistence import DocumentChunkRecord
-from spurel.documents.chunk_versions_persistence import DocumentChunkVersionRecord
 from spurel.documents.chunk_ports import DocumentChunkPersistenceError
+from spurel.documents.chunk_versions_persistence import DocumentChunkVersionRecord
 from spurel.documents.chunking import DocumentChunk
 from spurel.documents.persistence import DocumentRecord
 

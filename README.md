@@ -173,7 +173,7 @@ The document list response exposes `active_chunk_version`. The historical
 inspection endpoint preserves chunk IDs and embedding availability for older
 versions. Knowledge-base scoping applies to both history endpoints.
 
-**Upgrade:** Migration `0011_version_document_chunks` backfills existing
+**Upgrade:** The PostgreSQL migration CI job seeds a legacy document and embedding, then verifies they survive the schema change unchanged. Migration `0011_version_document_chunks` backfills existing
 documents with indexed chunks as version `1`, preserving **their original UUIDs,
 embeddings, and evaluation judgment references**. Existing uploaded-but-
 unprocessed documents remain at version `0`. Rollback from a database with
