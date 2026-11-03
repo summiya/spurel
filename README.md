@@ -86,6 +86,7 @@ The [CI workflow](.github/workflows/ci.yml) runs automatically on every pull req
 
 - **Backend checks:** Python 3.13, repository-wide `ruff check .`, `ruff format --check` for Python files changed by the PR/push, and `pytest`.
 - **PostgreSQL migrations:** start `pgvector/pgvector:pg17`, apply Alembic migrations, verify required tables/pgvector and that a repeated upgrade is safe.
+- **PostgreSQL integration:** exercise real persistence, retrieval, and evaluations in a separate disposable test database.
 - **Frontend checks:** Node.js 22, ESLint, Prettier, TypeScript, Vitest, and a Next.js production build.
 
 These checks use no OpenAI keys and keep the existing manual [RAG quality-gate workflows](docs/quality-gate-ci.md) separate.
@@ -110,6 +111,40 @@ npm run build
 ```
 
 **Current limitation:** existing Python files have significant pre-existing Ruff formatting drift, so CI enforces formatting on **changed backend Python files**, not the entire historical tree. Clean up remaining legacy formatting separately. Also, `frontend/package-lock.json` is not committed, so CI currently uses `npm install`, not a reproducible `npm ci`. Add the lockfile in a follow-up. Migration checks are smoke tests of the database schema, not end-to-end PostgreSQL integration tests; those are tracked separately. Configure the three CI job names as required status checks in GitHub branch protection if you want to prevent merging red PRs.
+
+## 🧪 Real PostgreSQL integration tests
+
+The automatic CI includes a dedicated **PostgreSQL integration** job using a fresh
+`pgvector/pgvector:pg17` test database. It runs Alembic migrations before executing
+the `postgres`-marked tests.
+
+The integration suite uses the real async SQLAlchemy repositories and local filesystem
+storage, with a deterministic 3-dimensional embedding fixture. It tests:
+
+- Authenticated HTTP upload, document processing and chunk inspection
+- Exact vector retrieval, PostgreSQL full-text search, hybrid RRF, and persisted traces
+- Knowledge-base scoped access to document chunks and retrieval results
+- Persisted evaluation datasets, benchmarks, run comparisons, baselines, and audit history
+- Atomic chunk replacement rollback and embedding upsert against actual DB constraints
+
+No OpenAI API key or external inference request is needed.
+
+To run locally, use a **disposable database whose name ends in `_test`**:
+
+```bash
+# From the repo root; ensure the isolated test database already exists:
+export DATABASE_URL=postgresql+asyncpg://spurel:spurel@localhost:5432/spurel_test
+export SPUREL_TEST_DATABASE_URL="$DATABASE_URL"
+cd backend
+python -m pip install -e ".[dev]"
+alembic upgrade head
+python -m pytest -q -m postgres
+```
+
+The tests refuse non-`_test` PostgreSQL database names and clean up only the
+knowledge bases they create. Without `SPUREL_TEST_DATABASE_URL`, they skip;
+the CI job sets it explicitly so missing configuration cannot produce a false pass.
+Regular unit tests run with `python -m pytest -q -m "not postgres"`.
 
 ## ✨ What is Spurel?
 
