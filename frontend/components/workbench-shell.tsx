@@ -2,14 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useState,
-  type ReactNode,
-} from "react";
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 
 import { NAVIGATION_GROUPS, routeLabel } from "@/lib/navigation";
 
@@ -37,11 +30,18 @@ function Brand() {
   return (
     <Link href="/" className="brand" aria-label="Spurel home">
       <span className="brand-mark" aria-hidden="true">
-        <i /><i /><i /><i />
+        <i />
+        <i />
+        <i />
+        <i />
       </span>
       <span>
         <span className="brand-word">SPUREL</span>
-        <span className="brand-subline">RETRIEVAL<br />INTELLIGENCE</span>
+        <span className="brand-subline">
+          RETRIEVAL
+          <br />
+          INTELLIGENCE
+        </span>
       </span>
     </Link>
   );
@@ -129,13 +129,21 @@ export function WorkbenchShell({ children }: { children: ReactNode }) {
             </nav>
             <div className="sidebar-bottom">
               <div className="usage-card">
-                <div className="usage-head"><strong>Workspace usage</strong><span>58%</span></div>
-                <div className="usage-track"><i /></div>
+                <div className="usage-head">
+                  <strong>Workspace usage</strong>
+                  <span>58%</span>
+                </div>
+                <div className="usage-track">
+                  <i />
+                </div>
                 <p>Illustrative metrics · not live</p>
               </div>
               <div className="sidebar-profile">
                 <span className="profile-avatar">SP</span>
-                <span><strong>Demo workspace</strong><small>Design preview · local only</small></span>
+                <span>
+                  <strong>Demo workspace</strong>
+                  <small>Design preview · local only</small>
+                </span>
               </div>
             </div>
           </aside>
@@ -153,7 +161,8 @@ export function WorkbenchShell({ children }: { children: ReactNode }) {
                   <Icon name="menu" />
                 </button>
                 <div className="breadcrumbs">
-                  <span>Workspace</span><span className="breadcrumb-divider">/</span>
+                  <span>Workspace</span>
+                  <span className="breadcrumb-divider">/</span>
                   <strong>{routeLabel(pathname)}</strong>
                 </div>
               </div>
@@ -168,7 +177,9 @@ export function WorkbenchShell({ children }: { children: ReactNode }) {
                   <span>Jump to anything</span>
                   <kbd>⌘ K</kbd>
                 </button>
-                <span className="top-demo-pill"><span /> INTERACTIVE DEMO</span>
+                <span className="top-demo-pill">
+                  <span /> INTERACTIVE DEMO
+                </span>
                 <button
                   type="button"
                   className="icon-button"
@@ -178,7 +189,9 @@ export function WorkbenchShell({ children }: { children: ReactNode }) {
                 >
                   <Icon name={theme === "dark" ? "moon" : "sun"} size={17} />
                 </button>
-                <span className="top-avatar" aria-label="Demo profile">S</span>
+                <span className="top-avatar" aria-label="Demo profile">
+                  S
+                </span>
               </div>
             </header>
             <main id="main-content" className="page-content" tabIndex={-1}>
@@ -193,7 +206,11 @@ export function WorkbenchShell({ children }: { children: ReactNode }) {
             <div className="toast-message" role="status" aria-live="polite">
               <Icon name="check" size={16} />
               {toast}
-              <button type="button" aria-label="Dismiss notification" onClick={() => setToast(null)}>
+              <button
+                type="button"
+                aria-label="Dismiss notification"
+                onClick={() => setToast(null)}
+              >
                 <Icon name="x" size={14} />
               </button>
             </div>

@@ -8,7 +8,11 @@ export default function NotFound() {
       title="Page not found"
       description="This workspace view doesn't exist."
       icon="search"
-      action={<Link href="/" className="button primary">Return to overview</Link>}
+      action={
+        <Link href="/" className="button primary">
+          Return to overview
+        </Link>
+      }
     />
   );
 }

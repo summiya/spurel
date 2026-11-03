@@ -29,8 +29,9 @@ describe("retrieval lab preview", () => {
     fireEvent.click(evidence[1]);
     expect(evidence[1]).toHaveAttribute("aria-pressed", "true");
     expect(
-      within(screen.getByRole("heading", { name: "Evidence inspector" }).closest("section")!)
-        .getByText("security-guidelines.md"),
+      within(
+        screen.getByRole("heading", { name: "Evidence inspector" }).closest("section")!,
+      ).getByText("security-guidelines.md"),
     ).toBeInTheDocument();
   });
 });

@@ -60,13 +60,21 @@ export function KnowledgeBasesPage() {
             onClick={() => setSelected(kb.id)}
             aria-pressed={selected === kb.id}
           >
-            <span className="kb-card-icon"><Icon name="database" size={22} /></span>
+            <span className="kb-card-icon">
+              <Icon name="database" size={22} />
+            </span>
             <strong>{kb.name}</strong>
             <p>{kb.description}</p>
-            <div className="kb-category">{kb.category} · {kb.updated}</div>
+            <div className="kb-category">
+              {kb.category} · {kb.updated}
+            </div>
             <div className="kb-card-footer">
-              <span><Icon name="file" size={14} /> {kb.documents} docs</span>
-              <span><Icon name="layers" size={14} /> {kb.chunks.toLocaleString()} chunks</span>
+              <span>
+                <Icon name="file" size={14} /> {kb.documents} docs
+              </span>
+              <span>
+                <Icon name="layers" size={14} /> {kb.chunks.toLocaleString()} chunks
+              </span>
             </div>
           </button>
         ))}
@@ -79,16 +87,27 @@ export function KnowledgeBasesPage() {
           action={<SampleBadge>Preview details</SampleBadge>}
         >
           <div className="kb-detail">
-            <span className="kb-detail-icon"><Icon name="database" size={28} /></span>
+            <span className="kb-detail-icon">
+              <Icon name="database" size={28} />
+            </span>
             <div>
               <strong>{active.description}</strong>
               <p>Source collection details and actions will connect to FastAPI in SP-10.</p>
             </div>
           </div>
           <div className="kb-detail-stats">
-            <span><strong>{active.documents}</strong><small>Documents</small></span>
-            <span><strong>{active.chunks.toLocaleString()}</strong><small>Indexed chunks</small></span>
-            <span><strong>{active.documents ? "Ready" : "Empty"}</strong><small>Index status</small></span>
+            <span>
+              <strong>{active.documents}</strong>
+              <small>Documents</small>
+            </span>
+            <span>
+              <strong>{active.chunks.toLocaleString()}</strong>
+              <small>Indexed chunks</small>
+            </span>
+            <span>
+              <strong>{active.documents ? "Ready" : "Empty"}</strong>
+              <small>Index status</small>
+            </span>
           </div>
           <Link href="/chunks" className="button ghost compact">
             Inspect sample chunks <Icon name="arrow-right" size={15} />
@@ -96,14 +115,18 @@ export function KnowledgeBasesPage() {
         </Panel>
         <Panel title="Processing overview" hint="Demonstration of the future health view">
           <div className="pipeline-grid">
-            {([
-              ["file", "124", "Documents"],
-              ["layers", "18,431", "Chunks"],
-              ["check", "98.7%", "Indexed"],
-              ["clock", "143 ms", "Query p95"],
-            ] as const).map(([icon, value, label]) => (
+            {(
+              [
+                ["file", "124", "Documents"],
+                ["layers", "18,431", "Chunks"],
+                ["check", "98.7%", "Indexed"],
+                ["clock", "143 ms", "Query p95"],
+              ] as const
+            ).map(([icon, value, label]) => (
               <div className="pipeline-step" key={label}>
-                <span className="pipeline-icon"><Icon name={icon} size={17} /></span>
+                <span className="pipeline-icon">
+                  <Icon name={icon} size={17} />
+                </span>
                 <strong>{value}</strong>
                 <small>{label}</small>
               </div>
@@ -125,13 +148,23 @@ export function KnowledgeBasesPage() {
             onMouseDown={(event) => event.stopPropagation()}
           >
             <div className="dialog-heading">
-              <div><h2>New knowledge base</h2><p>Create a sample collection in this browser session.</p></div>
-              <button type="button" className="icon-button" onClick={() => setCreating(false)} aria-label="Close dialog">
+              <div>
+                <h2>New knowledge base</h2>
+                <p>Create a sample collection in this browser session.</p>
+              </div>
+              <button
+                type="button"
+                className="icon-button"
+                onClick={() => setCreating(false)}
+                aria-label="Close dialog"
+              >
                 <Icon name="x" size={17} />
               </button>
             </div>
             <form onSubmit={addKnowledgeBase}>
-              <label className="field-label" htmlFor="kb-name">Collection name</label>
+              <label className="field-label" htmlFor="kb-name">
+                Collection name
+              </label>
               <input
                 autoFocus
                 id="kb-name"
@@ -144,8 +177,12 @@ export function KnowledgeBasesPage() {
               />
               <p className="text-hint">Demo only · nothing will be saved to PostgreSQL.</p>
               <div className="dialog-actions">
-                <button type="button" className="button ghost" onClick={() => setCreating(false)}>Cancel</button>
-                <button type="submit" className="button primary">Create in preview</button>
+                <button type="button" className="button ghost" onClick={() => setCreating(false)}>
+                  Cancel
+                </button>
+                <button type="submit" className="button primary">
+                  Create in preview
+                </button>
               </div>
             </form>
           </section>

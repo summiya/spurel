@@ -18,16 +18,25 @@ describe("workbench shell", () => {
   });
 
   it("has responsive navigation with labeled demo boundaries", () => {
-    render(<WorkbenchShell><p>Workspace content</p></WorkbenchShell>);
+    render(
+      <WorkbenchShell>
+        <p>Workspace content</p>
+      </WorkbenchShell>,
+    );
     expect(screen.getByRole("navigation", { name: "Main navigation" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Retrieval lab/i })).toHaveAttribute(
-      "href", "/retrieval",
+      "href",
+      "/retrieval",
     );
     expect(screen.getByText(/INTERACTIVE DEMO/)).toBeInTheDocument();
   });
 
   it("opens command search and navigates with keyboard", () => {
-    render(<WorkbenchShell><p>Workspace content</p></WorkbenchShell>);
+    render(
+      <WorkbenchShell>
+        <p>Workspace content</p>
+      </WorkbenchShell>,
+    );
     fireEvent.keyDown(document, { key: "k", metaKey: true });
     const dialog = screen.getByRole("dialog", { name: /Jump to a Spurel page/i });
     expect(dialog).toBeInTheDocument();
@@ -39,7 +48,11 @@ describe("workbench shell", () => {
   });
 
   it("toggles light and dark themes without storing backend secrets", () => {
-    render(<WorkbenchShell><p>Workspace content</p></WorkbenchShell>);
+    render(
+      <WorkbenchShell>
+        <p>Workspace content</p>
+      </WorkbenchShell>,
+    );
     fireEvent.click(screen.getByRole("button", { name: "Switch to light theme" }));
     expect(document.documentElement.dataset.theme).toBe("light");
     expect(localStorage.getItem("spurel-theme")).toBe("light");

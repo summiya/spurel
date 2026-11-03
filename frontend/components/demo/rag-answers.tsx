@@ -2,12 +2,7 @@
 
 import { useMemo, useState, type FormEvent } from "react";
 
-import {
-  PRESETS,
-  rankedEvidence,
-  topicForQuery,
-  type SampleTopic,
-} from "@/lib/demo-data";
+import { PRESETS, rankedEvidence, topicForQuery, type SampleTopic } from "@/lib/demo-data";
 
 import { Icon } from "../icons";
 import { PageHeading, Panel } from "../ui";
@@ -15,8 +10,10 @@ import { useDemoToast } from "../workbench-shell";
 
 const DEMO_ANSWERS: Record<SampleTopic, string> = {
   auth: "The sample passwordless flow sends a short-lived email challenge. The verification endpoint checks the nonce and expiry before creating a session. Successful verification invalidates the one-time challenge; session renewal and revocation are handled separately.",
-  refund: "The sample refund policy allows requests within 30 days. A manager must approve and document exceptions outside that window. Customer support verifies the transaction before finance processes the reversal.",
-  backup: "The sample recovery runbook restores the latest verified snapshot into an isolated environment. The team validates schema and data integrity, checks readiness, and only then resumes production traffic.",
+  refund:
+    "The sample refund policy allows requests within 30 days. A manager must approve and document exceptions outside that window. Customer support verifies the transaction before finance processes the reversal.",
+  backup:
+    "The sample recovery runbook restores the latest verified snapshot into an isolated environment. The team validates schema and data integrity, checks readiness, and only then resumes production traffic.",
 };
 
 export function RagAnswersPage() {
@@ -58,9 +55,14 @@ export function RagAnswersPage() {
         description="Inspect what a model would see, and connect answer claims to their retrieved evidence."
         badge="Simulated answer"
       />
-      <Panel title="Ask your knowledge base" hint="Example prompts and results run entirely in your browser">
+      <Panel
+        title="Ask your knowledge base"
+        hint="Example prompts and results run entirely in your browser"
+      >
         <form onSubmit={submit}>
-          <label className="field-label" htmlFor="rag-query">Question</label>
+          <label className="field-label" htmlFor="rag-query">
+            Question
+          </label>
           <textarea
             id="rag-query"
             className="textarea-control"
@@ -93,7 +95,9 @@ export function RagAnswersPage() {
       <div className="results-grid">
         <Panel
           title="Answer"
-          hint={generation ? "Local preview #" + generation : "Example answer · no generation service"}
+          hint={
+            generation ? "Local preview #" + generation : "Example answer · no generation service"
+          }
           action={
             <button type="button" className="button ghost compact" onClick={copyAnswer}>
               <Icon name="copy" size={15} /> Copy
@@ -101,7 +105,9 @@ export function RagAnswersPage() {
           }
         >
           <div className="answer-message">
-            <span className="answer-spark"><Icon name="sparkles" size={20} /></span>
+            <span className="answer-spark">
+              <Icon name="sparkles" size={20} />
+            </span>
             <div>
               <p>{DEMO_ANSWERS[topic]}</p>
               <div className="answer-citations">
@@ -122,7 +128,8 @@ export function RagAnswersPage() {
           </div>
           <div className="inline-notice">
             <Icon name="info" size={16} />
-            Canned example, not an AI response. These source tags are illustrative, not verified citations.
+            Canned example, not an AI response. These source tags are illustrative, not verified
+            citations.
           </div>
         </Panel>
         <Panel title="Source evidence" hint="Select a citation to inspect its sample excerpt">
@@ -136,7 +143,12 @@ export function RagAnswersPage() {
                 onClick={() => setSourceId(source.id)}
               >
                 <span className="result-rank">S{index + 1}</span>
-                <span><strong>{source.name}</strong><small>Chunk {source.chunk} · {source.offsets}</small></span>
+                <span>
+                  <strong>{source.name}</strong>
+                  <small>
+                    Chunk {source.chunk} · {source.offsets}
+                  </small>
+                </span>
                 <Icon name="chevron-right" size={15} />
               </button>
             ))}

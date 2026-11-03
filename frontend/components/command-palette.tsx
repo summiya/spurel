@@ -7,13 +7,7 @@ import { NAVIGATION_ITEMS } from "@/lib/navigation";
 
 import { Icon } from "./icons";
 
-export function CommandPalette({
-  open,
-  onClose,
-}: {
-  open: boolean;
-  onClose: () => void;
-}) {
+export function CommandPalette({ open, onClose }: { open: boolean; onClose: () => void }) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
@@ -90,7 +84,9 @@ export function CommandPalette({
                 onMouseEnter={() => setSelected(index)}
                 onClick={() => goTo(item.href)}
               >
-                <span className="command-option-icon"><Icon name={item.icon} size={17} /></span>
+                <span className="command-option-icon">
+                  <Icon name={item.icon} size={17} />
+                </span>
                 <span>
                   <strong>{item.label}</strong>
                   <small>{item.description}</small>
@@ -103,9 +99,16 @@ export function CommandPalette({
           )}
         </div>
         <div className="command-footer">
-          <span><kbd>↑</kbd><kbd>↓</kbd> Navigate</span>
-          <span><kbd>↵</kbd> Open</span>
-          <span><kbd>esc</kbd> Close</span>
+          <span>
+            <kbd>↑</kbd>
+            <kbd>↓</kbd> Navigate
+          </span>
+          <span>
+            <kbd>↵</kbd> Open
+          </span>
+          <span>
+            <kbd>esc</kbd> Close
+          </span>
         </div>
       </section>
     </div>

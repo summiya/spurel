@@ -12,11 +12,16 @@ export function ChunkInspectorPage() {
   const [version, setVersion] = useState(2);
   const [chunkIndex, setChunkIndex] = useState(0);
   const document = DEMO_DOCUMENTS[documentIndex];
-  const chunks = version === document.versions
-    ? document.chunks
-    : document.chunks.map((chunk, index) => index === 0
-      ? chunk.replace("A passwordless", "The passwordless").replace("Refunds", "Eligible refunds")
-      : chunk);
+  const chunks =
+    version === document.versions
+      ? document.chunks
+      : document.chunks.map((chunk, index) =>
+          index === 0
+            ? chunk
+                .replace("A passwordless", "The passwordless")
+                .replace("Refunds", "Eligible refunds")
+            : chunk,
+        );
   const activeChunk = chunks[chunkIndex] ?? chunks[0];
 
   function selectDocument(index: number) {
@@ -44,9 +49,13 @@ export function ChunkInspectorPage() {
                 aria-pressed={documentIndex === index}
                 onClick={() => selectDocument(index)}
               >
-                <span className="document-name"><Icon name="file" size={16} /> {item.name}</span>
+                <span className="document-name">
+                  <Icon name="file" size={16} /> {item.name}
+                </span>
                 <small>{item.description}</small>
-                <span>{item.chunks.length} chunks · Indexed · {item.updated}</span>
+                <span>
+                  {item.chunks.length} chunks · Indexed · {item.updated}
+                </span>
               </button>
             ))}
           </div>
@@ -66,18 +75,21 @@ export function ChunkInspectorPage() {
                   setChunkIndex(0);
                 }}
               >
-                {Array.from({ length: document.versions }, (_, i) => document.versions - i).map((value) => (
-                  <option value={value} key={value}>
-                    Version {value} {value === document.versions ? "· active" : "· historical"}
-                  </option>
-                ))}
+                {Array.from({ length: document.versions }, (_, i) => document.versions - i).map(
+                  (value) => (
+                    <option value={value} key={value}>
+                      Version {value} {value === document.versions ? "· active" : "· historical"}
+                    </option>
+                  ),
+                )}
               </select>
             </label>
           }
         >
           {version !== document.versions ? (
             <div className="inline-notice">
-              <Icon name="info" size={16} /> Historical sample snapshot · not used in live retrieval.
+              <Icon name="info" size={16} /> Historical sample snapshot · not used in live
+              retrieval.
             </div>
           ) : null}
           <div className="chunk-cards">
@@ -95,7 +107,9 @@ export function ChunkInspectorPage() {
                   <span className="status-badge success">Embedded</span>
                 </div>
                 <p>{text}</p>
-                <span className="text-hint">Offset {index * 1_000}–{index * 1_000 + text.length}</span>
+                <span className="text-hint">
+                  Offset {index * 1_000}–{index * 1_000 + text.length}
+                </span>
               </button>
             ))}
           </div>
@@ -103,12 +117,23 @@ export function ChunkInspectorPage() {
             <h3>Selected chunk details</h3>
             <p>{activeChunk}</p>
             <div className="chunk-facts">
-              <span>Version <strong>{version}</strong></span>
-              <span>Chunk <strong>{chunkIndex + 1} / {chunks.length}</strong></span>
-              <span>Characters <strong>{activeChunk.length}</strong></span>
+              <span>
+                Version <strong>{version}</strong>
+              </span>
+              <span>
+                Chunk{" "}
+                <strong>
+                  {chunkIndex + 1} / {chunks.length}
+                </strong>
+              </span>
+              <span>
+                Characters <strong>{activeChunk.length}</strong>
+              </span>
             </div>
             <ScoreMeter label="Embedding available" score={1} variant="cyan" />
-            <p className="text-hint">These version IDs, offsets and availability indicators are illustrative.</p>
+            <p className="text-hint">
+              These version IDs, offsets and availability indicators are illustrative.
+            </p>
           </div>
         </Panel>
       </div>

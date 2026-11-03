@@ -74,7 +74,9 @@ export function MetricCard({
     <div className="metric-card">
       <div className="metric-heading">
         <span>{label}</span>
-        <span className="metric-icon"><Icon name={icon} size={17} /></span>
+        <span className="metric-icon">
+          <Icon name={icon} size={17} />
+        </span>
       </div>
       <div className="metric-number">{value}</div>
       <p className={direction === "positive" ? "metric-note positive" : "metric-note"}>
@@ -101,7 +103,9 @@ export function EmptyState({
 }) {
   return (
     <div className="empty-state" role="status">
-      <span className="empty-icon"><Icon name={icon} size={23} /></span>
+      <span className="empty-icon">
+        <Icon name={icon} size={23} />
+      </span>
       <strong>{title}</strong>
       <p>{description}</p>
       {action}
@@ -129,7 +133,9 @@ export function ErrorState({
 }) {
   return (
     <div className="empty-state error-state" role="alert">
-      <span className="empty-icon"><Icon name="alert" size={23} /></span>
+      <span className="empty-icon">
+        <Icon name="alert" size={23} />
+      </span>
       <strong>{title}</strong>
       <p>{description}</p>
       {onRetry ? (

@@ -58,7 +58,9 @@ function EvidenceRow({
       <div className="tag-row">
         <span className="tag">Chunk {String(item.chunk).padStart(2, "0")}</span>
         <span className="tag">{item.tag}</span>
-        <span className="tag">{mode === "vector" ? "Cosine" : mode === "keyword" ? "FTS" : "RRF"}</span>
+        <span className="tag">
+          {mode === "vector" ? "Cosine" : mode === "keyword" ? "FTS" : "RRF"}
+        </span>
       </div>
     </button>
   );
@@ -96,11 +98,17 @@ export function RetrievalLabPage() {
 
       <Panel
         title="Query composer"
-        action={<span className="text-hint">Knowledge base: <strong>Engineering docs</strong></span>}
+        action={
+          <span className="text-hint">
+            Knowledge base: <strong>Engineering docs</strong>
+          </span>
+        }
         className="composer-panel"
       >
         <form onSubmit={submit}>
-          <label htmlFor="retrieval-query" className="field-label">Question or search query</label>
+          <label htmlFor="retrieval-query" className="field-label">
+            Question or search query
+          </label>
           <textarea
             id="retrieval-query"
             className="textarea-control retrieval-query"
@@ -143,7 +151,9 @@ export function RetrievalLabPage() {
               </div>
             </div>
             <div className="topk-field">
-              <label htmlFor="retrieval-topk" className="field-label">Top K results</label>
+              <label htmlFor="retrieval-topk" className="field-label">
+                Top K results
+              </label>
               <div className="range-control">
                 <input
                   id="retrieval-topk"
@@ -170,7 +180,13 @@ export function RetrievalLabPage() {
       <div className="results-grid">
         <Panel
           title="Ranked evidence"
-          hint={mode[0].toUpperCase() + mode.slice(1) + " / " + evidence.length + " illustrative results"}
+          hint={
+            mode[0].toUpperCase() +
+            mode.slice(1) +
+            " / " +
+            evidence.length +
+            " illustrative results"
+          }
           action={<span className="status-badge">124 ms · sample</span>}
         >
           <div className="evidence-list">
@@ -187,12 +203,17 @@ export function RetrievalLabPage() {
           </div>
         </Panel>
 
-        <Panel title="Evidence inspector" action={<span className="text-hint">Source details</span>}>
+        <Panel
+          title="Evidence inspector"
+          action={<span className="text-hint">Source details</span>}
+        >
           <div className="inspector-head">
             <strong>{selected.name}</strong>
             <small>Document excerpt · Chunk {String(selected.chunk).padStart(2, "0")}</small>
           </div>
-          <div className="excerpt-box"><HighlightedText text={selected.text} /></div>
+          <div className="excerpt-box">
+            <HighlightedText text={selected.text} />
+          </div>
           <ScoreMeter label="Vector similarity" score={selected.vector} variant="cyan" />
           <ScoreMeter label="Keyword relevance" score={selected.keyword} variant="pink" />
           <ScoreMeter label="Hybrid rank signal" score={selected.hybrid} variant="purple" />

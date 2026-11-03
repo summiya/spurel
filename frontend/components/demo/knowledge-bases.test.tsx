@@ -16,6 +16,8 @@ describe("knowledge bases preview", () => {
 
     expect(screen.getByRole("button", { name: /Architecture reference/i })).toBeInTheDocument();
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-    expect(screen.getByText(/Empty collection created for this local preview/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Empty collection created for this local preview/i),
+    ).toBeInTheDocument();
   });
 });

@@ -54,7 +54,9 @@ export function OverviewPage() {
         description="Understand what the system retrieved, why it ranked, and how it performed."
         action={
           <>
-            <Link href="/evaluations" className="button ghost">View evaluations</Link>
+            <Link href="/evaluations" className="button ghost">
+              View evaluations
+            </Link>
             <Link href="/retrieval" className="button primary">
               <Icon name="zap" size={16} /> New experiment
             </Link>
@@ -66,7 +68,10 @@ export function OverviewPage() {
         <div className="hero-content">
           <p className="eyebrow">RETRIEVAL, DECODED</p>
           <h2>Stop guessing why RAG works.</h2>
-          <p>Go from black-box answers to explorable evidence, ranked results, and measurable quality.</p>
+          <p>
+            Go from black-box answers to explorable evidence, ranked results, and measurable
+            quality.
+          </p>
           <Link href="/retrieval" className="button ghost compact">
             Explore retrieval lab <Icon name="arrow-right" size={15} />
           </Link>
@@ -81,10 +86,30 @@ export function OverviewPage() {
       </section>
 
       <div className="metrics-grid">
-        <MetricCard label="Knowledge bases" value="08" description="Across 3 workspaces · +2 new" icon="database" />
-        <MetricCard label="Indexed chunks" value="18.4k" description="Ready for retrieval · 98.7%" icon="layers" />
-        <MetricCard label="Recall @ 10" value="91.8%" description="↑ 3.6% against baseline" icon="chart" />
-        <MetricCard label="p95 query latency" value="143ms" description="↓ 18ms against previous run" icon="zap" />
+        <MetricCard
+          label="Knowledge bases"
+          value="08"
+          description="Across 3 workspaces · +2 new"
+          icon="database"
+        />
+        <MetricCard
+          label="Indexed chunks"
+          value="18.4k"
+          description="Ready for retrieval · 98.7%"
+          icon="layers"
+        />
+        <MetricCard
+          label="Recall @ 10"
+          value="91.8%"
+          description="↑ 3.6% against baseline"
+          icon="chart"
+        />
+        <MetricCard
+          label="p95 query latency"
+          value="143ms"
+          description="↓ 18ms against previous run"
+          icon="zap"
+        />
       </div>
 
       <div className="dashboard-grid">
@@ -105,8 +130,12 @@ export function OverviewPage() {
         >
           <QualityChart days={days} />
           <div className="chart-legend">
-            <span><i className="legend-line cyan" /> Recall @ 10</span>
-            <span><i className="legend-line purple" /> Precision @ 10</span>
+            <span>
+              <i className="legend-line cyan" /> Recall @ 10
+            </span>
+            <span>
+              <i className="legend-line purple" /> Precision @ 10
+            </span>
             <span className="chart-period">Sample · {days} days</span>
           </div>
         </Panel>
@@ -114,17 +143,25 @@ export function OverviewPage() {
         <Panel
           title="Ingestion pipeline"
           hint="Inspectable from source to searchable index."
-          action={<span className="health-indicator"><i /> Healthy · demo</span>}
+          action={
+            <span className="health-indicator">
+              <i /> Healthy · demo
+            </span>
+          }
         >
           <div className="pipeline-grid">
-            {([
-              ["file", "Parse", "Document"],
-              ["layers", "Chunk", "Segments"],
-              ["sparkles", "Embed", "Vectors"],
-              ["check", "Index", "Ready"],
-            ] as const).map(([icon, name, detail]) => (
+            {(
+              [
+                ["file", "Parse", "Document"],
+                ["layers", "Chunk", "Segments"],
+                ["sparkles", "Embed", "Vectors"],
+                ["check", "Index", "Ready"],
+              ] as const
+            ).map(([icon, name, detail]) => (
               <div className="pipeline-step" key={name}>
-                <span className="pipeline-icon"><Icon name={icon} size={18} /></span>
+                <span className="pipeline-icon">
+                  <Icon name={icon} size={18} />
+                </span>
                 <strong>{name}</strong>
                 <small>{detail}</small>
               </div>
@@ -153,24 +190,33 @@ export function OverviewPage() {
           <div className="recent-list">
             {DEMO_TRACES.slice(0, 3).map((trace, index) => (
               <Link href="/traces" key={trace.id} className="recent-item">
-                <span className="recent-icon"><Icon name="search" size={17} /></span>
+                <span className="recent-icon">
+                  <Icon name="search" size={17} />
+                </span>
                 <span className="recent-body">
                   <strong>{trace.query}</strong>
-                  <small>{trace.mode} · {trace.kb} · {trace.ago}</small>
+                  <small>
+                    {trace.mode} · {trace.kb} · {trace.ago}
+                  </small>
                 </span>
                 <strong className="recent-score">{["94.2%", "89.6%", "91.7%"][index]}</strong>
               </Link>
             ))}
           </div>
         </Panel>
-        <Panel title="Jump into your workflow" action={<span className="text-hint">Quick actions</span>}>
+        <Panel
+          title="Jump into your workflow"
+          action={<span className="text-hint">Quick actions</span>}
+        >
           <div className="quick-list">
-            {([
-              ["/knowledge-bases", "database", "Browse knowledge bases"],
-              ["/chunks", "layers", "Inspect document chunks"],
-              ["/retrieval", "search", "Debug a retrieval"],
-              ["/evaluations", "chart", "Compare evaluations"],
-            ] as const).map(([href, icon, label]) => (
+            {(
+              [
+                ["/knowledge-bases", "database", "Browse knowledge bases"],
+                ["/chunks", "layers", "Inspect document chunks"],
+                ["/retrieval", "search", "Debug a retrieval"],
+                ["/evaluations", "chart", "Compare evaluations"],
+              ] as const
+            ).map(([href, icon, label]) => (
               <Link key={href} href={href} className="quick-item">
                 <Icon name={icon} size={17} />
                 <span>{label}</span>
