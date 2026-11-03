@@ -37,9 +37,7 @@ class FixedSizeDocumentChunker:
             step=self._step,
         )
         if estimated_count > MAX_CHUNKS_PER_DOCUMENT:
-            raise DocumentChunkLimitError(
-                "document would produce too many chunks"
-            )
+            raise DocumentChunkLimitError("document would produce too many chunks")
 
         chunks: list[DocumentChunk] = []
 
@@ -61,9 +59,7 @@ class FixedSizeDocumentChunker:
                 break
 
         if not chunks:
-            raise DocumentChunkingError(
-                "document text did not produce any usable chunks"
-            )
+            raise DocumentChunkingError("document text did not produce any usable chunks")
 
         return tuple(chunks)
 
@@ -73,9 +69,7 @@ def _validate_config(*, chunk_size: int, overlap: int) -> None:
         raise DocumentChunkingConfigError("chunk size must be an integer")
 
     if chunk_size < 1 or chunk_size > MAX_CHUNK_SIZE_CHARACTERS:
-        raise DocumentChunkingConfigError(
-            "chunk size is outside the supported range"
-        )
+        raise DocumentChunkingConfigError("chunk size is outside the supported range")
 
     if isinstance(overlap, bool) or not isinstance(overlap, int):
         raise DocumentChunkingConfigError("chunk overlap must be an integer")

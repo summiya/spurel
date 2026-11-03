@@ -62,18 +62,14 @@ class EvaluationBaselineConfiguration:
                 or self.candidate_k < self.top_k
                 or self.candidate_k > 100
             ):
-                raise EvaluationBaselineConfigurationError(
-                    "hybrid baseline candidate_k is invalid"
-                )
+                raise EvaluationBaselineConfigurationError("hybrid baseline candidate_k is invalid")
             if (
                 isinstance(self.rrf_k, bool)
                 or not isinstance(self.rrf_k, int)
                 or self.rrf_k < 1
                 or self.rrf_k > 1_000
             ):
-                raise EvaluationBaselineConfigurationError(
-                    "hybrid baseline rrf_k is invalid"
-                )
+                raise EvaluationBaselineConfigurationError("hybrid baseline rrf_k is invalid")
         elif self.candidate_k is not None or self.rrf_k is not None:
             raise EvaluationBaselineConfigurationError(
                 "non-hybrid baseline cannot contain hybrid configuration"

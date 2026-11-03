@@ -58,9 +58,7 @@ def _validate_chunk_set(chunks: Sequence[DocumentChunk]) -> None:
 
     for expected_index, chunk in enumerate(chunks):
         if chunk.index != expected_index:
-            raise DocumentChunkSetError(
-                "chunk indexes must be contiguous and start at zero"
-            )
+            raise DocumentChunkSetError("chunk indexes must be contiguous and start at zero")
 
         if not chunk.text or len(chunk.text) > MAX_CHUNK_SIZE_CHARACTERS:
             raise DocumentChunkSetError("chunk text length is invalid")

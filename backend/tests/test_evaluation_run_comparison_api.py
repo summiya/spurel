@@ -144,9 +144,7 @@ def _comparison(
 def _client(service: FakeEvaluationRunComparisonService) -> TestClient:
     application = create_app()
     application.dependency_overrides[require_api_token] = lambda: None
-    application.dependency_overrides[
-        get_evaluation_run_comparison_service
-    ] = lambda: service
+    application.dependency_overrides[get_evaluation_run_comparison_service] = lambda: service
     return TestClient(application)
 
 
@@ -237,7 +235,5 @@ def test_run_comparison_hides_persistence_errors() -> None:
     )
 
     assert response.status_code == 503
-    assert response.json() == {
-        "detail": "evaluation run comparison temporarily unavailable"
-    }
+    assert response.json() == {"detail": "evaluation run comparison temporarily unavailable"}
     assert "database secret detail" not in response.text

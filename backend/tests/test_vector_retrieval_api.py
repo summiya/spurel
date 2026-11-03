@@ -32,9 +32,7 @@ class FakeVectorRetrievalService:
             "limit": limit,
         }
         if self.fail:
-            raise VectorRetrievalRepositoryError(
-                "database/provider secret details"
-            )
+            raise VectorRetrievalRepositoryError("database/provider secret details")
         return TracedRetrievalResult(
             trace_id=self.trace_id,
             duration_ms=self.duration_ms,
@@ -120,7 +118,5 @@ def test_vector_retrieval_does_not_leak_infrastructure_errors() -> None:
     )
 
     assert response.status_code == 503
-    assert response.json() == {
-        "detail": "retrieval service temporarily unavailable"
-    }
+    assert response.json() == {"detail": "retrieval service temporarily unavailable"}
     assert "secret details" not in response.text

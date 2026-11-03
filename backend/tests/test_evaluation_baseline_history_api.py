@@ -73,9 +73,7 @@ def _promotion(
 def _client(service: FakeEvaluationBaselineHistoryService) -> TestClient:
     application = create_app()
     application.dependency_overrides[require_api_token] = lambda: None
-    application.dependency_overrides[
-        get_evaluation_baseline_service
-    ] = lambda: service
+    application.dependency_overrides[get_evaluation_baseline_service] = lambda: service
     return TestClient(application)
 
 
@@ -121,10 +119,7 @@ def test_baseline_history_bounds_page_size() -> None:
     client = _client(FakeEvaluationBaselineHistoryService())
 
     response = client.get(
-        (
-            f"/knowledge-bases/{uuid4()}/evaluation-datasets/"
-            f"{uuid4()}/baselines/history"
-        ),
+        (f"/knowledge-bases/{uuid4()}/evaluation-datasets/{uuid4()}/baselines/history"),
         params={"limit": 101},
     )
 
@@ -133,18 +128,13 @@ def test_baseline_history_bounds_page_size() -> None:
 
 def test_baseline_history_hides_persistence_errors() -> None:
     service = FakeEvaluationBaselineHistoryService()
-    service.error = EvaluationBaselinePersistenceError(
-        "database secret detail"
-    )
+    service.error = EvaluationBaselinePersistenceError("database secret detail")
     client = _client(service)
 
     response = client.get(
-        f"/knowledge-bases/{uuid4()}/evaluation-datasets/"
-        f"{uuid4()}/baselines/history"
+        f"/knowledge-bases/{uuid4()}/evaluation-datasets/{uuid4()}/baselines/history"
     )
 
     assert response.status_code == 503
-    assert response.json() == {
-        "detail": "evaluation baseline service temporarily unavailable"
-    }
+    assert response.json() == {"detail": "evaluation baseline service temporarily unavailable"}
     assert "database secret detail" not in response.text

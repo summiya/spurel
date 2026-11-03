@@ -44,9 +44,7 @@ class SqlAlchemyDocumentChunkRepository:
                         ]
                     )
         except SQLAlchemyError as exc:
-            raise DocumentChunkPersistenceError(
-                "failed to replace document chunks"
-            ) from exc
+            raise DocumentChunkPersistenceError("failed to replace document chunks") from exc
 
     async def list_stored_by_document(
         self,
@@ -69,9 +67,7 @@ class SqlAlchemyDocumentChunkRepository:
                 result = await session.scalars(statement)
                 records = result.all()
         except SQLAlchemyError as exc:
-            raise DocumentChunkPersistenceError(
-                "failed to list stored document chunks"
-            ) from exc
+            raise DocumentChunkPersistenceError("failed to list stored document chunks") from exc
 
         return tuple(
             StoredDocumentChunk(
@@ -103,8 +99,6 @@ class SqlAlchemyDocumentChunkRepository:
                 result = await session.scalars(statement)
                 records = result.all()
         except SQLAlchemyError as exc:
-            raise DocumentChunkPersistenceError(
-                "failed to list document chunks"
-            ) from exc
+            raise DocumentChunkPersistenceError("failed to list document chunks") from exc
 
         return tuple(record.to_domain() for record in records)
