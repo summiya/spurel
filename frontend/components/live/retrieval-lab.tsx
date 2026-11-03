@@ -461,6 +461,12 @@ export function LiveRetrievalLabPage({ initialKnowledgeBaseId }: Props) {
               <span className="retrieval-trace-id" title={result.trace_id}>
                 Trace ID · {result.trace_id}
               </span>
+              <Link
+                href={`/traces?kb=${currentRun?.knowledgeBaseId}&trace=${result.trace_id}`}
+                className="button ghost compact"
+              >
+                <Icon name="activity" size={14} /> Browse trace history
+              </Link>
               <button
                 type="button"
                 className="button ghost compact"

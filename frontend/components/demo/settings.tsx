@@ -105,13 +105,13 @@ export function SettingsPage() {
             <span className="status-badge success">Not in browser</span>
           </div>
           <div className="pipeline-detail last">
-            <span>Knowledge bases, documents, chunks and retrieval</span>
-            <span className="status-badge success">Live · SP-10–12</span>
+            <span>Sources, chunks, retrieval and trace comparisons</span>
+            <span className="status-badge success">Live · SP-10–13</span>
           </div>
           <p className="muted-panel-note">
-            SP-10–SP-12 connect source, chunk and retrieval workflows to FastAPI. Evaluations, trace
-            comparisons and RAG answer screens remain demos until later milestones. Never put your
-            API token in NEXT_PUBLIC_* settings.
+            SP-10–SP-13 connect sources, chunk inspection, retrieval and saved trace comparisons to
+            FastAPI. Evaluations and RAG answers remain demo screens. Never put your API token in
+            NEXT_PUBLIC_* settings.
           </p>
         </Panel>
       </div>

@@ -2,7 +2,7 @@
 
 [← README](../README.md) · [Architecture](architecture.md) · [Roadmap](roadmap.md) · [Benchmark gates](quality-gate-ci.md)
 
-This guide covers Spurel's **working pre-alpha backend** and its Next.js frontend, including live source, chunk and retrieval inspection plus separate demo-only evaluation/answer views. The Docker Compose configuration is for **localhost development, not production**.
+This guide covers Spurel's **working pre-alpha backend** and its Next.js frontend, including live source, chunk, retrieval and trace-comparison views plus demo-only evaluation/answer views. The Docker Compose configuration is for **localhost development, not production**.
 
 ## Requirements and startup
 
@@ -74,7 +74,7 @@ a same-origin `Origin` header; unknown paths and identifiers are not forwarded
 via a generic proxy. Signing out clears the cookie. This simple single-operator
 access is **not a production login or multi-tenant authorization system**.
 
-**Evaluations, trace history/comparison and RAG answers remain interactive demos**, with clearly labeled
+**Evaluations and RAG answers remain interactive demos**, with clearly labeled
 illustrative evidence and metrics. Do not mistake their results for saved
 database records.
 
@@ -94,14 +94,38 @@ real backend **only when you click Run live retrieval**. Choose one of:
 
 The UI displays **raw** backend score units, ranked chunk IDs and source
 offsets, actual duration and the persisted trace ID. **Inspect saved trace**
-reads provider/model metadata and the stored trace snapshot; trace
-history/comparison UI is planned for SP-13. Changing the query/settings
+reads provider/model metadata and the stored trace snapshot. The
+history/comparison UI is implemented in SP-13. Changing the query/settings
 without running again leaves previous results clearly marked as old.
 
 **First index documents** from Knowledge Bases. An uploaded but unprocessed
 document has no active searchable chunks, so retrieval returns no matches.
 The session cookie and server-only `SPUREL_API_TOKEN` secure these two new
 allowlisted endpoints; no secrets are sent to browser JavaScript.
+
+## Live saved-trace history and comparison (SP-13)
+
+Open `/traces` after signing in, or click **Browse trace history** after
+running Retrieval Lab. The page lists saved retrieval queries newest first,
+with mode, timestamp, duration, result count and the recorded configuration.
+Click **View saved evidence** to read the persisted snapshot. Select
+**Trace A** and a distinct **Trace B**, then click **Compare saved traces**.
+The backend returns per-chunk alignment, first and second ranks, signed
+rank deltas, first-only and second-only counts, Jaccard overlap, raw score
+snapshots and timing difference. The frontend does not generate synthetic
+scores. An overlap ratio of null for two empty result sets is shown as N/A.
+
+For trustworthy interpretation, compare runs with the same query and
+prefer the same scoring mode. The UI warns when queries or modes differ.
+**Rank movement is descriptive, not ground-truth retrieval-quality
+evaluation**; the latter is a separate SP-14 feature. These operations
+read already-persisted snapshots and do not call model providers, modify
+documents or rerun retrieval.
+
+Two exact server-side Next.js endpoints implement the feature: operator
+authenticated `GET /.../retrieval/traces` with bounded pagination and
+authenticated, same-origin `POST /.../retrieval/trace-comparisons` with
+two validated distinct UUIDs. Existing secrets and DB migrations suffice.
 
 ## Environment and secrets
 
@@ -142,9 +166,9 @@ curl -H "Authorization: Bearer $SPUREL_API_TOKEN" \
 
 Anonymous protected requests return `401`; a missing or weak *server-side* token configuration disables the protected routes with `503`. `SPUREL_ENABLE_DOCS=1` enables `/docs` and `/openapi.json` without protecting the schema itself, so use it only on a trusted interface.
 
-**Never place this token in `NEXT_PUBLIC_*` environment variables or send it from browser JavaScript.** Spurel currently has **no** user/session authentication, RBAC or true tenant authorization. SP-10 through SP-12 use a local operator session for protected Knowledge Bases,
-Documents, Chunk Inspector and Retrieval Lab APIs. Evaluation, trace history
-and RAG answers still use demo data. No protected API proxy is
+**Never place this token in `NEXT_PUBLIC_*` environment variables or send it from browser JavaScript.** Spurel currently has **no** user/session authentication, RBAC or true tenant authorization. SP-10 through SP-13 use the local operator session for protected source,
+chunk, retrieval and saved-trace workflows. Evaluation and RAG Answers still
+use demo data. No protected API proxy is
 accessible without a valid operator session; multi-user login remains unimplemented.
 
 ## Run the backend on the host (optional)
@@ -220,7 +244,7 @@ Every pull request and push to `main` triggers five independent checks in [CI](.
 | PostgreSQL migrations | Legacy-to-current migrations, preserved chunk IDs/embeddings and pgvector |
 | PostgreSQL integration | Real database document/retrieval/evaluation scenarios with deterministic embeddings |
 | Frontend checks | ESLint, Prettier, TypeScript, Vitest and Next.js production build |
-| Local Compose smoke | Full-stack Docker build/up, migrations, operator session, cross-origin checks, real KB/upload/chunk reads, keyword retrieval and saved trace read without OpenAI, anonymous denial, cleanup |
+| Local Compose smoke | Full-stack Docker build/up, operator session, KB/upload/chunk reads, real keyword retrieval and two-trace history/comparison, invalid input and CSRF rejection, logout denial; no OpenAI calls |
 
 Real OpenAI keys are **not required** for CI. Two separate workflows — [RAG quality gate](../.github/workflows/rag-quality-gate.yml) and [RAG benchmark gate](../.github/workflows/rag-benchmark-gate.yml) — are **manual/reusable**, not automatic on every PR. See [benchmark-gate CLI setup](quality-gate-ci.md).
 

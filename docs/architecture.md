@@ -4,15 +4,15 @@
 
 Spurel has working backend APIs and an interactive Next.js frontend. SP-10 wires
 Knowledge Bases and Documents to FastAPI; SP-11 adds **read-only live chunk
-and historical version inspection**, and SP-12 adds **live keyword, vector and
-hybrid retrieval** using the same local operator session. Evaluation, trace
-comparison/history and generated-answer screens remain fixtures.
+and historical version inspection**, SP-12 adds **live keyword, vector and hybrid retrieval**, and SP-13 adds
+**saved trace history/comparison** using the same local operator session.
+Evaluation and generated-answer screens remain fixtures.
 
 ## System boundary
 
 ```text
-                             Next.js live source / chunk / retrieval
-                            + separate demo-only views
+                             Next.js live sources / chunks / retrieval / traces
+                            + separate evaluation and RAG demo views
                                       |
                                       v
                           FastAPI business endpoints
@@ -46,7 +46,7 @@ FastAPI runs on Python 3.13 and uses Pydantic schemas, application services, int
 | [`evaluation_datasets/`](../backend/src/spurel/evaluation_datasets/) | Labeled data, benchmarks, baseline history, quality gates and CLI |
 | [`infrastructure/`](../backend/src/spurel/infrastructure/) | PDF/text parsers, fixed character chunker, local storage, OpenAI adapters |
 | [`backend/migrations/`](../backend/migrations/) | PostgreSQL schema migrations |
-| [`frontend/app/`](../frontend/app/) | Live source management, Chunk Inspector and Retrieval Lab behind operator sign-in; evaluation/trace-history/RAG views remain fixtures |
+| [`frontend/app/`](../frontend/app/) | Live source management, Chunk Inspector, Retrieval Lab and Trace History behind operator sign-in; evaluation/RAG views remain fixtures |
 
 ## Ingestion and versioned indexing
 
@@ -97,8 +97,24 @@ The UI renders raw cosine similarity, PostgreSQL full-text `ts_rank_cd` and
 RRF scores **without mixing their numeric scales**. Every completed search
 returns a persisted trace UUID and actual execution duration. A separate,
 authenticated GET handler fetches the **saved trace detail** with provider,
-model, dimensions and historical ranked results. Full trace-history and
-comparison browsing remain SP-13 work.
+model, dimensions and historical ranked results. SP-13 adds live history browsing and comparisons of stored traces.
+
+### SP-13: persisted trace history and read-only comparison
+
+The operator-protected `/traces` frontend lists bounded newest-first trace
+pages via exact GET endpoints, and retrieves an immutable ranked-result
+snapshot with the existing detail GET. An explicitly invoked comparison
+POST validates two **different UUIDs**, uses same-origin CSRF protection,
+and calls the existing FastAPI trace-comparison service. The backend
+returns shared/unique chunks, aligned ranks and raw score fields,
+Jaccard overlap and B−A duration and rank deltas. No provider call or
+retrieval reexecution occurs during inspection or comparison.
+
+A negative rank delta indicates a move toward the first rank, not
+necessarily better relevance. Cross-query and cross-mode results are
+explicitly labeled non-comparable as controlled experiments. The
+comparison is descriptive and does **not** calculate graded relevance
+metrics or answer quality. Saved traces remain read-only.
 
 ## Evaluation and regression protection
 
@@ -143,6 +159,6 @@ development workflow**, not scalable user identity or tenant authorization.
 
 ## What is planned, not implemented
 
-The frontend has live source, chunk and retrieval inspection; advanced trace-comparison/evaluation/RAG views use fixtures. The following are **not built**: live trace-history/comparison, evaluation and generated-answer UI, recursive/semantic/token-aware chunking, scanned-PDF OCR, BM25, pgvector ANN/HNSW, metadata filters, rerankers, citation verification, non-OpenAI providers, data-source connectors, Redis-backed background jobs, experiment export and production auth/monitoring.
+The frontend has live source, chunk, retrieval and trace-comparison inspection; evaluation and RAG views use fixtures. The following are **not built**: live evaluation and generated-answer UI, recursive/semantic/token-aware chunking, scanned-PDF OCR, BM25, pgvector ANN/HNSW, metadata filters, rerankers, citation verification, non-OpenAI providers, data-source connectors, Redis-backed background jobs, experiment export and production auth/monitoring.
 
 For the exact implementation order and deliverables, use [SP-01–SP-28 roadmap](roadmap.md).
