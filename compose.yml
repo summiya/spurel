@@ -1,19 +1,112 @@
+name: spurel
+
+# Local development only: database/API/frontend ports bind to loopback.
+# Backend services talk to PostgreSQL via the Compose hostname, not localhost.
+x-backend-environment: &backend-environment
+  DATABASE_URL: postgresql+asyncpg://spurel:${SPUREL_POSTGRES_PASSWORD:-spurel}@postgres:5432/spurel
+  SPUREL_LOCAL_STORAGE_ROOT: /app/.spurel/storage
+
+x-backend-build: &backend-build
+  context: ./backend
+  dockerfile: Dockerfile
+
 services:
   postgres:
     image: pgvector/pgvector:pg17
     environment:
       POSTGRES_DB: spurel
       POSTGRES_USER: spurel
-      POSTGRES_PASSWORD: spurel
+      POSTGRES_PASSWORD: ${SPUREL_POSTGRES_PASSWORD:-spurel}
     ports:
-      - "5432:5432"
+      - "127.0.0.1:${SPUREL_POSTGRES_PORT:-5432}:5432"
     volumes:
       - spurel_postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U spurel -d spurel"]
       interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
+    restart: unless-stopped
+
+  migrate:
+    build: *backend-build
+    environment: *backend-environment
+    volumes:
+      - ./backend:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: ["alembic", "upgrade", "head"]
+    restart: "no"
+
+  backend:
+    build: *backend-build
+    env_file:
+      - .env
+    environment:
+      <<: *backend-environment
+      SPUREL_API_TOKEN: ${SPUREL_API_TOKEN:?Run 'make init' to generate a local API token}
+      SPUREL_ENABLE_DOCS: ${SPUREL_ENABLE_DOCS:-0}
+    ports:
+      - "127.0.0.1:${SPUREL_API_PORT:-8000}:8000"
+    volumes:
+      - ./backend:/app
+      - spurel_document_storage:/app/.spurel/storage
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    command:
+      - uvicorn
+      - spurel.main:app
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8000"
+      - --reload
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)"
+      interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 20
+      start_period: 10s
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    environment:
+      NEXT_TELEMETRY_DISABLED: "1"
+      WATCHPACK_POLLING: "true"
+    ports:
+      - "127.0.0.1:${SPUREL_FRONTEND_PORT:-3000}:3000"
+    volumes:
+      - ./frontend:/app
+      - spurel_frontend_modules:/app/node_modules
+      - spurel_next_cache:/app/.next
+    depends_on:
+      backend:
+        condition: service_healthy
+    command: ["npm", "run", "dev", "--", "--hostname", "0.0.0.0"]
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3000').then(r => { if (!r.ok) process.exit(1); }).catch(() => process.exit(1))"
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 20s
+    restart: unless-stopped
 
 volumes:
   spurel_postgres_data:
+  spurel_document_storage:
+  spurel_frontend_modules:
+  spurel_next_cache:

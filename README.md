@@ -50,44 +50,102 @@ A missing or invalid server-side token configuration returns **503** for all pro
 
 **Security boundaries:** Use HTTPS when accessing the API remotely. Do not embed `SPUREL_API_TOKEN` in a browser application or ship it to end users. A future frontend should use a server-side gateway/session model, and publicly hosted multi-user deployments additionally require user authentication, tenant authorization, and role-based access control.
 
-## ⚙️ Local environment
+## ⚙️ Local development with Docker Compose
 
-Copy the committed example file and add your own local secrets:
+Spurel now has a **single-command, localhost-only** development environment
+for PostgreSQL 17 + pgvector, Alembic migrations, FastAPI, and the existing
+Next.js frontend. It supports API hot reload and Next.js development reload.
+
+**Requirements:** Docker Desktop (or Docker Engine + Compose v2), Python 3,
+and `make`. A Git clone of the repository is sufficient; you do not need
+Python or Node.js dependencies installed on the host for the Compose path.
 
 ```bash
-cp .env.example .env
+# From the repository root:
+make up       # initialize .env, build images, migrate and start all services
+make status   # check API health, bearer authentication, database and frontend
+make logs     # follow service logs
+make down     # stop containers WITHOUT deleting database or uploaded documents
 ```
 
-Spurel currently reads configuration from the process environment, so for local shell development load the file before starting the backend:
+Once healthy:
+
+| Component | Local address | Notes |
+| --- | --- | --- |
+| Frontend | http://127.0.0.1:3000 | Existing Next.js pre-alpha placeholder UI |
+| FastAPI health | http://127.0.0.1:8000/health | Public liveness endpoint |
+| FastAPI business endpoints | http://127.0.0.1:8000/knowledge-bases | Bearer authentication required |
+| PostgreSQL + pgvector | 127.0.0.1:5432 | Local development credentials only |
+
+`make init` creates an ignored `.env` from `.env.example` and generates a
+strong random `SPUREL_API_TOKEN` without displaying it. Re-running it does
+**not** replace an existing token or OpenAI key. The local `.env` is
+restricted to owner read/write permissions on POSIX systems. You can update
+the environment file before calling `make up` if you prefer custom settings.
+
+Useful commands: `make ps` to view containers, `make migrate` to re-run
+Alembic safely after pulling newer migrations, and `make backend` /
+`make frontend` to stream one service's logs. To enable Swagger locally,
+set `SPUREL_ENABLE_DOCS=1` in `.env` and restart via `make up`; it is
+disabled by default.
+
+**Environment behavior:** Compose loads `.env`, then overrides the
+backend's `DATABASE_URL` to use the service hostname `postgres`.
+`DATABASE_URL` in `.env.example` uses `localhost` for optional host-based
+Python/Alembic commands. Set `SPUREL_POSTGRES_PORT`, `SPUREL_API_PORT`
+or `SPUREL_FRONTEND_PORT` if a host port is occupied. If changing the
+development PostgreSQL password, update the host `DATABASE_URL` too.
+Container document uploads persist in a named Docker volume; the host
+`SPUREL_LOCAL_STORAGE_ROOT` is used only by direct, non-Compose runs.
+
+**OpenAI is optional for startup.** Health, knowledge-base operations and
+the placeholder frontend work with an empty `OPENAI_API_KEY`; embedding,
+document-processing and model-backed RAG routes require their provider
+configuration. The shared API token is **server-side only** and must never
+be added to `NEXT_PUBLIC_*` variables or frontend JavaScript.
+
+**Data safety:** `make down` preserves the named PostgreSQL and document
+volumes. `docker compose down --volumes` destroys local database content
+and uploaded files; use it only when you explicitly intend a reset.
+This stack is a **development configuration, not production deployment**:
+it uses hot reload, developer database credentials and HTTP loopback ports.
+The database and API are **not** exposed on public interfaces.
+
+### Running the backend outside Docker (optional)
+
+You can still use the previous host-based workflow. Start the database via
+`docker compose up -d postgres`, then load `.env` into your shell:
 
 ```bash
+make init
 set -a
 source .env
 set +a
+
+cd backend
+python3.13 -m pip install -e ".[dev]"
+alembic upgrade head
+uvicorn spurel.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-The example includes the configuration currently used by Spurel:
-
-- `DATABASE_URL`
-- `SPUREL_LOCAL_STORAGE_ROOT`
-- `OPENAI_API_KEY`
-- `SPUREL_API_TOKEN`
-- `SPUREL_ENABLE_DOCS`
-- `SPUREL_EMBEDDING_MODEL`
-- `SPUREL_EMBEDDING_DIMENSIONS`
+For host-based integration testing, use a **separate database ending in
+`_test`** as described below; do not run destructive tests against the
+development `spurel` database.
 
 > [!WARNING]
-> Never commit your real `.env` file or API keys. Only `.env.example` belongs in Git.
-
+> Never commit `.env`, real provider keys, or Docker volume data. Only
+> `.env.example` belongs in Git. The frontend is still a placeholder;
+> SP-09 will build the actual application UI.
 
 ## ✅ Continuous integration
 
-The [CI workflow](.github/workflows/ci.yml) runs automatically on every pull request and push to `main`. All three jobs must pass:
+The [CI workflow](.github/workflows/ci.yml) runs automatically on every pull request and push to `main`. All five jobs must pass:
 
 - **Backend checks:** Python 3.13, repository-wide `ruff check .`, `ruff format --check` for Python files changed by the PR/push, and `pytest`.
 - **PostgreSQL migrations:** start `pgvector/pgvector:pg17`, apply Alembic migrations, verify required tables/pgvector and that a repeated upgrade is safe.
 - **PostgreSQL integration:** exercise real persistence, retrieval, and evaluations in a separate disposable test database.
 - **Frontend checks:** Node.js 22, ESLint, Prettier, TypeScript, Vitest, and a Next.js production build.
+- **Docker Compose smoke:** build and start the full localhost development stack, check migration completion, API authentication, and frontend HTTP.
 
 These checks use no OpenAI keys and keep the existing manual [RAG quality-gate workflows](docs/quality-gate-ci.md) separate.
 
@@ -110,7 +168,7 @@ npm test
 npm run build
 ```
 
-**Current limitation:** existing Python files have significant pre-existing Ruff formatting drift, so CI enforces formatting on **changed backend Python files**, not the entire historical tree. Clean up remaining legacy formatting separately. Also, `frontend/package-lock.json` is not committed, so CI currently uses `npm install`, not a reproducible `npm ci`. Add the lockfile in a follow-up. Migration checks are smoke tests of the database schema, not end-to-end PostgreSQL integration tests; those are tracked separately. Configure the three CI job names as required status checks in GitHub branch protection if you want to prevent merging red PRs.
+**Current limitation:** existing Python files have significant pre-existing Ruff formatting drift, so CI enforces formatting on **changed backend Python files**, not the entire historical tree. Clean up remaining legacy formatting separately. Also, `frontend/package-lock.json` is not committed, so CI currently uses `npm install`, not a reproducible `npm ci`. Add the lockfile in a follow-up. Migration smoke checks and dedicated real PostgreSQL integration tests are separate jobs. Configure all five CI job names as required checks in GitHub branch protection if you want to prevent merging red PRs.
 
 ## 🧪 Real PostgreSQL integration tests
 
