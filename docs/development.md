@@ -2,7 +2,7 @@
 
 [← README](../README.md) · [Architecture](architecture.md) · [Roadmap](roadmap.md) · [Benchmark gates](quality-gate-ci.md)
 
-This guide covers Spurel's **working pre-alpha backend** and its Next.js frontend, including live source, chunk, retrieval and trace-comparison views plus a live evaluation dashboard (SP-14 in review) and demo-only RAG answers. The Docker Compose configuration is for **localhost development, not production**.
+This guide covers Spurel's **working pre-alpha backend** and Next.js frontend, including live source, chunk, retrieval, trace-comparison and evaluation views plus the SP-15 live RAG answer frontend (in review). The Docker Compose configuration is for **localhost development, not production**.
 
 ## Requirements and startup
 
@@ -74,9 +74,9 @@ a same-origin `Origin` header; unknown paths and identifiers are not forwarded
 via a generic proxy. Signing out clears the cookie. This simple single-operator
 access is **not a production login or multi-tenant authorization system**.
 
-**RAG answers remain an interactive demo**, with clearly labeled
-illustrative evidence and metrics. Do not mistake their results for saved
-database records.
+The SP-15 branch connects the RAG answer page to real FastAPI generation.
+The overview still shows illustrative metrics; do not confuse those examples
+with persisted source, retrieval or evaluation records.
 
 ## Live Retrieval Lab (SP-12)
 
@@ -127,7 +127,7 @@ authenticated `GET /.../retrieval/traces` with bounded pagination and
 authenticated, same-origin `POST /.../retrieval/trace-comparisons` with
 two validated distinct UUIDs. Existing secrets and DB migrations suffice.
 
-## SP-14: live evaluation workbench (in review)
+## SP-14: live evaluation workbench (merged)
 
 The `/evaluations` page requires the existing local operator session and reads actual
 FastAPI/PostgreSQL evaluation datasets and saved benchmark runs. Select a knowledge base,
@@ -151,6 +151,36 @@ or secrets are required. Local frontend smoke: create an indexed document, creat
 a labeled case, audit, run Keyword twice, inspect both persisted runs, compare, and
 check a quality gate. Do not claim successful live verification until this flow
 has been tested in a running Spurel stack.
+
+## SP-15: live RAG answers (in review)
+
+The operator-authenticated `/rag` page uses a dedicated, allowlisted
+same-origin Next.js POST endpoint that forwards validated requests only to
+`/knowledge-bases/{knowledge_base_id}/rag/answer` using the existing
+**server-only** FastAPI token. It rejects cross-origin requests, invalid KB
+UUIDs, unsupported settings, malformed/oversized bodies and anonymous calls.
+No new backend provider, migration, secret or data store is introduced.
+
+Open `http://localhost:3000/rag` after sign-in, select a knowledge base with
+processed documents and provide a query. Top K is 1–20, Candidate K ranges
+from Top K to 100, and RRF K is 1–1,000. The UI makes **no model calls**
+until the operator explicitly confirms each generation attempt; hybrid query
+embeddings and OpenAI text generation may incur provider charges. The
+backend needs `OPENAI_API_KEY` and generation-model configuration.
+
+An answer displays its actual response text, model/provider names, saved
+retrieval trace ID, bounded context source labels, excerpt text, chunk UUIDs
+and source character offsets. Source labels are clickable but are **not**
+automatic claim verification (SP-23). Source and trace deep links lead into
+the existing live Chunk Inspector and Trace History. No-result retrievals show
+the backend's no-context response, with no invented citations and no
+text-generation call. The frontend does not persist conversation history.
+
+CI uses invalid requests, cross-origin rejection and unauthenticated calls to
+test the Next.js API route **without submitting a valid paid RAG request**.
+The frontend has mocked integration tests for successful answers, no context,
+validation, provider errors and explicit consent. Live provider verification
+requires an explicitly authorized local manual test.
 
 ## Environment and secrets
 
@@ -191,10 +221,9 @@ curl -H "Authorization: Bearer $SPUREL_API_TOKEN" \
 
 Anonymous protected requests return `401`; a missing or weak *server-side* token configuration disables the protected routes with `503`. `SPUREL_ENABLE_DOCS=1` enables `/docs` and `/openapi.json` without protecting the schema itself, so use it only on a trusted interface.
 
-**Never place this token in `NEXT_PUBLIC_*` environment variables or send it from browser JavaScript.** Spurel currently has **no** user/session authentication, RBAC or true tenant authorization. SP-10 through SP-13 use the local operator session for protected source,
-chunk, retrieval and saved-trace workflows. Evaluation and RAG Answers still
-use demo data. No protected API proxy is
-accessible without a valid operator session; multi-user login remains unimplemented.
+**Never place this token in `NEXT_PUBLIC_*` environment variables or send it from browser JavaScript.** Spurel has a signed local operator session, but **no** per-user authentication, RBAC or true tenant authorization. SP-10 through SP-15 use this session for protected source,
+chunk, retrieval, trace, evaluation and generated-answer workflows. The API proxy
+requires a valid operator session and an exact allowlisted route; multi-user login remains unimplemented.
 
 ## Run the backend on the host (optional)
 

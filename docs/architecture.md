@@ -2,17 +2,16 @@
 
 [← README](../README.md) · [Roadmap](roadmap.md) · [Local development](development.md)
 
-Spurel has working backend APIs and an interactive Next.js frontend. SP-10 wires
-Knowledge Bases and Documents to FastAPI; SP-11 adds **read-only live chunk
-and historical version inspection**, SP-12 adds **live keyword, vector and hybrid retrieval**, and SP-13 adds
-**saved trace history/comparison** using the same local operator session.
-Evaluation and generated-answer screens remain fixtures.
+Spurel has working backend APIs and an interactive Next.js frontend. SP-10–SP-14 connect
+Knowledge Bases, Documents, live chunk history, retrieval, saved-trace comparison and
+evaluation workflows. The SP-15 branch adds operator-authenticated RAG answers
+using the existing FastAPI service. Overview metrics remain illustrative.
 
 ## System boundary
 
 ```text
                              Next.js live sources / chunks / retrieval / traces
-                            + separate evaluation and RAG demo views
+                             + evaluations / SP-15 RAG answers
                                       |
                                       v
                           FastAPI business endpoints
@@ -46,7 +45,7 @@ FastAPI runs on Python 3.13 and uses Pydantic schemas, application services, int
 | [`evaluation_datasets/`](../backend/src/spurel/evaluation_datasets/) | Labeled data, benchmarks, baseline history, quality gates and CLI |
 | [`infrastructure/`](../backend/src/spurel/infrastructure/) | PDF/text parsers, fixed character chunker, local storage, OpenAI adapters |
 | [`backend/migrations/`](../backend/migrations/) | PostgreSQL schema migrations |
-| [`frontend/app/`](../frontend/app/) | Live source management, Chunk Inspector, Retrieval Lab and Trace History behind operator sign-in; evaluation/RAG views remain fixtures |
+| [`frontend/app/`](../frontend/app/) | Operator-protected source management, chunks, retrieval, traces and evaluations; RAG answers connected by SP-15 branch |
 
 ## Ingestion and versioned indexing
 
@@ -159,6 +158,6 @@ development workflow**, not scalable user identity or tenant authorization.
 
 ## What is planned, not implemented
 
-The frontend has live source, chunk, retrieval and trace-comparison inspection; evaluation and RAG views use fixtures. The following are **not built**: live evaluation and generated-answer UI, recursive/semantic/token-aware chunking, scanned-PDF OCR, BM25, pgvector ANN/HNSW, metadata filters, rerankers, citation verification, non-OpenAI providers, data-source connectors, Redis-backed background jobs, experiment export and production auth/monitoring.
+The frontend has live source, chunk, retrieval, trace-comparison and evaluation inspection; SP-15 adds provider-backed RAG answers for review. Overview values remain illustrative. The following are **not built**: recursive/semantic/token-aware chunking, scanned-PDF OCR, BM25, pgvector ANN/HNSW, metadata filters, rerankers, independent citation/claim verification, non-OpenAI providers, data-source connectors, Redis-backed background jobs, experiment export and production auth/monitoring.
 
 For the exact implementation order and deliverables, use [SP-01–SP-28 roadmap](roadmap.md).

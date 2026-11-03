@@ -184,6 +184,7 @@ export function WorkbenchShell({ children }: { children: ReactNode }) {
                   pathname === "/retrieval" ||
                   pathname === "/traces" ||
                   pathname === "/evaluations" ||
+                  pathname === "/rag" ||
                   pathname === "/operator/login"
                     ? "LIVE WORKSPACE"
                     : "INTERACTIVE DEMO"}
@@ -209,8 +210,9 @@ export function WorkbenchShell({ children }: { children: ReactNode }) {
                 pathname === "/chunks" ||
                 pathname === "/retrieval" ||
                 pathname === "/traces" ||
-                pathname === "/evaluations"
-                  ? "SPUREL · LIVE SOURCES, CHUNKS, RETRIEVAL, TRACES & EVALUATIONS · RAG IS A DEMO"
+                pathname === "/evaluations" ||
+                pathname === "/rag"
+                  ? "SPUREL · LIVE SOURCES, CHUNKS, RETRIEVAL, TRACES, EVALUATIONS & RAG · PRE-ALPHA"
                   : "SPUREL DESIGN PREVIEW · DEMO SCREENS USE ILLUSTRATIVE DATA"}
               </footer>
             </main>

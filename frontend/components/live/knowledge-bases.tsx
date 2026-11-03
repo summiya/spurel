@@ -254,8 +254,9 @@ export function LiveKnowledgeBasesPage() {
 
       <div className="inline-notice">
         <Icon name="check" size={17} />
-        This screen shows your actual FastAPI and PostgreSQL data. The Retrieval Lab, Evaluations,
-        Traces and RAG Answers remain clearly labeled demos.
+        This screen shows actual FastAPI and PostgreSQL data. Retrieval, trace history, evaluations
+        and RAG answers use live backend integrations; the overview still displays illustrative
+        metrics.
       </div>
 
       <Panel

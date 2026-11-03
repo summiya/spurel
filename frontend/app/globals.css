@@ -3236,3 +3236,127 @@ html[data-motion="reduce"] *::after {
     width: 100%;
   }
 }
+
+/* SP-15: authenticated RAG answer generation and exact source inspection. */
+.rag-live-knowledge-base {
+  display: flex;
+  align-items: end;
+  gap: 14px;
+  margin: 12px 0 18px;
+}
+.rag-live-knowledge-base > div {
+  flex: 1;
+  min-width: 0;
+}
+.rag-live-knowledge-base > .button {
+  flex-shrink: 0;
+}
+.rag-live-config {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 14px 0;
+}
+.rag-live-config > div {
+  min-width: 0;
+}
+.rag-live-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 11px;
+  margin: 16px 0;
+}
+.rag-live-summary > span {
+  display: grid;
+  min-width: 0;
+  gap: 7px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--panel-alt);
+}
+.rag-live-summary small {
+  font-size: 10px;
+  color: var(--subtle);
+}
+.rag-live-summary strong {
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.rag-live-answer-text {
+  min-width: 0;
+  flex: 1;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  line-height: 1.85;
+}
+.rag-inline-citation {
+  display: inline-flex;
+  margin: 0 3px;
+  padding: 2px 5px;
+  border-radius: 5px;
+  vertical-align: baseline;
+  cursor: pointer;
+}
+.rag-live-answer-actions {
+  margin: 14px 0;
+}
+.rag-live-evidence {
+  min-width: 0;
+  display: grid;
+  gap: 12px;
+  padding-top: 15px;
+}
+.rag-live-evidence-meta {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.rag-live-evidence-meta strong,
+.rag-live-evidence-meta small {
+  overflow-wrap: anywhere;
+}
+.rag-live-evidence-meta small {
+  color: var(--subtle);
+  font-size: 10px;
+}
+.rag-live-excerpt {
+  margin: 0;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel-alt);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font: inherit;
+  font-size: 12px;
+  line-height: 1.7;
+  max-height: 520px;
+  overflow-y: auto;
+}
+.rag-live-evidence > .button {
+  justify-self: start;
+}
+@media (max-width: 1050px) {
+  .rag-live-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 600px) {
+  .rag-live-knowledge-base {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .rag-live-config,
+  .rag-live-summary {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .rag-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .rag-actions .button {
+    width: 100%;
+  }
+}
