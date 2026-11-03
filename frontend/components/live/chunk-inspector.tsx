@@ -513,7 +513,9 @@ export function LiveChunkInspectorPage({ initialKnowledgeBaseId, initialDocument
                         </span>
                         <span>
                           PDF extraction
-                          <strong>{selectedChunk.ocr_used ? "Includes OCR text" : "Text layer"}</strong>
+                          <strong>
+                            {selectedChunk.ocr_used ? "Includes OCR text" : "Text layer"}
+                          </strong>
                         </span>
                       </>
                     ) : null}
@@ -536,8 +538,8 @@ export function LiveChunkInspectorPage({ initialKnowledgeBaseId, initialDocument
                   </div>
                   {selectedChunk.ocr_used ? (
                     <p className="text-hint">
-                      This excerpt contains text recovered by optical character recognition.
-                      Check the original PDF for recognition errors before relying on a citation.
+                      This excerpt contains text recovered by optical character recognition. Check
+                      the original PDF for recognition errors before relying on a citation.
                     </p>
                   ) : null}
                   <p className="text-hint">

@@ -124,16 +124,12 @@ export function isRetrievalResult(value: unknown): value is RetrievalResult {
       return false;
     const pageStart = item.page_start ?? null;
     const pageEnd = item.page_end ?? null;
-    if (
-      !(
-        (pageStart === null && pageEnd === null && item.ocr_used !== true) ||
-        (
-          boundedInteger(pageStart, 1, 500) &&
-          boundedInteger(pageEnd, pageStart, 500) &&
-          (item.ocr_used === undefined || typeof item.ocr_used === "boolean")
-        )
-      )
-    )
+    if (!(
+      (pageStart === null && pageEnd === null && item.ocr_used !== true) ||
+      (boundedInteger(pageStart, 1, 500) &&
+        boundedInteger(pageEnd, pageStart, 500) &&
+        (item.ocr_used === undefined || typeof item.ocr_used === "boolean"))
+    ))
       return false;
 
     const primary =

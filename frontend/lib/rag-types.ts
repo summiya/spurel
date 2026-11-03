@@ -105,11 +105,9 @@ export function isRagAnswerResponse(value: unknown): value is RagAnswerResponse 
       !integer(item.end_offset, item.start_offset, Number.MAX_SAFE_INTEGER) ||
       !(
         (item.page_start == null && item.page_end == null && item.ocr_used !== true) ||
-        (
-          integer(item.page_start, 1, 500) &&
+        (integer(item.page_start, 1, 500) &&
           integer(item.page_end, item.page_start, 500) &&
-          (item.ocr_used === undefined || typeof item.ocr_used === "boolean")
-        )
+          (item.ocr_used === undefined || typeof item.ocr_used === "boolean"))
       ) ||
       labels.has(item.label) ||
       ranks.has(item.retrieval_rank) ||

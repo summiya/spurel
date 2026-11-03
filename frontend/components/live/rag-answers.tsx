@@ -455,8 +455,8 @@ export function LiveRagAnswersPage({ initialKnowledgeBaseId }: Props) {
                       <pre className="rag-live-excerpt">{selectedSource.excerpt}</pre>
                       {selectedSource.ocr_used ? (
                         <p className="text-hint">
-                          OCR-derived text can contain recognition errors; check the
-                          original PDF before relying on this source.
+                          OCR-derived text can contain recognition errors; check the original PDF
+                          before relying on this source.
                         </p>
                       ) : null}
                       <Link

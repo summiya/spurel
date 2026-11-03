@@ -104,18 +104,24 @@ describe("retrieval payloads and scores", () => {
       matches: [chunk],
     };
     expect(isRetrievalResult(valid)).toBe(true);
-    expect(isRetrievalResult({
-      ...valid,
-      matches: [{ ...chunk, page_start: 0 }],
-    })).toBe(false);
-    expect(isRetrievalResult({
-      ...valid,
-      matches: [{ ...chunk, page_end: 1 }],
-    })).toBe(false);
-    expect(isRetrievalResult({
-      ...valid,
-      matches: [{ ...chunk, page_start: null, page_end: null, ocr_used: true }],
-    })).toBe(false);
+    expect(
+      isRetrievalResult({
+        ...valid,
+        matches: [{ ...chunk, page_start: 0 }],
+      }),
+    ).toBe(false);
+    expect(
+      isRetrievalResult({
+        ...valid,
+        matches: [{ ...chunk, page_end: 1 }],
+      }),
+    ).toBe(false);
+    expect(
+      isRetrievalResult({
+        ...valid,
+        matches: [{ ...chunk, page_start: null, page_end: null, ocr_used: true }],
+      }),
+    ).toBe(false);
   });
 
   it("validates real response shape without fabricating scores", () => {

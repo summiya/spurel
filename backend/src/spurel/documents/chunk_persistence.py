@@ -5,6 +5,7 @@ from uuid import UUID, uuid4
 from sqlalchemy import (
     Boolean,
     CheckConstraint,
+    false,
     Computed,
     ForeignKey,
     ForeignKeyConstraint,
@@ -104,7 +105,7 @@ class DocumentChunkRecord(Base):
     page_start: Mapped[int | None] = mapped_column(Integer, nullable=True)
     page_end: Mapped[int | None] = mapped_column(Integer, nullable=True)
     ocr_used: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, server_default=text("false")
+        Boolean, nullable=False, server_default=false()
     )
 
     @classmethod

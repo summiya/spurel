@@ -6,14 +6,14 @@ from pypdf.generic import DecodedStreamObject, DictionaryObject, NameObject
 
 from spurel.documents.domain import DocumentMediaType
 from spurel.documents.parsing import (
+    DocumentExtractedTextLimitError,
     DocumentParseError,
     DocumentPdfEncryptedError,
-    DocumentExtractedTextLimitError,
     DocumentTextContentError,
     UnsupportedParserMediaTypeError,
 )
-from spurel.infrastructure.parsing.pdf import PdfDocumentParser
 from spurel.infrastructure.parsing.ocr import PdfOcrError, PdfOcrPageLimitError
+from spurel.infrastructure.parsing.pdf import PdfDocumentParser
 
 
 def _blank_pdf_bytes(*, encrypted: bool = False) -> bytes:
@@ -234,6 +234,23 @@ def test_ocr_enabled_rejects_unsafe_language_and_excessive_page_limit(
     monkeypatch.setenv("SPUREL_PDF_OCR_MAX_PAGES", "200")
     with pytest.raises(PdfOcrError):
         PdfDocumentParser().parse(
+            content=_pdf_with_text_pages([None]),
+            media_type=DocumentMediaType.PDF,
+        )
+
+
+
+def test_pdf_parser_enforces_combined_text_limit_after_local_ocr(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("SPUREL_PDF_OCR_ENABLED", "true")
+    monkeypatch.setattr("spurel.infrastructure.parsing.pdf.MAX_EXTRACTED_TEXT_CHARACTERS", 5)
+
+    def ocr(*, content: bytes, page_number: int, language: str) -> str:
+        return "This OCR content is longer than five characters."
+
+    with pytest.raises(DocumentExtractedTextLimitError):
+        PdfDocumentParser(ocr_runner=ocr).parse(
             content=_pdf_with_text_pages([None]),
             media_type=DocumentMediaType.PDF,
         )
