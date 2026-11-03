@@ -10,7 +10,9 @@ export async function GET(request: NextRequest, context: Context) {
   if (denied) return noStore(denied);
   const { knowledgeBaseId, traceId } = await context.params;
   if (!validUUID(knowledgeBaseId) || !validUUID(traceId)) {
-    return noStore(NextResponse.json({ error: "Invalid retrieval trace reference." }, { status: 400 }));
+    return noStore(
+      NextResponse.json({ error: "Invalid retrieval trace reference." }, { status: 400 }),
+    );
   }
   try {
     const response = await backendRequest(

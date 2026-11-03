@@ -2737,7 +2737,7 @@ html[data-motion="reduce"] *::after {
 }
 .retrieval-config-grid {
   display: grid;
-  grid-template-columns: minmax(210px, 1.5fr) repeat(3, minmax(105px, .65fr));
+  grid-template-columns: minmax(210px, 1.5fr) repeat(3, minmax(105px, 0.65fr));
   gap: 14px;
   align-items: end;
   margin-top: 20px;
@@ -2806,7 +2806,9 @@ html[data-motion="reduce"] *::after {
   margin: 10px 0 4px;
   background: var(--accent-soft);
 }
-.saved-trace-details strong { font-size: 12px; }
+.saved-trace-details strong {
+  font-size: 12px;
+}
 .saved-trace-details span {
   color: var(--muted);
   font-size: 11px;
@@ -2831,7 +2833,8 @@ html[data-motion="reduce"] *::after {
   overflow-wrap: anywhere;
   font-size: 11px;
 }
-.retrieval-inspector-actions, .retrieval-source-link {
+.retrieval-inspector-actions,
+.retrieval-source-link {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
@@ -2839,14 +2842,33 @@ html[data-motion="reduce"] *::after {
   margin: 14px 0;
 }
 @media (max-width: 1200px) {
-  .retrieval-config-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .retrieval-score { white-space: normal; text-align: right; }
+  .retrieval-config-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .retrieval-score {
+    white-space: normal;
+    text-align: right;
+  }
 }
 @media (max-width: 580px) {
-  .retrieval-base-row { align-items: stretch; flex-direction: column; }
-  .retrieval-config-grid { grid-template-columns: minmax(0, 1fr); }
-  .retrieval-submit-row { align-items: stretch; flex-direction: column; }
-  .live-retrieval-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .retrieval-score-facts { grid-template-columns: minmax(0, 1fr); }
-  .retrieval-score { font-size: 10px; }
+  .retrieval-base-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .retrieval-config-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .retrieval-submit-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .live-retrieval-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .retrieval-score-facts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .retrieval-score {
+    font-size: 10px;
+  }
 }

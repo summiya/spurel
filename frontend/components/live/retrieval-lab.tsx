@@ -39,7 +39,11 @@ function formatDate(raw: string): string {
 }
 
 function modeTitle(mode: RetrievalMode): string {
-  return mode === "hybrid" ? "Hybrid · RRF" : mode === "keyword" ? "Keyword · PostgreSQL FTS" : "Vector · cosine";
+  return mode === "hybrid"
+    ? "Hybrid · RRF"
+    : mode === "keyword"
+      ? "Keyword · PostgreSQL FTS"
+      : "Vector · cosine";
 }
 
 function EvidenceItem({
@@ -63,16 +67,30 @@ function EvidenceItem({
     >
       <div className="result-heading">
         <span className="result-rank">{String(item.rank).padStart(2, "0")}</span>
-        <strong>Document {item.document_id.slice(0, 8)} · Chunk {item.chunk_index + 1}</strong>
-        <span className="retrieval-score">{score.label}: {score.value}</span>
+        <strong>
+          Document {item.document_id.slice(0, 8)} · Chunk {item.chunk_index + 1}
+        </strong>
+        <span className="retrieval-score">
+          {score.label}: {score.value}
+        </span>
       </div>
       <p>{item.text}</p>
       <div className="tag-row">
-        <span className="tag">Source {item.start_offset}–{item.end_offset}</span>
+        <span className="tag">
+          Source {item.start_offset}–{item.end_offset}
+        </span>
         {mode === "hybrid" ? (
           <>
-            <span className="tag">{item.vector_rank === null || item.vector_rank === undefined ? "Not in vector pool" : `Vector rank #${item.vector_rank}`}</span>
-            <span className="tag">{item.keyword_rank === null || item.keyword_rank === undefined ? "Not in keyword pool" : `Keyword rank #${item.keyword_rank}`}</span>
+            <span className="tag">
+              {item.vector_rank === null || item.vector_rank === undefined
+                ? "Not in vector pool"
+                : `Vector rank #${item.vector_rank}`}
+            </span>
+            <span className="tag">
+              {item.keyword_rank === null || item.keyword_rank === undefined
+                ? "Not in keyword pool"
+                : `Keyword rank #${item.keyword_rank}`}
+            </span>
           </>
         ) : null}
       </div>
@@ -84,7 +102,8 @@ export function LiveRetrievalLabPage({ initialKnowledgeBaseId }: Props) {
   const notify = useDemoToast();
   const bases = useWorkspacePages<LiveKnowledgeBase>("/api/workspace/knowledge-bases");
   const [preferredBaseId, setPreferredBaseId] = useState(initialKnowledgeBaseId ?? "");
-  const knowledgeBase = bases.items.find((base) => base.id === preferredBaseId) ?? bases.items[0] ?? null;
+  const knowledgeBase =
+    bases.items.find((base) => base.id === preferredBaseId) ?? bases.items[0] ?? null;
   const [query, setQuery] = useState("");
   const [mode, setMode] = useState<RetrievalMode>("keyword");
   const [topK, setTopK] = useState(10);
@@ -101,11 +120,15 @@ export function LiveRetrievalLabPage({ initialKnowledgeBaseId }: Props) {
 
   const currentRun = run?.knowledgeBaseId === knowledgeBase?.id ? run : null;
   const result = currentRun?.result;
-  const chosen = result?.matches.find((item) => item.chunk_id === preferredChunk) ?? result?.matches[0];
-  const editedSinceRun = Boolean(result && (
-    query.trim() !== result.query || mode !== result.mode || topK !== result.top_k ||
-    (result.mode === "hybrid" && (candidateK !== result.candidate_k || rrfK !== result.rrf_k))
-  ));
+  const chosen =
+    result?.matches.find((item) => item.chunk_id === preferredChunk) ?? result?.matches[0];
+  const editedSinceRun = Boolean(
+    result &&
+    (query.trim() !== result.query ||
+      mode !== result.mode ||
+      topK !== result.top_k ||
+      (result.mode === "hybrid" && (candidateK !== result.candidate_k || rrfK !== result.rrf_k))),
+  );
 
   function changeBase(id: string) {
     sequence.current += 1;
@@ -161,14 +184,16 @@ export function LiveRetrievalLabPage({ initialKnowledgeBaseId }: Props) {
         knowledgeBaseName: knowledgeBase.name,
         result: raw,
       });
-      notify(`Saved retrieval trace ${raw.trace_id.slice(0, 8)} · ${raw.matches.length} result(s).`);
+      notify(
+        `Saved retrieval trace ${raw.trace_id.slice(0, 8)} · ${raw.matches.length} result(s).`,
+      );
     } catch (cause) {
       if (id === sequence.current) {
         setError(
           liveError(cause) +
-          (submittedMode === "keyword"
-            ? ""
-            : " For vector and hybrid modes, also check your embedding provider credentials and indexed embedding space."),
+            (submittedMode === "keyword"
+              ? ""
+              : " For vector and hybrid modes, also check your embedding provider credentials and indexed embedding space."),
         );
       }
     } finally {
@@ -221,9 +246,9 @@ export function LiveRetrievalLabPage({ initialKnowledgeBaseId }: Props) {
       />
       <div className="inline-notice">
         <Icon name="shield" size={17} />
-        All results, scores and timings are returned by your own Spurel backend.
-        Keyword mode uses PostgreSQL full-text search (not BM25).
-        Vector and Hybrid can call the configured embedding provider.
+        All results, scores and timings are returned by your own Spurel backend. Keyword mode uses
+        PostgreSQL full-text search (not BM25). Vector and Hybrid can call the configured embedding
+        provider.
       </div>
       <Panel title="Query composer" hint="Explicit queries only — no automatic model requests">
         {bases.loading ? (
@@ -235,13 +260,19 @@ export function LiveRetrievalLabPage({ initialKnowledgeBaseId }: Props) {
             icon="database"
             title="No knowledge bases available"
             description="Create a collection and process some documents before searching."
-            action={<Link href="/knowledge-bases" className="button primary">Open Knowledge Bases</Link>}
+            action={
+              <Link href="/knowledge-bases" className="button primary">
+                Open Knowledge Bases
+              </Link>
+            }
           />
         ) : (
           <form onSubmit={submit}>
             <div className="retrieval-base-row">
               <div>
-                <label className="field-label" htmlFor="retrieval-knowledge-base">Knowledge base</label>
+                <label className="field-label" htmlFor="retrieval-knowledge-base">
+                  Knowledge base
+                </label>
                 <select
                   id="retrieval-knowledge-base"
                   className="select-control"
@@ -250,22 +281,34 @@ export function LiveRetrievalLabPage({ initialKnowledgeBaseId }: Props) {
                   onChange={(event) => changeBase(event.target.value)}
                 >
                   {bases.items.map((base) => (
-                    <option value={base.id} key={base.id}>{base.name}</option>
+                    <option value={base.id} key={base.id}>
+                      {base.name}
+                    </option>
                   ))}
                 </select>
               </div>
-              <button type="button" className="button ghost compact"
-                disabled={bases.loadingMore || running} onClick={bases.refresh}>
+              <button
+                type="button"
+                className="button ghost compact"
+                disabled={bases.loadingMore || running}
+                onClick={bases.refresh}
+              >
                 <Icon name="refresh" size={14} /> Refresh collections
               </button>
             </div>
             {bases.hasMore ? (
-              <button type="button" className="button ghost compact live-load-more"
-                disabled={bases.loadingMore || running} onClick={() => void bases.loadMore()}>
+              <button
+                type="button"
+                className="button ghost compact live-load-more"
+                disabled={bases.loadingMore || running}
+                onClick={() => void bases.loadMore()}
+              >
                 {bases.loadingMore ? "Loading…" : "Load more knowledge bases"}
               </button>
             ) : null}
-            <label htmlFor="retrieval-query" className="field-label">Search query</label>
+            <label htmlFor="retrieval-query" className="field-label">
+              Search query
+            </label>
             <textarea
               id="retrieval-query"
               className="textarea-control retrieval-query"
@@ -281,21 +324,38 @@ export function LiveRetrievalLabPage({ initialKnowledgeBaseId }: Props) {
                 <span className="field-label">Retrieval strategy</span>
                 <div className="segmented-control" role="group" aria-label="Retrieval strategy">
                   {(["keyword", "vector", "hybrid"] as const).map((candidate) => (
-                    <button key={candidate} type="button"
+                    <button
+                      key={candidate}
+                      type="button"
                       className={"segment-button " + (mode === candidate ? "selected" : "")}
                       aria-pressed={mode === candidate}
                       disabled={running}
-                      onClick={() => setMode(candidate)}>
-                      {candidate === "keyword" ? "Keyword" : candidate === "vector" ? "Vector" : "Hybrid"}
+                      onClick={() => setMode(candidate)}
+                    >
+                      {candidate === "keyword"
+                        ? "Keyword"
+                        : candidate === "vector"
+                          ? "Vector"
+                          : "Hybrid"}
                     </button>
                   ))}
                 </div>
               </div>
               <div>
-                <label htmlFor="retrieval-topk" className="field-label">Top K (1–100)</label>
-                <input id="retrieval-topk" className="input-control" type="number" min={1} max={100}
-                  required value={topK} disabled={running}
-                  onChange={(event) => updateTopK(Number(event.target.value))} />
+                <label htmlFor="retrieval-topk" className="field-label">
+                  Top K (1–100)
+                </label>
+                <input
+                  id="retrieval-topk"
+                  className="input-control"
+                  type="number"
+                  min={1}
+                  max={100}
+                  required
+                  value={topK}
+                  disabled={running}
+                  onChange={(event) => updateTopK(Number(event.target.value))}
+                />
               </div>
               {mode === "hybrid" ? (
                 <>
@@ -303,15 +363,37 @@ export function LiveRetrievalLabPage({ initialKnowledgeBaseId }: Props) {
                     <label htmlFor="retrieval-candidatek" className="field-label">
                       Candidate K ({topK}–100)
                     </label>
-                    <input id="retrieval-candidatek" className="input-control" type="number"
-                      min={topK} max={100} required value={candidateK} disabled={running}
-                      onChange={(event) => setCandidateK(Math.max(topK, Math.min(100, Number(event.target.value))))} />
+                    <input
+                      id="retrieval-candidatek"
+                      className="input-control"
+                      type="number"
+                      min={topK}
+                      max={100}
+                      required
+                      value={candidateK}
+                      disabled={running}
+                      onChange={(event) =>
+                        setCandidateK(Math.max(topK, Math.min(100, Number(event.target.value))))
+                      }
+                    />
                   </div>
                   <div>
-                    <label htmlFor="retrieval-rrfk" className="field-label">RRF K (1–1,000)</label>
-                    <input id="retrieval-rrfk" className="input-control" type="number"
-                      min={1} max={1000} required value={rrfK} disabled={running}
-                      onChange={(event) => setRrfK(Math.max(1, Math.min(1000, Number(event.target.value))))} />
+                    <label htmlFor="retrieval-rrfk" className="field-label">
+                      RRF K (1–1,000)
+                    </label>
+                    <input
+                      id="retrieval-rrfk"
+                      className="input-control"
+                      type="number"
+                      min={1}
+                      max={1000}
+                      required
+                      value={rrfK}
+                      disabled={running}
+                      onChange={(event) =>
+                        setRrfK(Math.max(1, Math.min(1000, Number(event.target.value))))
+                      }
+                    />
                   </div>
                 </>
               ) : null}
@@ -322,15 +404,22 @@ export function LiveRetrievalLabPage({ initialKnowledgeBaseId }: Props) {
                   ? "PostgreSQL FTS · no query-time embedding provider call"
                   : "Vector embeddings may incur API usage; configure OPENAI_API_KEY server-side"}
               </div>
-              <button type="submit" className="button primary"
-                disabled={running || !knowledgeBase || !query.trim()}>
+              <button
+                type="submit"
+                className="button primary"
+                disabled={running || !knowledgeBase || !query.trim()}
+              >
                 <Icon name={running ? "refresh" : "play"} size={15} />
                 {running ? "Running…" : "Run live retrieval"}
               </button>
             </div>
           </form>
         )}
-        {error ? <div className="inline-notice live-error" role="alert">{error}</div> : null}
+        {error ? (
+          <div className="inline-notice live-error" role="alert">
+            {error}
+          </div>
+        ) : null}
       </Panel>
 
       {running ? <LoadingState label="Retrieving and persisting the result trace" /> : null}
@@ -340,23 +429,50 @@ export function LiveRetrievalLabPage({ initialKnowledgeBaseId }: Props) {
           {editedSinceRun ? (
             <div className="inline-notice">
               <Icon name="info" size={15} />
-              Your query or configuration has changed. The results below belong to the
-              last completed run; click Run live retrieval to update them.
+              Your query or configuration has changed. The results below belong to the last
+              completed run; click Run live retrieval to update them.
             </div>
           ) : null}
-          <Panel title="Completed retrieval" hint="These values come from the persisted retrieval execution">
+          <Panel
+            title="Completed retrieval"
+            hint="These values come from the persisted retrieval execution"
+          >
             <div className="live-retrieval-metrics">
-              <span><small>Mode</small><strong>{modeTitle(result.mode)}</strong></span>
-              <span><small>Matches returned</small><strong>{result.matches.length} / {result.top_k}</strong></span>
-              <span><small>Duration</small><strong>{duration(result.duration_ms)}</strong></span>
-              <span><small>Knowledge base</small><strong>{currentRun?.knowledgeBaseName}</strong></span>
+              <span>
+                <small>Mode</small>
+                <strong>{modeTitle(result.mode)}</strong>
+              </span>
+              <span>
+                <small>Matches returned</small>
+                <strong>
+                  {result.matches.length} / {result.top_k}
+                </strong>
+              </span>
+              <span>
+                <small>Duration</small>
+                <strong>{duration(result.duration_ms)}</strong>
+              </span>
+              <span>
+                <small>Knowledge base</small>
+                <strong>{currentRun?.knowledgeBaseName}</strong>
+              </span>
             </div>
             <div className="retrieval-trace-bar">
-              <span className="retrieval-trace-id" title={result.trace_id}>Trace ID · {result.trace_id}</span>
-              <button type="button" className="button ghost compact"
-                disabled={traceLoading} onClick={() => void loadPersistedTrace()}>
+              <span className="retrieval-trace-id" title={result.trace_id}>
+                Trace ID · {result.trace_id}
+              </span>
+              <button
+                type="button"
+                className="button ghost compact"
+                disabled={traceLoading}
+                onClick={() => void loadPersistedTrace()}
+              >
                 <Icon name="clock" size={15} />
-                {traceLoading ? "Reading saved trace…" : trace ? "Reload saved trace" : "Inspect saved trace"}
+                {traceLoading
+                  ? "Reading saved trace…"
+                  : trace
+                    ? "Reload saved trace"
+                    : "Inspect saved trace"}
               </button>
             </div>
             <p className="text-hint">
@@ -365,13 +481,20 @@ export function LiveRetrievalLabPage({ initialKnowledgeBaseId }: Props) {
                 ? ` · Top K ${result.top_k} · Candidate K ${result.candidate_k} · RRF K ${result.rrf_k}`
                 : ` · Top K ${result.top_k}`}
             </p>
-            {traceError ? <div className="inline-notice live-error" role="alert">{traceError}</div> : null}
+            {traceError ? (
+              <div className="inline-notice live-error" role="alert">
+                {traceError}
+              </div>
+            ) : null}
             {trace ? (
               <div className="saved-trace-details" aria-label="Persisted trace details">
                 <strong>Verified persisted trace · {formatDate(trace.created_at)}</strong>
-                <span>Mode: {trace.mode} · {trace.results.length} saved result(s)</span>
                 <span>
-                  Embedding: {trace.embedding_provider && trace.embedding_model
+                  Mode: {trace.mode} · {trace.results.length} saved result(s)
+                </span>
+                <span>
+                  Embedding:{" "}
+                  {trace.embedding_provider && trace.embedding_model
                     ? `${trace.embedding_provider} / ${trace.embedding_model} · ${trace.embedding_dimensions} dimensions`
                     : "Not applicable (keyword only)"}
                 </span>
@@ -414,32 +537,64 @@ export function LiveRetrievalLabPage({ initialKnowledgeBaseId }: Props) {
               {chosen && currentRun ? (
                 <>
                   <div className="inspector-head">
-                    <strong>Chunk {chosen.chunk_index + 1} · Rank #{chosen.rank}</strong>
+                    <strong>
+                      Chunk {chosen.chunk_index + 1} · Rank #{chosen.rank}
+                    </strong>
                     <small>Persisted chunk UUID · {chosen.chunk_id}</small>
                   </div>
                   <pre className="live-chunk-preview">{chosen.text}</pre>
                   <div className="retrieval-score-facts">
-                    <div><small>{mainScore(chosen, result.mode).label}</small>
-                      <strong>{mainScore(chosen, result.mode).value}</strong></div>
+                    <div>
+                      <small>{mainScore(chosen, result.mode).label}</small>
+                      <strong>{mainScore(chosen, result.mode).value}</strong>
+                    </div>
                     {result.mode === "hybrid" ? (
                       <>
-                        <div><small>Vector pool rank</small><strong>{chosen.vector_rank ?? "Not present"}</strong></div>
-                        <div><small>Keyword pool rank</small><strong>{chosen.keyword_rank ?? "Not present"}</strong></div>
-                        <div><small>Cosine similarity</small><strong>{otherScore(chosen.cosine_similarity, 4)}</strong></div>
-                        <div><small>PostgreSQL FTS</small><strong>{otherScore(chosen.keyword_score, 5)}</strong></div>
+                        <div>
+                          <small>Vector pool rank</small>
+                          <strong>{chosen.vector_rank ?? "Not present"}</strong>
+                        </div>
+                        <div>
+                          <small>Keyword pool rank</small>
+                          <strong>{chosen.keyword_rank ?? "Not present"}</strong>
+                        </div>
+                        <div>
+                          <small>Cosine similarity</small>
+                          <strong>{otherScore(chosen.cosine_similarity, 4)}</strong>
+                        </div>
+                        <div>
+                          <small>PostgreSQL FTS</small>
+                          <strong>{otherScore(chosen.keyword_score, 5)}</strong>
+                        </div>
                       </>
                     ) : null}
-                    <div><small>Source offsets</small><strong>{chosen.start_offset}–{chosen.end_offset}</strong></div>
-                    <div><small>Document ID</small><strong>{chosen.document_id}</strong></div>
-                    <div><small>Chunk ID</small><strong>{chosen.chunk_id}</strong></div>
+                    <div>
+                      <small>Source offsets</small>
+                      <strong>
+                        {chosen.start_offset}–{chosen.end_offset}
+                      </strong>
+                    </div>
+                    <div>
+                      <small>Document ID</small>
+                      <strong>{chosen.document_id}</strong>
+                    </div>
+                    <div>
+                      <small>Chunk ID</small>
+                      <strong>{chosen.chunk_id}</strong>
+                    </div>
                   </div>
                   <div className="retrieval-inspector-actions">
-                    <Link href={`/chunks?kb=${currentRun.knowledgeBaseId}&doc=${chosen.document_id}`}
-                      className="button ghost compact">
+                    <Link
+                      href={`/chunks?kb=${currentRun.knowledgeBaseId}&doc=${chosen.document_id}`}
+                      className="button ghost compact"
+                    >
                       <Icon name="layers" size={14} /> Inspect document
                     </Link>
-                    <button type="button" className="button ghost compact"
-                      onClick={() => void copyExcerpt(chosen.text)}>
+                    <button
+                      type="button"
+                      className="button ghost compact"
+                      onClick={() => void copyExcerpt(chosen.text)}
+                    >
                       <Icon name="copy" size={14} /> Copy excerpt
                     </button>
                   </div>
@@ -449,8 +604,10 @@ export function LiveRetrievalLabPage({ initialKnowledgeBaseId }: Props) {
                   </p>
                 </>
               ) : (
-                <EmptyState title="No evidence selected"
-                  description="Run a query that matches indexed chunks, then choose a result to inspect." />
+                <EmptyState
+                  title="No evidence selected"
+                  description="Run a query that matches indexed chunks, then choose a result to inspect."
+                />
               )}
             </Panel>
           </div>

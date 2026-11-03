@@ -52,68 +52,81 @@ function fakeFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Respon
   }
   if (url === base + "/keyword" && init?.method === "POST") {
     const request = JSON.parse(String(init.body));
-    return Promise.resolve(json({
-      mode: "keyword",
-      query: request.query,
-      top_k: request.top_k,
-      trace_id: traceId,
-      duration_ms: 13.33,
-      matches: request.query === "nothing here" ? [] : [
-        { ...first, keyword_score: 0.08394 },
-        { ...second, keyword_score: 0.04893 },
-      ],
-    }));
+    return Promise.resolve(
+      json({
+        mode: "keyword",
+        query: request.query,
+        top_k: request.top_k,
+        trace_id: traceId,
+        duration_ms: 13.33,
+        matches:
+          request.query === "nothing here"
+            ? []
+            : [
+                { ...first, keyword_score: 0.08394 },
+                { ...second, keyword_score: 0.04893 },
+              ],
+      }),
+    );
   }
   if (url === base + "/vector" && init?.method === "POST") {
     const request = JSON.parse(String(init.body));
-    return Promise.resolve(json({
-      mode: "vector",
-      query: request.query,
-      top_k: request.top_k,
-      trace_id: traceId,
-      duration_ms: 91.5,
-      matches: [
-        { ...first, cosine_similarity: 0.9321 },
-        { ...second, cosine_similarity: 0.8104 },
-      ],
-    }));
+    return Promise.resolve(
+      json({
+        mode: "vector",
+        query: request.query,
+        top_k: request.top_k,
+        trace_id: traceId,
+        duration_ms: 91.5,
+        matches: [
+          { ...first, cosine_similarity: 0.9321 },
+          { ...second, cosine_similarity: 0.8104 },
+        ],
+      }),
+    );
   }
   if (url === base + "/hybrid" && init?.method === "POST") {
     const request = JSON.parse(String(init.body));
-    return Promise.resolve(json({
-      mode: "hybrid",
-      query: request.query,
-      top_k: request.top_k,
-      candidate_k: request.candidate_k,
-      rrf_k: request.rrf_k,
-      trace_id: traceId,
-      duration_ms: 112.45,
-      matches: [{
-        ...first,
-        rrf_score: 0.032786,
-        vector_rank: 1,
-        keyword_rank: 2,
-        cosine_similarity: 0.9321,
-        keyword_score: 0.08394,
-      }],
-    }));
+    return Promise.resolve(
+      json({
+        mode: "hybrid",
+        query: request.query,
+        top_k: request.top_k,
+        candidate_k: request.candidate_k,
+        rrf_k: request.rrf_k,
+        trace_id: traceId,
+        duration_ms: 112.45,
+        matches: [
+          {
+            ...first,
+            rrf_score: 0.032786,
+            vector_rank: 1,
+            keyword_rank: 2,
+            cosine_similarity: 0.9321,
+            keyword_score: 0.08394,
+          },
+        ],
+      }),
+    );
   }
   if (url === base + "/traces/" + traceId) {
-    return Promise.resolve(json({
-      id: traceId,
-      knowledge_base_id: kb.id,
-      mode: "vector",
-      query: "passwordless sessions",
-      top_k: 10,
-      candidate_k: null,
-      rrf_k: null,
-      duration_ms: 91.5,
-      embedding_provider: "openai",
-      embedding_model: "text-embedding-3-small",
-      embedding_dimensions: 1536,
-      created_at: "2026-11-03T12:00:00Z",
-      results: [{ ...first, cosine_similarity: 0.9321 }],
-    }));
+    return Promise.resolve(
+      json({
+        id: traceId,
+        knowledge_base_id: kb.id,
+        mode: "vector",
+        query: "passwordless sessions",
+        top_k: 10,
+        candidate_k: null,
+        rrf_k: null,
+        duration_ms: 91.5,
+        embedding_provider: "openai",
+        embedding_model: "text-embedding-3-small",
+        embedding_dimensions: 1536,
+        created_at: "2026-11-03T12:00:00Z",
+        results: [{ ...first, cosine_similarity: 0.9321 }],
+      }),
+    );
   }
   return Promise.resolve(json({ error: "Unexpected mock endpoint " + url }, 500));
 }
@@ -136,8 +149,9 @@ describe("live retrieval lab", () => {
     await ready();
     expect(screen.getByRole("button", { name: "Keyword" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByText(/no query-time embedding provider call/i)).toBeInTheDocument();
-    expect(vi.mocked(fetch).mock.calls.filter(([, init]) => init?.method === "POST"))
-      .toHaveLength(0);
+    expect(vi.mocked(fetch).mock.calls.filter(([, init]) => init?.method === "POST")).toHaveLength(
+      0,
+    );
     expect(screen.getByText("Run a query to inspect real evidence")).toBeInTheDocument();
     expect(screen.queryByText("refund-policy.md")).not.toBeInTheDocument();
   });
@@ -168,7 +182,10 @@ describe("live retrieval lab", () => {
       top_k: 10,
     });
     fireEvent.click(container.querySelectorAll(".evidence-result")[1]);
-    expect(container.querySelectorAll(".evidence-result")[1]).toHaveAttribute("aria-pressed", "true");
+    expect(container.querySelectorAll(".evidence-result")[1]).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
     expect(screen.getByText(secondId)).toBeInTheDocument();
   });
 
@@ -196,7 +213,10 @@ describe("live retrieval lab", () => {
     expect(screen.getByText(/Keyword pool rank/)).toBeInTheDocument();
     const call = vi.mocked(fetch).mock.calls.find(([path]) => String(path) === base + "/hybrid");
     expect(JSON.parse(String(call?.[1]?.body))).toEqual({
-      query: "data retention", top_k: 12, candidate_k: 14, rrf_k: 81,
+      query: "data retention",
+      top_k: 12,
+      candidate_k: 14,
+      rrf_k: 81,
     });
   });
 

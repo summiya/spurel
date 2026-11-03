@@ -34,12 +34,17 @@ describe("retrieval payloads and scores", () => {
   });
 
   it("trims bounded queries and rejects extraneous/invalid fields", () => {
-    expect(parseRetrievalRequest("keyword", { query: "  backup  ", top_k: 10 }))
-      .toEqual({ query: "backup", top_k: 10 });
-    expect(parseRetrievalRequest("vector", { query: "search", top_k: 1 }))
-      .toEqual({ query: "search", top_k: 1 });
+    expect(parseRetrievalRequest("keyword", { query: "  backup  ", top_k: 10 })).toEqual({
+      query: "backup",
+      top_k: 10,
+    });
+    expect(parseRetrievalRequest("vector", { query: "search", top_k: 1 })).toEqual({
+      query: "search",
+      top_k: 1,
+    });
     const invalid: unknown[] = [
-      null, [],
+      null,
+      [],
       { query: "", top_k: 10 },
       { query: " ", top_k: 1 },
       { query: "a".repeat(8_001), top_k: 10 },
@@ -56,18 +61,33 @@ describe("retrieval payloads and scores", () => {
   });
 
   it("requires valid hybrid candidate and RRF bounds", () => {
-    expect(parseRetrievalRequest("hybrid", {
-      query: "history", top_k: 10, candidate_k: 50, rrf_k: 60,
-    })).toEqual({ query: "history", top_k: 10, candidate_k: 50, rrf_k: 60 });
+    expect(
+      parseRetrievalRequest("hybrid", {
+        query: "history",
+        top_k: 10,
+        candidate_k: 50,
+        rrf_k: 60,
+      }),
+    ).toEqual({ query: "history", top_k: 10, candidate_k: 50, rrf_k: 60 });
     for (const candidate_k of [0, 9, 101]) {
-      expect(parseRetrievalRequest("hybrid", {
-        query: "history", top_k: 10, candidate_k, rrf_k: 60,
-      })).toBeNull();
+      expect(
+        parseRetrievalRequest("hybrid", {
+          query: "history",
+          top_k: 10,
+          candidate_k,
+          rrf_k: 60,
+        }),
+      ).toBeNull();
     }
     for (const rrf_k of [0, 1001, 6.4]) {
-      expect(parseRetrievalRequest("hybrid", {
-        query: "history", top_k: 10, candidate_k: 50, rrf_k,
-      })).toBeNull();
+      expect(
+        parseRetrievalRequest("hybrid", {
+          query: "history",
+          top_k: 10,
+          candidate_k: 50,
+          rrf_k,
+        }),
+      ).toBeNull();
     }
   });
 
@@ -84,21 +104,26 @@ describe("retrieval payloads and scores", () => {
     expect(isRetrievalResult({ ...keyword, matches: [{ ...chunk, rank: 2 }] })).toBe(false);
     expect(isRetrievalResult({ ...keyword, duration_ms: null })).toBe(false);
     expect(isRetrievalResult({ ...keyword, duration_ms: -1 })).toBe(false);
-    expect(isRetrievalResult({ ...keyword, matches: [{ ...chunk, keyword_score: null }] }))
-      .toBe(false);
-    expect(isRetrievalResult({ ...keyword, mode: "hybrid", candidate_k: 2, rrf_k: 60 }))
-      .toBe(false);
+    expect(isRetrievalResult({ ...keyword, matches: [{ ...chunk, keyword_score: null }] })).toBe(
+      false,
+    );
+    expect(isRetrievalResult({ ...keyword, mode: "hybrid", candidate_k: 2, rrf_k: 60 })).toBe(
+      false,
+    );
   });
 
   it("reports raw, incomparable backend score scales", () => {
     expect(mainScore(chunk, "vector")).toEqual({
-      label: "Cosine similarity", value: "0.9143",
+      label: "Cosine similarity",
+      value: "0.9143",
     });
     expect(mainScore(chunk, "keyword")).toEqual({
-      label: "PostgreSQL FTS", value: "0.08942",
+      label: "PostgreSQL FTS",
+      value: "0.08942",
     });
     expect(mainScore(chunk, "hybrid")).toEqual({
-      label: "RRF score", value: "0.032786",
+      label: "RRF score",
+      value: "0.032786",
     });
     expect(otherScore(null, 4)).toBe("Not present");
     expect(otherScore(0, 4)).toBe("0.0000");

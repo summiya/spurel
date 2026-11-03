@@ -109,9 +109,9 @@ export function SettingsPage() {
             <span className="status-badge success">Live · SP-10–12</span>
           </div>
           <p className="muted-panel-note">
-            SP-10–SP-12 connect source, chunk and retrieval workflows to FastAPI.
-            Evaluations, trace comparisons and RAG answer screens remain demos until
-            later milestones. Never put your API token in NEXT_PUBLIC_* settings.
+            SP-10–SP-12 connect source, chunk and retrieval workflows to FastAPI. Evaluations, trace
+            comparisons and RAG answer screens remain demos until later milestones. Never put your
+            API token in NEXT_PUBLIC_* settings.
           </p>
         </Panel>
       </div>

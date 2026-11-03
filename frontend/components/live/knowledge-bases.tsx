@@ -472,7 +472,9 @@ export function LiveKnowledgeBasesPage() {
             <Link href={`/retrieval?kb=${selected.id}`} className="button ghost compact">
               <Icon name="search" size={15} /> Search this knowledge base
             </Link>
-            <span className="text-hint">Keyword search works without a query-time embedding call.</span>
+            <span className="text-hint">
+              Keyword search works without a query-time embedding call.
+            </span>
           </div>
           <p className="muted-panel-note">
             Processing requires <code>OPENAI_API_KEY</code> in your server environment. Inspect the
