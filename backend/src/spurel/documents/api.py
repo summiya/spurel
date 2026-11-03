@@ -18,6 +18,7 @@ from spurel.documents.dependencies import (
     get_chunk_inspector_service,
     get_document_service,
     get_document_upload_service,
+    get_document_version_service,
 )
 from spurel.documents.domain import (
     MAX_DOCUMENT_SIZE_BYTES,
@@ -38,12 +39,20 @@ from spurel.documents.processing_dependencies import (
 from spurel.documents.schemas import (
     ChunkInspectionListResponse,
     ChunkInspectionResponse,
+    DocumentChunkVersionListResponse,
+    DocumentChunkVersionResponse,
     DocumentListResponse,
     DocumentProcessingResponse,
     DocumentResponse,
     DocumentUploadResponse,
+    VersionedChunkInspectionListResponse,
 )
 from spurel.documents.service import DocumentService
+from spurel.documents.versions import (
+    DocumentVersionNotFoundError,
+    DocumentVersionPersistenceError,
+    DocumentVersionService,
+)
 from spurel.documents.upload_service import (
     DocumentUploadError,
     DocumentUploadService,
@@ -80,6 +89,11 @@ DocumentUploadServiceDependency = Annotated[
     Depends(get_document_upload_service),
 ]
 
+DocumentVersionServiceDependency = Annotated[
+    DocumentVersionService,
+    Depends(get_document_version_service),
+]
+
 
 def _to_document_response(document) -> DocumentResponse:
     return DocumentResponse(
@@ -89,6 +103,7 @@ def _to_document_response(document) -> DocumentResponse:
         media_type=document.media_type,
         size_bytes=document.size_bytes,
         created_at=document.created_at,
+        active_chunk_version=document.active_chunk_version,
     )
 
 
@@ -170,6 +185,7 @@ async def upload_document(
         media_type=document.media_type,
         size_bytes=document.size_bytes,
         created_at=document.created_at,
+        active_chunk_version=document.active_chunk_version,
         sha256=result.sha256,
     )
 
@@ -196,6 +212,95 @@ async def list_documents(
 
     return DocumentListResponse(
         items=[_to_document_response(document) for document in documents],
+        limit=limit,
+        offset=offset,
+    )
+
+
+@router.get(
+    "/{document_id}/versions",
+    response_model=DocumentChunkVersionListResponse,
+)
+async def list_document_versions(
+    knowledge_base_id: UUID,
+    document_id: UUID,
+    service: DocumentVersionServiceDependency,
+    limit: Annotated[int, Query(ge=1, le=100)] = 50,
+    offset: Annotated[int, Query(ge=0)] = 0,
+) -> DocumentChunkVersionListResponse:
+    """List read-only processing versions for one knowledge-base-scoped document."""
+    try:
+        versions = await service.list_versions(
+            knowledge_base_id=knowledge_base_id,
+            document_id=document_id,
+            limit=limit,
+            offset=offset,
+        )
+    except DocumentVersionNotFoundError as exc:
+        raise HTTPException(status_code=404, detail="document was not found") from exc
+    except DocumentVersionPersistenceError as exc:
+        raise HTTPException(
+            status_code=503, detail="document version service temporarily unavailable"
+        ) from exc
+
+    return DocumentChunkVersionListResponse(
+        items=[
+            DocumentChunkVersionResponse(
+                version=item.version,
+                chunk_count=item.chunk_count,
+                created_at=item.created_at,
+                is_active=item.is_active,
+            )
+            for item in versions
+        ],
+        limit=limit,
+        offset=offset,
+    )
+
+
+@router.get(
+    "/{document_id}/versions/{version}/chunks",
+    response_model=VersionedChunkInspectionListResponse,
+)
+async def inspect_document_version_chunks(
+    knowledge_base_id: UUID,
+    document_id: UUID,
+    version: int,
+    service: DocumentVersionServiceDependency,
+    limit: Annotated[int, Query(ge=1, le=100)] = 50,
+    offset: Annotated[int, Query(ge=0)] = 0,
+) -> VersionedChunkInspectionListResponse:
+    """Inspect historical chunks without making them visible to active retrieval."""
+    try:
+        chunks = await service.list_version_chunks(
+            knowledge_base_id=knowledge_base_id,
+            document_id=document_id,
+            version=version,
+            limit=limit,
+            offset=offset,
+        )
+    except DocumentVersionNotFoundError as exc:
+        raise HTTPException(status_code=404, detail="document version was not found") from exc
+    except DocumentVersionPersistenceError as exc:
+        raise HTTPException(
+            status_code=503, detail="document version service temporarily unavailable"
+        ) from exc
+
+    return VersionedChunkInspectionListResponse(
+        items=[
+            ChunkInspectionResponse(
+                id=item.id,
+                document_id=item.document_id,
+                index=item.index,
+                text=item.text,
+                start_offset=item.start_offset,
+                end_offset=item.end_offset,
+                has_embeddings=item.has_embeddings,
+                embedding_count=item.embedding_count,
+            )
+            for item in chunks
+        ],
+        version=version,
         limit=limit,
         offset=offset,
     )

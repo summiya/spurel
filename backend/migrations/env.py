@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from spurel.db import Base
 from spurel.documents import chunk_persistence
+from spurel.documents import chunk_versions_persistence
 from spurel.documents import persistence as document_persistence
 from spurel.embeddings import persistence as embedding_persistence
 from spurel.evaluation_datasets import baseline_persistence as baseline_persistence
@@ -39,6 +40,7 @@ _ = evaluation_persistence.EvaluationJudgmentRecord
 _ = evaluation_run_persistence.EvaluationRunRecord
 _ = evaluation_run_persistence.EvaluationRunCaseRecord
 _ = chunk_persistence.DocumentChunkRecord
+_ = chunk_versions_persistence.DocumentChunkVersionRecord
 _ = knowledge_base_persistence.KnowledgeBaseRecord
 _ = trace_persistence.RetrievalTraceRecord
 _ = trace_persistence.RetrievalTraceResultRecord

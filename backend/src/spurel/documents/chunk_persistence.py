@@ -6,11 +6,13 @@ from sqlalchemy import (
     CheckConstraint,
     Computed,
     ForeignKey,
+    ForeignKeyConstraint,
     Index,
     Integer,
     Text,
     UniqueConstraint,
     Uuid,
+    text,
 )
 from sqlalchemy.dialects.postgresql import TSVECTOR
 from sqlalchemy.orm import Mapped, mapped_column
@@ -46,8 +48,16 @@ class DocumentChunkRecord(Base):
         ),
         UniqueConstraint(
             "document_id",
+            "chunk_version",
             "chunk_index",
-            name="uq_document_chunks_document_index",
+            name="uq_document_chunks_document_version_index",
+        ),
+        CheckConstraint("chunk_version >= 1", name="ck_document_chunks_version"),
+        ForeignKeyConstraint(
+            ["document_id", "chunk_version"],
+            ["document_chunk_versions.document_id", "document_chunk_versions.version"],
+            name="fk_document_chunks_version",
+            ondelete="CASCADE",
         ),
         Index(
             "ix_document_chunks_document_offsets",
@@ -69,6 +79,9 @@ class DocumentChunkRecord(Base):
         nullable=False,
     )
     chunk_index: Mapped[int] = mapped_column(Integer, nullable=False)
+    chunk_version: Mapped[int] = mapped_column(
+        Integer, nullable=False, server_default=text("1")
+    )
     text: Mapped[str] = mapped_column(Text, nullable=False)
     search_vector: Mapped[str] = mapped_column(
         TSVECTOR,
@@ -87,12 +100,14 @@ class DocumentChunkRecord(Base):
         *,
         document_id: UUID,
         chunk: DocumentChunk,
+        chunk_version: int = 1,
     ) -> "DocumentChunkRecord":
         """Create a persistence record from a chunking result."""
         return cls(
             id=uuid4(),
             document_id=document_id,
             chunk_index=chunk.index,
+            chunk_version=chunk_version,
             text=chunk.text,
             start_offset=chunk.start_offset,
             end_offset=chunk.end_offset,

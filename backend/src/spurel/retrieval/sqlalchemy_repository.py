@@ -56,6 +56,7 @@ class SqlAlchemyVectorRetrievalRepository:
             )
             .where(
                 DocumentRecord.knowledge_base_id == knowledge_base_id,
+                DocumentChunkRecord.chunk_version == DocumentRecord.active_chunk_version,
                 ChunkEmbeddingRecord.provider == provider,
                 ChunkEmbeddingRecord.model == model,
                 ChunkEmbeddingRecord.dimensions == dimensions,

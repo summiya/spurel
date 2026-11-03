@@ -6,6 +6,8 @@ from pathlib import Path
 from spurel.db import async_session_factory
 from spurel.documents.chunk_inspector import ChunkInspectorService
 from spurel.documents.service import DocumentService
+from spurel.documents.sqlalchemy_version_repository import SqlAlchemyDocumentVersionRepository
+from spurel.documents.versions import DocumentVersionService
 from spurel.documents.sqlalchemy_chunk_inspector_repository import (
     SqlAlchemyChunkInspectorRepository,
 )
@@ -35,3 +37,10 @@ def get_document_upload_service() -> DocumentUploadService:
     storage_root = Path(os.getenv(LOCAL_STORAGE_ROOT_ENV, DEFAULT_LOCAL_STORAGE_ROOT))
     storage = LocalDocumentBlobStorage(storage_root)
     return DocumentUploadService(repository=repository, storage=storage)
+
+
+def get_document_version_service() -> DocumentVersionService:
+    """Build read-only immutable chunk history access."""
+    return DocumentVersionService(
+        SqlAlchemyDocumentVersionRepository(async_session_factory)
+    )

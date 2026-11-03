@@ -56,6 +56,7 @@ class SqlAlchemyChunkInspectorRepository:
             .where(
                 DocumentRecord.knowledge_base_id == knowledge_base_id,
                 DocumentChunkRecord.document_id == document_id,
+                DocumentChunkRecord.chunk_version == DocumentRecord.active_chunk_version,
             )
             .order_by(DocumentChunkRecord.chunk_index.asc())
             .limit(limit)

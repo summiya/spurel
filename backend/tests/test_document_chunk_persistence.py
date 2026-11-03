@@ -47,19 +47,21 @@ def test_document_chunk_table_has_defense_in_depth_constraints() -> None:
         "ck_document_chunks_offset_order",
         "ck_document_chunks_offset_span",
         "ck_document_chunks_text_length",
+        "ck_document_chunks_version",
     }
 
 
-def test_document_chunk_index_is_unique_per_document() -> None:
+def test_document_chunk_index_is_unique_per_version() -> None:
     unique = next(
         constraint
         for constraint in DocumentChunkRecord.__table__.constraints
         if isinstance(constraint, UniqueConstraint)
-        and constraint.name == "uq_document_chunks_document_index"
+        and constraint.name == "uq_document_chunks_document_version_index"
     )
 
     assert [column.name for column in unique.columns] == [
         "document_id",
+        "chunk_version",
         "chunk_index",
     ]
 

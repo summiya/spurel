@@ -49,6 +49,7 @@ class Document:
     media_type: DocumentMediaType
     size_bytes: int
     created_at: datetime
+    active_chunk_version: int = 0
 
     @classmethod
     def create(

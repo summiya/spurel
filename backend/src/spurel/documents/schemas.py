@@ -18,6 +18,7 @@ class DocumentResponse(BaseModel):
     media_type: DocumentMediaType
     size_bytes: int
     created_at: datetime
+    active_chunk_version: int = Field(default=0, ge=0)
 
 
 class DocumentListResponse(BaseModel):
@@ -66,3 +67,26 @@ class DocumentProcessingResponse(BaseModel):
     embedding_provider: str
     embedding_model: str
     embedding_dimensions: int
+
+
+class DocumentChunkVersionResponse(BaseModel):
+    """One historic chunk-set version of an immutable uploaded document."""
+
+    version: int = Field(ge=1)
+    chunk_count: int = Field(ge=1)
+    created_at: datetime
+    is_active: bool
+
+
+class DocumentChunkVersionListResponse(BaseModel):
+    """A bounded page of saved document processing versions."""
+
+    items: list[DocumentChunkVersionResponse]
+    limit: int
+    offset: int
+
+
+class VersionedChunkInspectionListResponse(ChunkInspectionListResponse):
+    """One explicit historical chunk-set inspection page."""
+
+    version: int = Field(ge=1)

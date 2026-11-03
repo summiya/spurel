@@ -53,6 +53,7 @@ class SqlAlchemyKeywordRetrievalRepository:
             )
             .where(
                 DocumentRecord.knowledge_base_id == knowledge_base_id,
+                DocumentChunkRecord.chunk_version == DocumentRecord.active_chunk_version,
                 DocumentChunkRecord.search_vector.op("@@")(ts_query),
             )
             .order_by(

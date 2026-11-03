@@ -30,6 +30,7 @@ def test_document_table_shape() -> None:
         "filename",
         "media_type",
         "size_bytes",
+        "active_chunk_version",
         "created_at",
     }
     assert table.primary_key.columns.keys() == ["id"]
@@ -52,6 +53,7 @@ def test_document_table_has_defense_in_depth_constraints() -> None:
     assert constraints == {
         "ck_documents_size_bytes_bounds",
         "ck_documents_supported_media_type",
+        "ck_documents_active_chunk_version",
     }
 
 
