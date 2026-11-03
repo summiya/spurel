@@ -221,6 +221,58 @@ def run(root: Path) -> None:
     assert comparison["results"] == []
     assert isinstance(comparison["duration_delta_ms"], (float, int))
 
+    # SP-15: exercise the exact RAG frontend proxy without calling a paid provider.
+    # Valid requests are intentionally only sent from a rejected origin or after logout.
+    rag_endpoint = f"{endpoint}/{kb_id}/rag/answer"
+    rag_payload = json.dumps(
+        {"query": "What is the policy?", "top_k": 8, "candidate_k": 50, "rrf_k": 60}
+    ).encode("utf-8")
+    assert _request(
+        opener,
+        base,
+        rag_endpoint,
+        method="POST",
+        data=rag_payload,
+        content_type="application/json",
+        origin="http://untrusted.example",
+    )[0] == 403
+    assert _request(
+        opener,
+        base,
+        rag_endpoint,
+        method="POST",
+        data=b'{"query":"","top_k":8,"candidate_k":50,"rrf_k":60}',
+        content_type="application/json",
+        origin=base,
+    )[0] == 422
+    assert _request(
+        opener,
+        base,
+        rag_endpoint,
+        method="POST",
+        data=b'{"query":"x","top_k":21,"candidate_k":50,"rrf_k":60}',
+        content_type="application/json",
+        origin=base,
+    )[0] == 422
+    assert _request(
+        opener,
+        base,
+        rag_endpoint,
+        method="POST",
+        data=b'not-json',
+        content_type="application/json",
+        origin=base,
+    )[0] == 400
+    assert _request(
+        opener,
+        base,
+        f"{endpoint}/invalid-id/rag/answer",
+        method="POST",
+        data=rag_payload,
+        content_type="application/json",
+        origin=base,
+    )[0] == 400
+
     status, _ = _request(opener, base, "/api/operator/logout", method="POST", data=b"", origin=base)
     assert status == 200
     assert _request(opener, base, endpoint)[0] == 401
@@ -232,9 +284,18 @@ def run(root: Path) -> None:
     assert _request(opener, base, history_endpoint)[0] == 401
     assert _request(opener, base, comparison_endpoint, method="POST", data=comparison_payload,
                     content_type="application/json", origin=base)[0] == 401
+    assert _request(
+        opener,
+        base,
+        rag_endpoint,
+        method="POST",
+        data=rag_payload,
+        content_type="application/json",
+        origin=base,
+    )[0] == 401
     print(
-        "SP-13 operator auth, real source/chunk/retrieval workflows, persisted "
-        "trace history, read-only comparison, validation and CSRF: PASS"
+        "SP-13/SP-15 operator auth, real retrieval/trace workflows, "
+        "RAG proxy rejection checks and CSRF: PASS (no provider calls)"
     )
 
 

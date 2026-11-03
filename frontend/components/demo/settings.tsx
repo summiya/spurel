@@ -98,20 +98,19 @@ export function SettingsPage() {
           </div>
           <div className="pipeline-detail">
             <span>UI data source</span>
-            <span className="status-badge">Illustrative fixtures</span>
+            <span className="status-badge">Live tools + preview overview</span>
           </div>
           <div className="pipeline-detail">
             <span>Shared API bearer token</span>
             <span className="status-badge success">Not in browser</span>
           </div>
           <div className="pipeline-detail last">
-            <span>Sources, chunks, retrieval and trace comparisons</span>
-            <span className="status-badge success">Live · SP-10–13</span>
+            <span>Sources, chunks, retrieval, traces, evaluations and RAG</span>
+            <span className="status-badge success">Live · SP-10–15</span>
           </div>
           <p className="muted-panel-note">
-            SP-10–SP-13 connect sources, chunk inspection, retrieval and saved trace comparisons to
-            FastAPI. Evaluations and RAG answers remain demo screens. Never put your API token in
-            NEXT_PUBLIC_* settings.
+            SP-10–SP-15 connect the live workbench to authenticated FastAPI endpoints.
+            Overview metrics are still illustrative. Never put your API token in NEXT_PUBLIC_* settings.
           </p>
         </Panel>
       </div>

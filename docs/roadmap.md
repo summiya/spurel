@@ -2,7 +2,7 @@
 
 [← README](../README.md) · [Development](development.md) · [Architecture](architecture.md)
 
-**Stage:** pre-alpha. The backend API and development infrastructure are functional; the frontend includes live source, chunk, retrieval and saved-trace views with evaluation and answer screens still in demo mode. This roadmap tracks the original **SP-01–SP-28** implementation plan, not a claim of a released product.
+**Stage:** pre-alpha. Backend APIs and development infrastructure are functional; the frontend has live source, chunk, retrieval, trace and evaluation views. SP-15 adds a live RAG answer page in a review branch. The overview remains illustrative. This roadmap tracks the original **SP-01–SP-28** implementation plan, not a claim of a released product.
 
 **Status convention:** ✅ Merged = implemented in `main`; ◐ In review = open PR, not yet available on `main`; ☐ Planned = not implemented.
 
@@ -25,10 +25,9 @@ These tasks were prioritized first because the rest of the workbench depends on 
 
 ## Phase 2 — Functional frontend
 
-SP-09 adds the interactive shell; SP-10 connects real knowledge bases and
-documents; SP-11 adds the live Chunk Inspector, SP-12 adds live retrieval,
-and SP-13 adds saved-trace history and comparison. Evaluation and RAG answers
-remain planned for SP-14–SP-15.
+SP-09 adds the interactive shell; SP-10–SP-14 connect sources, chunks, retrieval,
+trace comparison and evaluations. SP-15 adds the operator-protected RAG answer
+frontend on its own review branch; not yet on main.
 
 | Task | Priority | Status | Scope / acceptance target |
 | --- | --- | --- | --- |
@@ -37,8 +36,8 @@ remain planned for SP-14–SP-15.
 | SP-11 | High | ✅ Merged | Operator-protected live Chunk Inspector, active/historical versions, persisted text/offsets and embedding state. [PR #71](https://github.com/summiya/spurel/pull/71) |
 | SP-12 | High | ✅ Merged | Live Keyword/Vector/Hybrid retrieval, raw scores and saved trace detail; no implicit model calls. [PR #72](https://github.com/summiya/spurel/pull/72) |
 | SP-13 | High | ✅ Merged | Live saved-trace history and comparison, overlap, rank movement, raw scores and duration deltas. [PR #73](https://github.com/summiya/spurel/pull/73) |
-| SP-14 | High | ◐ In review | Operator-protected live evaluation dashboard: dataset/case labeling, audits, benchmark runs, comparison, baselines and quality gates. Feature branch `feat/sp14-live-evaluation-dashboard`; PR review required. |
-| SP-15 | Medium | ☐ Planned | RAG Answer UI: queries, answer, source excerpts/labels, trace link and missing-context handling |
+| SP-14 | High | ✅ Merged | Operator-protected evaluation datasets, relevance judgments, audits, persisted benchmark runs, comparisons, baselines and quality gates. [PR #74](https://github.com/summiya/spurel/pull/74) |
+| SP-15 | Medium | ◐ In review | Operator-protected live RAG answers with explicit paid-call confirmation, exact source excerpts/labels, saved trace deep links and no-context handling. Feature branch `feat/sp15-live-rag-answer-ui`; PR and CI review required. |
 
 **Frontend security requirement:** Do not place `SPUREL_API_TOKEN` in `NEXT_PUBLIC_*`, browser storage, or client JavaScript. The shared bearer token is not a replacement for user authentication or tenant authorization.
 
@@ -80,7 +79,7 @@ These are cross-cutting technical debts, **not completed roadmap tasks**:
 3. **Ingestion execution:** Processing still runs in an HTTP request. Lease renewal occurs between embedding batches, so a single provider call longer than the lease can be reclaimed; stale workers are fenced at promotion.
 4. **Parsing:** No OCR/scanned PDFs; encrypted PDFs are unsupported; fixed-size chunking counts characters, not model tokens.
 5. **Retrieval:** Exact pgvector search only; Postgres keyword scoring is not BM25; no HNSW, filters or reranking.
-6. **Frontend:** Live source, chunk, retrieval and trace history/comparison use a single-operator local session, while RAG answers remain fixtures. The SP-14 evaluation UI is in review. The session is not production identity, RBAC or multi-tenant authorization.
+6. **Frontend:** Live source, chunk, retrieval, trace comparison and evaluation use a single-operator local session; SP-15 RAG UI is under review. Overview metrics remain fixtures. The session is not production identity, RBAC or multi-tenant authorization.
 7. **Dependency reproducibility:** Frontend does not yet commit a `package-lock.json`; `npm install` is used, and Docker image tags are not digest-pinned.
 8. **Deployment:** Compose is intended for localhost development, with example database credentials and hot reload. The project has no hardened production deployment profile.
 
