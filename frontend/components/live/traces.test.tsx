@@ -152,9 +152,8 @@ function fakeFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Respon
   if (url === prefix + "/traces/" + first) {
     return Promise.resolve(
       json({
-        id: first,
-        knowledge_base_id: kb,
         ...summary1,
+        knowledge_base_id: kb,
         results: [evidence],
       }),
     );
