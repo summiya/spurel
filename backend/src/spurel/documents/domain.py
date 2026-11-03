@@ -34,9 +34,7 @@ class DocumentMediaType(StrEnum):
         try:
             return cls(value.strip().lower())
         except ValueError as exc:
-            raise UnsupportedDocumentMediaTypeError(
-                "document media type is not supported"
-            ) from exc
+            raise UnsupportedDocumentMediaTypeError("document media type is not supported") from exc
 
 
 @dataclass(frozen=True, slots=True)
@@ -49,6 +47,7 @@ class Document:
     media_type: DocumentMediaType
     size_bytes: int
     created_at: datetime
+    active_chunk_version: int = 0
 
     @classmethod
     def create(

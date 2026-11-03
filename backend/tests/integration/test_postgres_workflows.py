@@ -24,7 +24,11 @@ from spurel.documents.chunk_pipeline import DocumentChunkPipeline
 from spurel.documents.chunk_ports import DocumentChunkPersistenceError
 from spurel.documents.chunk_service import DocumentChunkService
 from spurel.documents.chunking import DocumentChunk
-from spurel.documents.dependencies import get_chunk_inspector_service, get_document_upload_service
+from spurel.documents.dependencies import (
+    get_chunk_inspector_service,
+    get_document_upload_service,
+    get_document_version_service,
+)
 from spurel.documents.domain import DocumentMediaType
 from spurel.documents.ingestion_service import DocumentIngestionService
 from spurel.documents.processing import DocumentProcessingService
@@ -34,8 +38,10 @@ from spurel.documents.sqlalchemy_chunk_inspector_repository import (
 )
 from spurel.documents.sqlalchemy_chunk_repository import SqlAlchemyDocumentChunkRepository
 from spurel.documents.sqlalchemy_repository import SqlAlchemyDocumentRepository
+from spurel.documents.sqlalchemy_version_repository import SqlAlchemyDocumentVersionRepository
 from spurel.documents.storage import document_object_key
 from spurel.documents.upload_service import DocumentUploadService
+from spurel.documents.versions import DocumentVersionService
 from spurel.embeddings.chunk import ChunkEmbedding
 from spurel.embeddings.domain import EmbeddingBatch, EmbeddingVector
 from spurel.embeddings.pipeline import DocumentEmbeddingPipeline
@@ -173,6 +179,7 @@ def _processor(
     database: _Database,
     storage: LocalDocumentBlobStorage,
     provider: _DeterministicEmbeddings,
+    chunk_size: int = 512,
 ) -> DocumentProcessingService:
     documents = SqlAlchemyDocumentRepository(database.sessions)
     chunks = SqlAlchemyDocumentChunkRepository(database.sessions)
@@ -184,7 +191,7 @@ def _processor(
             storage=storage,
             parsers={DocumentMediaType.TEXT: parser, DocumentMediaType.MARKDOWN: parser},
         ),
-        chunker=FixedSizeDocumentChunker(chunk_size=512, overlap=0),
+        chunker=FixedSizeDocumentChunker(chunk_size=chunk_size, overlap=0),
         chunk_service=DocumentChunkService(chunks),
     )
     return DocumentProcessingService(
@@ -533,4 +540,177 @@ async def _chunk_transaction_round_trip(postgres_url: str, tmp_path: Path) -> No
                 knowledge_base_id=uuid4(), document_id=document_id
             )
             is None
+        )
+
+
+def test_reprocessing_preserves_identity_and_immutable_chunk_history(
+    postgres_url: str,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Identical reprocessing is idempotent; changed chunking retains old evidence."""
+    monkeypatch.setenv("SPUREL_API_TOKEN", _TEST_TOKEN)
+    asyncio.run(_version_round_trip(postgres_url, tmp_path))
+
+
+async def _version_round_trip(postgres_url: str, tmp_path: Path) -> None:
+    async with _isolated_database(postgres_url) as database:
+        kb_id = await database.new_knowledge_base("Versioned evidence")
+        other_kb_id = await database.new_knowledge_base("Unrelated KB")
+        storage = LocalDocumentBlobStorage(tmp_path / "versioned")
+        provider = _DeterministicEmbeddings()
+        doc_id = await _upload(
+            database,
+            storage,
+            kb_id,
+            "Refund requests are accepted within thirty days. "
+            "Backup procedures are performed each morning. "
+            "Additional refund requests require an approval.",
+        )
+        processor = _processor(database, storage, provider)
+        chunks_repo = SqlAlchemyDocumentChunkRepository(database.sessions)
+        version_repo = SqlAlchemyDocumentVersionRepository(database.sessions)
+        versions = DocumentVersionService(version_repo)
+
+        await processor.process(knowledge_base_id=kb_id, document_id=doc_id)
+        first = await chunks_repo.list_stored_by_document(document_id=doc_id, limit=50, offset=0)
+        assert len(first) == 1
+        original_id = first[0].id
+        document = await SqlAlchemyDocumentRepository(database.sessions).get_by_id(
+            knowledge_base_id=kb_id, document_id=doc_id
+        )
+        assert document is not None
+        assert document.active_chunk_version == 1
+
+        # Existing relevance judgments point at real original chunk identities.
+        evaluations = EvaluationDatasetService(
+            SqlAlchemyEvaluationDatasetRepository(database.sessions)
+        )
+        dataset = await evaluations.create_dataset(knowledge_base_id=kb_id, name="Versioned labels")
+        labeled = await evaluations.add_case(
+            knowledge_base_id=kb_id,
+            dataset_id=dataset.id,
+            query="refund",
+            judgments=(RelevanceJudgment(chunk_id=original_id, relevance=3),),
+        )
+
+        # Processing the same data and chunk boundaries must not replace IDs.
+        await processor.process(knowledge_base_id=kb_id, document_id=doc_id)
+        same = await chunks_repo.list_stored_by_document(document_id=doc_id, limit=50, offset=0)
+        assert [row.id for row in same] == [original_id]
+        assert (
+            len(
+                await versions.list_versions(
+                    knowledge_base_id=kb_id, document_id=doc_id, limit=50, offset=0
+                )
+            )
+            == 1
+        )
+
+        # A new chunking strategy creates a new version without deleting old IDs.
+        changed_processor = _processor(database, storage, provider, chunk_size=48)
+        await changed_processor.process(knowledge_base_id=kb_id, document_id=doc_id)
+        new_chunks = await chunks_repo.list_stored_by_document(
+            document_id=doc_id, limit=50, offset=0
+        )
+        assert len(new_chunks) > 1
+        assert original_id not in {row.id for row in new_chunks}
+
+        current = await SqlAlchemyDocumentRepository(database.sessions).get_by_id(
+            knowledge_base_id=kb_id, document_id=doc_id
+        )
+        assert current is not None and current.active_chunk_version == 2
+
+        history = await versions.list_versions(
+            knowledge_base_id=kb_id, document_id=doc_id, limit=50, offset=0
+        )
+        assert [(row.version, row.is_active) for row in history] == [
+            (2, True),
+            (1, False),
+        ]
+        old_chunks = await versions.list_version_chunks(
+            knowledge_base_id=kb_id,
+            document_id=doc_id,
+            version=1,
+            limit=50,
+            offset=0,
+        )
+        assert old_chunks[0].id == original_id
+        assert old_chunks[0].embedding_count == 1
+        assert (
+            await evaluations.get_case(
+                knowledge_base_id=kb_id, dataset_id=dataset.id, case_id=labeled.id
+            )
+        ).judgments[0].chunk_id == original_id
+
+        vectors, keywords, hybrid, _ = _retrievers(database, provider)
+        for matches in (
+            await vectors.search(knowledge_base_id=kb_id, query="refund", limit=50),
+            await keywords.search(knowledge_base_id=kb_id, query="refund", limit=50),
+            await hybrid.search(
+                knowledge_base_id=kb_id,
+                query="refund",
+                limit=10,
+                candidate_limit=50,
+            ),
+        ):
+            assert matches
+            assert original_id not in {item.chunk_id for item in matches}
+            assert {item.chunk_id for item in matches} <= {item.id for item in new_chunks}
+
+        # Public history is explicitly read-only and cannot cross KBs.
+        app = create_app()
+        app.dependency_overrides[get_document_version_service] = lambda: versions
+        headers = {"Authorization": f"Bearer {_TEST_TOKEN}"}
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            base = f"/knowledge-bases/{kb_id}/documents/{doc_id}"
+            response = await client.get(f"{base}/versions", headers=headers)
+            assert response.status_code == 200
+            assert [item["version"] for item in response.json()["items"]] == [2, 1]
+            result = await client.get(f"{base}/versions/1/chunks", headers=headers)
+            assert result.status_code == 200
+            assert result.json()["items"][0]["id"] == str(original_id)
+            assert (
+                await client.get(
+                    f"/knowledge-bases/{other_kb_id}/documents/{doc_id}/versions",
+                    headers=headers,
+                )
+            ).status_code == 404
+            assert (
+                await client.get(
+                    f"/knowledge-bases/{other_kb_id}/documents/{doc_id}/versions/1/chunks",
+                    headers=headers,
+                )
+            ).status_code == 404
+
+        # Identical second-version reprocessing is idempotent too.
+        await changed_processor.process(knowledge_base_id=kb_id, document_id=doc_id)
+        again = await chunks_repo.list_stored_by_document(document_id=doc_id, limit=50, offset=0)
+        assert [row.id for row in again] == [row.id for row in new_chunks]
+        assert (
+            len(
+                await versions.list_versions(
+                    knowledge_base_id=kb_id, document_id=doc_id, limit=50, offset=0
+                )
+            )
+            == 2
+        )
+
+        # Concurrent identical writes are serialized by the parent document lock.
+        concurrent_chunks = tuple(row.chunk for row in again)
+        await asyncio.gather(
+            chunks_repo.replace_for_document(document_id=doc_id, chunks=concurrent_chunks),
+            chunks_repo.replace_for_document(document_id=doc_id, chunks=concurrent_chunks),
+        )
+        after_concurrent = await chunks_repo.list_stored_by_document(
+            document_id=doc_id, limit=50, offset=0
+        )
+        assert [row.id for row in after_concurrent] == [row.id for row in again]
+        assert (
+            len(
+                await versions.list_versions(
+                    knowledge_base_id=kb_id, document_id=doc_id, limit=50, offset=0
+                )
+            )
+            == 2
         )

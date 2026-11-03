@@ -9,8 +9,10 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     Index,
+    Integer,
     String,
     Uuid,
+    text,
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -35,6 +37,10 @@ class DocumentRecord(Base):
             "media_type IN ('application/pdf', 'text/markdown', 'text/plain')",
             name="ck_documents_supported_media_type",
         ),
+        CheckConstraint(
+            "active_chunk_version >= 0",
+            name="ck_documents_active_chunk_version",
+        ),
         Index(
             "ix_documents_knowledge_base_created_id",
             "knowledge_base_id",
@@ -52,6 +58,9 @@ class DocumentRecord(Base):
     filename: Mapped[str] = mapped_column(String(255), nullable=False)
     media_type: Mapped[str] = mapped_column(String(64), nullable=False)
     size_bytes: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    active_chunk_version: Mapped[int] = mapped_column(
+        Integer, nullable=False, server_default=text("0")
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
     @classmethod
@@ -63,6 +72,7 @@ class DocumentRecord(Base):
             filename=document.filename,
             media_type=document.media_type.value,
             size_bytes=document.size_bytes,
+            active_chunk_version=document.active_chunk_version,
             created_at=document.created_at,
         )
 
@@ -75,4 +85,5 @@ class DocumentRecord(Base):
             media_type=DocumentMediaType.parse(self.media_type),
             size_bytes=self.size_bytes,
             created_at=self.created_at,
+            active_chunk_version=self.active_chunk_version,
         )

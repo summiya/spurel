@@ -101,6 +101,72 @@ jobs:
       - name: Install backend
         run: python -m pip install -e .
 
+      - name: Apply legacy Alembic migrations
+        run: alembic upgrade 0010_create_evaluation_baseline_promotions
+
+      - name: Seed a legacy document with persisted chunks and embeddings
+        run: |
+          python - <<'PY'
+          import asyncio
+          import os
+
+          from sqlalchemy import text
+          from sqlalchemy.ext.asyncio import create_async_engine
+
+
+          async def seed() -> None:
+              engine = create_async_engine(os.environ["DATABASE_URL"])
+              try:
+                  async with engine.begin() as connection:
+                      await connection.execute(
+                          text("""
+                              INSERT INTO knowledge_bases (id, name, created_at)
+                              VALUES ('00000000-0000-0000-0000-000000000011', 'Legacy', NOW())
+                          """)
+                      )
+                      await connection.execute(
+                          text("""
+                              INSERT INTO documents (
+                                  id, knowledge_base_id, filename, media_type, size_bytes, created_at
+                              )
+                              VALUES (
+                                  '00000000-0000-0000-0000-000000000022',
+                                  '00000000-0000-0000-0000-000000000011',
+                                  'legacy.txt', 'text/plain', 10, NOW()
+                              )
+                          """)
+                      )
+                      await connection.execute(
+                          text("""
+                              INSERT INTO document_chunks (
+                                  id, document_id, chunk_index, text, start_offset, end_offset
+                              )
+                              VALUES (
+                                  '00000000-0000-0000-0000-000000000033',
+                                  '00000000-0000-0000-0000-000000000022',
+                                  0, 'legacytext', 0, 10
+                              )
+                          """)
+                      )
+                      await connection.execute(
+                          text("""
+                              INSERT INTO chunk_embeddings (
+                                  id, chunk_id, provider, model, dimensions, embedding, created_at
+                              )
+                              VALUES (
+                                  '00000000-0000-0000-0000-000000000044',
+                                  '00000000-0000-0000-0000-000000000033',
+                                  'test', 'legacy-3d', 3, '[1,0,0]'::vector, NOW()
+                              )
+                          """)
+                      )
+              finally:
+                  await engine.dispose()
+
+
+          asyncio.run(seed())
+          PY
+
       - name: Apply all Alembic migrations
         run: alembic upgrade head
 
@@ -141,12 +207,37 @@ jobs:
                           "evaluation_runs",
                           "evaluation_baselines",
                           "evaluation_baseline_promotions",
+                          "document_chunk_versions",
                       }
                       rows = await connection.execute(
                           text("SELECT tablename FROM pg_tables WHERE schemaname = 'public'")
                       )
                       actual_tables = {row[0] for row in rows}
                       assert expected_tables <= actual_tables, expected_tables - actual_tables
+
+                      legacy = (
+                          await connection.execute(
+                              text("""
+                                  SELECT document.active_chunk_version,
+                                         chunk.chunk_version,
+                                         chunk.id,
+                                         embedding.chunk_id,
+                                         version.chunk_count
+                                  FROM documents AS document
+                                  JOIN document_chunks AS chunk ON chunk.document_id = document.id
+                                  JOIN chunk_embeddings AS embedding ON embedding.chunk_id = chunk.id
+                                  JOIN document_chunk_versions AS version
+                                    ON version.document_id = document.id
+                                   AND version.version = chunk.chunk_version
+                                  WHERE document.id = '00000000-0000-0000-0000-000000000022'
+                              """)
+                          )
+                      ).one()
+                      assert legacy.active_chunk_version == 1
+                      assert legacy.chunk_version == 1
+                      assert str(legacy.id) == "00000000-0000-0000-0000-000000000033"
+                      assert str(legacy.chunk_id) == str(legacy.id)
+                      assert legacy.chunk_count == 1
 
                       distance = await connection.scalar(
                           text("SELECT '[1,0,0]'::vector <=> '[1,0,0]'::vector")

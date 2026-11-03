@@ -53,6 +53,7 @@ class SqlAlchemyKeywordRetrievalRepository:
             )
             .where(
                 DocumentRecord.knowledge_base_id == knowledge_base_id,
+                DocumentChunkRecord.chunk_version == DocumentRecord.active_chunk_version,
                 DocumentChunkRecord.search_vector.op("@@")(ts_query),
             )
             .order_by(
@@ -66,9 +67,7 @@ class SqlAlchemyKeywordRetrievalRepository:
             async with self._session_factory() as session:
                 rows = (await session.execute(statement)).all()
         except SQLAlchemyError as exc:
-            raise KeywordRetrievalRepositoryError(
-                "keyword retrieval failed"
-            ) from exc
+            raise KeywordRetrievalRepositoryError("keyword retrieval failed") from exc
 
         return tuple(
             KeywordRetrievalMatch(

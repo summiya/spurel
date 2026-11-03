@@ -56,6 +56,7 @@ class SqlAlchemyChunkInspectorRepository:
             .where(
                 DocumentRecord.knowledge_base_id == knowledge_base_id,
                 DocumentChunkRecord.document_id == document_id,
+                DocumentChunkRecord.chunk_version == DocumentRecord.active_chunk_version,
             )
             .order_by(DocumentChunkRecord.chunk_index.asc())
             .limit(limit)
@@ -66,9 +67,7 @@ class SqlAlchemyChunkInspectorRepository:
             async with self._session_factory() as session:
                 rows = (await session.execute(statement)).all()
         except SQLAlchemyError as exc:
-            raise ChunkInspectionPersistenceError(
-                "failed to inspect document chunks"
-            ) from exc
+            raise ChunkInspectionPersistenceError("failed to inspect document chunks") from exc
 
         return tuple(
             ChunkInspectionItem(

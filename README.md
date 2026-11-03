@@ -146,6 +146,45 @@ knowledge bases they create. Without `SPUREL_TEST_DATABASE_URL`, they skip;
 the CI job sets it explicitly so missing configuration cannot produce a false pass.
 Regular unit tests run with `python -m pytest -q -m "not postgres"`.
 
+## 📖 Document chunk-set versioning
+
+Spurel retains **immutable indexing snapshots** when a document is reprocessed.
+This is versioning of the *derived chunks*, not replacement of the uploaded source
+file; existing document uploads remain immutable.
+
+- Uploading a document begins with `active_chunk_version = 0` (not indexed yet).
+- Its first successful chunk persistence creates version `1`.
+- Reprocessing with **identical chunk texts, indexes and offsets** reuses the
+  active version and all existing chunk UUIDs, preserving related embeddings
+  and evaluation judgments.
+- When the chunk set changes, a new numbered version is created. Old chunk
+  rows, embeddings, UUIDs and relevance labels are retained for historical use.
+- Vector/keyword/hybrid retrieval and the standard Chunk Inspector see **only
+  the active version**, preventing duplicate or stale results.
+
+Authenticated read-only history endpoints:
+
+```text
+GET /knowledge-bases/{knowledge_base_id}/documents/{document_id}/versions
+GET /knowledge-bases/{knowledge_base_id}/documents/{document_id}/versions/{version}/chunks
+```
+
+The document list response exposes `active_chunk_version`. The historical
+inspection endpoint preserves chunk IDs and embedding availability for older
+versions. Knowledge-base scoping applies to both history endpoints.
+
+**Upgrade:** The PostgreSQL migration CI job seeds a legacy document and embedding, then verifies they survive the schema change unchanged. Migration `0011_version_document_chunks` backfills existing
+documents with indexed chunks as version `1`, preserving **their original UUIDs,
+embeddings, and evaluation judgment references**. Existing uploaded-but-
+unprocessed documents remain at version `0`. Rollback from a database with
+multiple versions **discards inactive historical chunk rows and their embeddings**;
+back up the database first.
+
+**SP-05 remains:** New chunk sets become active after chunk persistence, before
+embedding completes. Safe staging, failure recovery, and atomic activation after
+successful embedding are the next separate task. SP-06 will address stale
+evaluation judgments when relevance labels refer to older content.
+
 ## ✨ What is Spurel?
 
 **Spurel** is an open-source RAG engineering workbench for developers who want to understand **why** a retrieval pipeline succeeds or fails.

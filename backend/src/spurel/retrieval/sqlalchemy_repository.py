@@ -32,9 +32,9 @@ class SqlAlchemyVectorRetrievalRepository:
         limit: int,
     ) -> Sequence[VectorRetrievalMatch]:
         """Return exact cosine-ranked chunks."""
-        distance = ChunkEmbeddingRecord.embedding.cosine_distance(
-            list(query_vector.values)
-        ).label("cosine_distance")
+        distance = ChunkEmbeddingRecord.embedding.cosine_distance(list(query_vector.values)).label(
+            "cosine_distance"
+        )
 
         statement = (
             select(
@@ -56,6 +56,7 @@ class SqlAlchemyVectorRetrievalRepository:
             )
             .where(
                 DocumentRecord.knowledge_base_id == knowledge_base_id,
+                DocumentChunkRecord.chunk_version == DocumentRecord.active_chunk_version,
                 ChunkEmbeddingRecord.provider == provider,
                 ChunkEmbeddingRecord.model == model,
                 ChunkEmbeddingRecord.dimensions == dimensions,
@@ -71,9 +72,7 @@ class SqlAlchemyVectorRetrievalRepository:
             async with self._session_factory() as session:
                 rows = (await session.execute(statement)).all()
         except SQLAlchemyError as exc:
-            raise VectorRetrievalRepositoryError(
-                "vector retrieval failed"
-            ) from exc
+            raise VectorRetrievalRepositoryError("vector retrieval failed") from exc
 
         return tuple(
             VectorRetrievalMatch(

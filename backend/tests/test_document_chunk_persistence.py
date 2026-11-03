@@ -28,10 +28,25 @@ def test_document_chunk_record_round_trip() -> None:
 
 def test_document_chunk_foreign_key_cascades_with_document() -> None:
     foreign_key = next(
-        iter(DocumentChunkRecord.__table__.c.document_id.foreign_keys)
+        key
+        for key in DocumentChunkRecord.__table__.c.document_id.foreign_keys
+        if key.target_fullname == "documents.id"
     )
 
-    assert foreign_key.target_fullname == "documents.id"
+    assert foreign_key.ondelete == "CASCADE"
+
+
+def test_chunk_version_foreign_key_preserves_version_identity() -> None:
+    foreign_key = next(
+        constraint
+        for constraint in DocumentChunkRecord.__table__.foreign_key_constraints
+        if constraint.name == "fk_document_chunks_version"
+    )
+
+    assert {element.target_fullname for element in foreign_key.elements} == {
+        "document_chunk_versions.document_id",
+        "document_chunk_versions.version",
+    }
     assert foreign_key.ondelete == "CASCADE"
 
 
@@ -47,19 +62,21 @@ def test_document_chunk_table_has_defense_in_depth_constraints() -> None:
         "ck_document_chunks_offset_order",
         "ck_document_chunks_offset_span",
         "ck_document_chunks_text_length",
+        "ck_document_chunks_version",
     }
 
 
-def test_document_chunk_index_is_unique_per_document() -> None:
+def test_document_chunk_index_is_unique_per_version() -> None:
     unique = next(
         constraint
         for constraint in DocumentChunkRecord.__table__.constraints
         if isinstance(constraint, UniqueConstraint)
-        and constraint.name == "uq_document_chunks_document_index"
+        and constraint.name == "uq_document_chunks_document_version_index"
     )
 
     assert [column.name for column in unique.columns] == [
         "document_id",
+        "chunk_version",
         "chunk_index",
     ]
 
