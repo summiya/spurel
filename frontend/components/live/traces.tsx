@@ -86,11 +86,15 @@ export function LiveTraceHistoryPage({ initialKnowledgeBaseId, initialTraceId }:
   const first = history.items.find((item) => item.id === firstId) ?? history.items[0] ?? null;
   const second =
     history.items.find((item) => item.id === secondId && item.id !== first?.id) ?? null;
-  const detail = snapshot?.kb === base?.id && snapshot.id === first?.id ? snapshot.data : null;
+  const detail =
+    snapshot && base && first && snapshot.kb === base.id && snapshot.id === first.id
+      ? snapshot.data
+      : null;
   const compared =
-    comparison?.kb === base?.id &&
-    comparison.first === first?.id &&
-    comparison.second === second?.id
+    comparison && base && first && second &&
+    comparison.kb === base.id &&
+    comparison.first === first.id &&
+    comparison.second === second.id
       ? comparison.data
       : null;
 
