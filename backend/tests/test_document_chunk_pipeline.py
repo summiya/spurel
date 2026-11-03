@@ -255,7 +255,6 @@ def test_pipeline_does_not_persist_when_chunking_fails() -> None:
     assert document.id not in chunk_repository.items
 
 
-
 def test_pipeline_can_opt_in_to_new_chunker_without_replacing_default() -> None:
     content = b"abcdefghijklmnop"
     document = Document.create(
@@ -281,7 +280,5 @@ def test_pipeline_can_opt_in_to_new_chunker_without_replacing_default() -> None:
     assert repository.items[document.id][0].text == "abcde"
 
     # The configured default chunker was not mutated by the opt-in run.
-    asyncio.run(
-        pipeline.run(knowledge_base_id=document.knowledge_base_id, document_id=document.id)
-    )
+    asyncio.run(pipeline.run(knowledge_base_id=document.knowledge_base_id, document_id=document.id))
     assert repository.items[document.id][0].text == "abcdefgh"

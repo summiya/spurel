@@ -5,7 +5,8 @@ import { POST } from "./route";
 
 const mocks = vi.hoisted(() => ({ authFailure: vi.fn(), backendRequest: vi.fn() }));
 vi.mock("@/lib/server/backend-client", () => ({
-  validUUID: (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value),
+  validUUID: (value: string) =>
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value),
   backendRequest: mocks.backendRequest,
   safeBackendError: () => ({ status: 503, error: "Backend unavailable." }),
 }));
@@ -27,7 +28,11 @@ function ctx(knowledgeBaseId = kb, documentId = doc) {
 function request(body?: string, headers?: Record<string, string>): NextRequest {
   return new NextRequest(url, {
     method: "POST",
-    headers: { Origin: "http://localhost:3000", ...(body ? { "Content-Type": "application/json" } : {}), ...headers },
+    headers: {
+      Origin: "http://localhost:3000",
+      ...(body ? { "Content-Type": "application/json" } : {}),
+      ...headers,
+    },
     body,
   });
 }
@@ -44,7 +49,8 @@ describe("SP-16 authenticated document processing proxy", () => {
     const response = await POST(request(), ctx());
     expect(response.status).toBe(200);
     expect(mocks.backendRequest).toHaveBeenCalledWith(upstream, {
-      method: "POST", timeoutMs: 180000,
+      method: "POST",
+      timeoutMs: 180000,
     });
     expect(response.headers.get("Cache-Control")).toBe("no-store");
   });
@@ -54,7 +60,9 @@ describe("SP-16 authenticated document processing proxy", () => {
     const response = await POST(request(JSON.stringify(body)), ctx());
     expect(response.status).toBe(200);
     expect(mocks.backendRequest).toHaveBeenCalledWith(upstream, {
-      method: "POST", body: JSON.stringify(body), timeoutMs: 180000,
+      method: "POST",
+      body: JSON.stringify(body),
+      timeoutMs: 180000,
     });
     expect(mocks.authFailure).toHaveBeenCalledWith(expect.any(NextRequest), true);
   });
@@ -75,10 +83,23 @@ describe("SP-16 authenticated document processing proxy", () => {
   });
 
   it("protects operator sessions and cross-origin writes", async () => {
-    mocks.authFailure.mockReturnValueOnce(NextResponse.json({ error: "Login required" }, { status: 401 }));
+    mocks.authFailure.mockReturnValueOnce(
+      NextResponse.json({ error: "Login required" }, { status: 401 }),
+    );
     expect((await POST(request(), ctx())).status).toBe(401);
-    mocks.authFailure.mockReturnValueOnce(NextResponse.json({ error: "Cross origin" }, { status: 403 }));
-    expect((await POST(request(JSON.stringify({ strategy: "tokens", chunk_size: 512, overlap: 64 }), { Origin: "http://evil.example" }), ctx())).status).toBe(403);
+    mocks.authFailure.mockReturnValueOnce(
+      NextResponse.json({ error: "Cross origin" }, { status: 403 }),
+    );
+    expect(
+      (
+        await POST(
+          request(JSON.stringify({ strategy: "tokens", chunk_size: 512, overlap: 64 }), {
+            Origin: "http://evil.example",
+          }),
+          ctx(),
+        )
+      ).status,
+    ).toBe(403);
     expect(mocks.backendRequest).not.toHaveBeenCalled();
   });
 });

@@ -109,16 +109,11 @@ def test_chunk_inspector_hides_persistence_errors() -> None:
     service.fail = True
     client = _client(service)
 
-    response = client.get(
-        f"/knowledge-bases/{uuid4()}/documents/{uuid4()}/chunks"
-    )
+    response = client.get(f"/knowledge-bases/{uuid4()}/documents/{uuid4()}/chunks")
 
     assert response.status_code == 503
-    assert response.json() == {
-        "detail": "chunk inspector temporarily unavailable"
-    }
+    assert response.json() == {"detail": "chunk inspector temporarily unavailable"}
     assert "secret details" not in response.text
-
 
 
 def test_chunk_inspector_adds_exact_current_tokenizer_measurements(
@@ -129,13 +124,16 @@ def test_chunk_inspector_adds_exact_current_tokenizer_measurements(
     service = FakeChunkInspectorService()
     service.items = (
         ChunkInspectionItem(
-            id=uuid4(), document_id=doc_id, index=0,
-            text="The café has a robot 🤖", start_offset=0, end_offset=22, embedding_count=1,
+            id=uuid4(),
+            document_id=doc_id,
+            index=0,
+            text="The café has a robot 🤖",
+            start_offset=0,
+            end_offset=22,
+            embedding_count=1,
         ),
     )
-    result = _client(service).get(
-        f"/knowledge-bases/{kb_id}/documents/{doc_id}/chunks"
-    )
+    result = _client(service).get(f"/knowledge-bases/{kb_id}/documents/{doc_id}/chunks")
     assert result.status_code == 200
     item = result.json()["items"][0]
     assert item["token_count"] == measured_tokens(service.items[0].text)[0]

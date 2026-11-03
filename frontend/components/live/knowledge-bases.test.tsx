@@ -125,7 +125,10 @@ describe("live source management", () => {
   });
 
   it("keeps legacy character settings by default and opts into token sizing explicitly", async () => {
-    vi.stubGlobal("confirm", vi.fn(() => true));
+    vi.stubGlobal(
+      "confirm",
+      vi.fn(() => true),
+    );
     render(<LiveKnowledgeBasesPage />);
     await screen.findByText("readme.txt");
     const strategy = screen.getByRole("combobox", { name: "Chunking method" });
@@ -137,9 +140,11 @@ describe("live source management", () => {
     fireEvent.click(screen.getByRole("button", { name: /^Process$/i }));
     await screen.findByText(/Indexed · version 1/);
     expect(window.confirm).toHaveBeenCalledOnce();
-    const call = vi.mocked(fetch).mock.calls.find(([url, opts]) =>
-      String(url).endsWith("/process") && opts?.method === "POST",
-    );
+    const call = vi
+      .mocked(fetch)
+      .mock.calls.find(
+        ([url, opts]) => String(url).endsWith("/process") && opts?.method === "POST",
+      );
     expect(JSON.parse(String(call?.[1]?.body))).toEqual({
       strategy: "tokens",
       chunk_size: 512,
@@ -148,7 +153,10 @@ describe("live source management", () => {
   });
 
   it("does not process when the opt-in confirmation is declined", async () => {
-    vi.stubGlobal("confirm", vi.fn(() => false));
+    vi.stubGlobal(
+      "confirm",
+      vi.fn(() => false),
+    );
     render(<LiveKnowledgeBasesPage />);
     await screen.findByText("readme.txt");
     fireEvent.change(screen.getByRole("combobox", { name: "Chunking method" }), {
@@ -156,8 +164,9 @@ describe("live source management", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: /^Process$/i }));
     expect(window.confirm).toHaveBeenCalledOnce();
-    expect(vi.mocked(fetch).mock.calls.some(([url]) => String(url).endsWith("/process")))
-      .toBe(false);
+    expect(vi.mocked(fetch).mock.calls.some(([url]) => String(url).endsWith("/process"))).toBe(
+      false,
+    );
   });
 
   it("processes a document and shows the persisted active version", async () => {

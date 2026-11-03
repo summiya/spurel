@@ -232,7 +232,6 @@ def test_staged_processing_records_failure_without_promotion() -> None:
     assert chunk_pipeline.events == ["renew", "fail"]
 
 
-
 def test_processing_explicit_options_select_chunker_without_mutating_legacy_default() -> None:
     knowledge_base_id = uuid4()
     document_id = uuid4()
@@ -242,9 +241,7 @@ def test_processing_explicit_options_select_chunker_without_mutating_legacy_defa
 
         async def run(self, *, knowledge_base_id: UUID, document_id: UUID, chunker=None):
             self.chosen_chunker = chunker
-            return await super().run(
-                knowledge_base_id=knowledge_base_id, document_id=document_id
-            )
+            return await super().run(knowledge_base_id=knowledge_base_id, document_id=document_id)
 
     chunk_pipeline = ConfigurableFakeChunkPipeline(
         result=DocumentChunkPipelineResult(
@@ -262,9 +259,7 @@ def test_processing_explicit_options_select_chunker_without_mutating_legacy_defa
             embedded_chunk_count=1,
         )
     )
-    options = DocumentChunkOptions(
-        strategy=ChunkStrategy.CHARACTERS, chunk_size=100, overlap=20
-    )
+    options = DocumentChunkOptions(strategy=ChunkStrategy.CHARACTERS, chunk_size=100, overlap=20)
     service = DocumentProcessingService(
         chunk_pipeline=chunk_pipeline,  # type: ignore[arg-type]
         embedding_pipeline=embedding_pipeline,  # type: ignore[arg-type]

@@ -312,9 +312,7 @@ async def inspect_document_version_chunks(
         ) from exc
 
     return VersionedChunkInspectionListResponse(
-        items=[
-            _to_chunk_inspection_response(item) for item in chunks
-        ],
+        items=[_to_chunk_inspection_response(item) for item in chunks],
         version=version,
         limit=limit,
         offset=offset,
@@ -347,9 +345,7 @@ async def inspect_document_chunks(
         ) from exc
 
     return ChunkInspectionListResponse(
-        items=[
-            _to_chunk_inspection_response(item) for item in chunks
-        ],
+        items=[_to_chunk_inspection_response(item) for item in chunks],
         limit=limit,
         offset=offset,
     )

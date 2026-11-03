@@ -12,10 +12,12 @@ describe("SP-16 explicit document chunking controls", () => {
     expect(parseChunkingOptions(DEFAULT_CHUNKING)).toEqual(DEFAULT_CHUNKING);
     expect(parseChunkingOptions(TOKEN_CHUNKING)).toEqual(TOKEN_CHUNKING);
     expect(isLegacyChunking(TOKEN_CHUNKING)).toBe(false);
-    expect(parseChunkingOptions({ strategy: "characters", chunk_size: 20000, overlap: 19999 }))
-      .not.toBeNull();
-    expect(parseChunkingOptions({ strategy: "tokens", chunk_size: 2000, overlap: 0 }))
-      .not.toBeNull();
+    expect(
+      parseChunkingOptions({ strategy: "characters", chunk_size: 20000, overlap: 19999 }),
+    ).not.toBeNull();
+    expect(
+      parseChunkingOptions({ strategy: "tokens", chunk_size: 2000, overlap: 0 }),
+    ).not.toBeNull();
   });
 
   it("rejects unknown strategies, malformed bodies, overlap violations and unsafe limits", () => {

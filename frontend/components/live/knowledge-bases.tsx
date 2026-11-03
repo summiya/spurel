@@ -216,7 +216,8 @@ export function LiveKnowledgeBasesPage() {
       !window.confirm(
         `Reprocess ${document.filename} using ${options.chunk_size} ${chunkStrategy} per chunk and ${options.overlap} overlap? Embedding may incur OpenAI charges. The current active version remains available until processing succeeds.`,
       )
-    ) return;
+    )
+      return;
     setProcessingId(document.id);
     setActionError("");
     try {
@@ -431,14 +432,16 @@ export function LiveKnowledgeBasesPage() {
             <div>
               <strong>Chunking settings for the next processing run</strong>
               <p className="text-hint">
-                Existing character chunking stays the default. Switch to token-based
-                windows only when you want model-aware token sizes. Changing settings
-                does not modify any document until you click Process or Reprocess.
+                Existing character chunking stays the default. Switch to token-based windows only
+                when you want model-aware token sizes. Changing settings does not modify any
+                document until you click Process or Reprocess.
               </p>
             </div>
             <div className="live-chunking-controls">
               <div>
-                <label htmlFor="chunk-strategy" className="field-label">Chunking method</label>
+                <label htmlFor="chunk-strategy" className="field-label">
+                  Chunking method
+                </label>
                 <select
                   id="chunk-strategy"
                   className="select-control"
@@ -459,25 +462,36 @@ export function LiveKnowledgeBasesPage() {
                 <label htmlFor="chunk-size" className="field-label">
                   Chunk size ({chunkStrategy === "tokens" ? "tokens" : "characters"})
                 </label>
-                <input id="chunk-size" className="input-control" type="number"
-                  min={1} max={chunkStrategy === "tokens" ? 2000 : 20000}
-                  value={chunkSize} onChange={(event) => setChunkSize(Number(event.target.value))} />
+                <input
+                  id="chunk-size"
+                  className="input-control"
+                  type="number"
+                  min={1}
+                  max={chunkStrategy === "tokens" ? 2000 : 20000}
+                  value={chunkSize}
+                  onChange={(event) => setChunkSize(Number(event.target.value))}
+                />
               </div>
               <div>
                 <label htmlFor="chunk-overlap" className="field-label">
                   Overlap ({chunkStrategy === "tokens" ? "tokens" : "characters"})
                 </label>
-                <input id="chunk-overlap" className="input-control" type="number" min={0}
+                <input
+                  id="chunk-overlap"
+                  className="input-control"
+                  type="number"
+                  min={0}
                   max={Math.max(0, chunkSize - 1)}
                   value={chunkOverlap}
-                  onChange={(event) => setChunkOverlap(Number(event.target.value))} />
+                  onChange={(event) => setChunkOverlap(Number(event.target.value))}
+                />
               </div>
             </div>
             {chunkStrategy === "tokens" ? (
               <p className="text-hint">
-                Token counts use the tokenizer for the configured embedding model.
-                A 20,000-character source-span safety cap also applies. Reprocessing creates
-                a new staged version when chunk boundaries change; older versions remain inspectable.
+                Token counts use the tokenizer for the configured embedding model. A
+                20,000-character source-span safety cap also applies. Reprocessing creates a new
+                staged version when chunk boundaries change; older versions remain inspectable.
               </p>
             ) : null}
           </div>

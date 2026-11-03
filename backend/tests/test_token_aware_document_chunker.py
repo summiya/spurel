@@ -112,7 +112,9 @@ def test_opt_in_strategy_preserves_default_character_chunking() -> None:
 def test_existing_character_chunker_still_returns_exact_previous_windows() -> None:
     chunks = FixedSizeDocumentChunker(chunk_size=5, overlap=2).chunk(text="abcdefghij")
     assert [(c.text, c.start_offset, c.end_offset) for c in chunks] == [
-        ("abcde", 0, 5), ("defgh", 3, 8), ("ghij", 6, 10)
+        ("abcde", 0, 5),
+        ("defgh", 3, 8),
+        ("ghij", 6, 10),
     ]
 
 

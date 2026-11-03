@@ -112,7 +112,6 @@ def test_process_document_returns_unprocessable_for_invalid_content() -> None:
     assert "raw parser detail" not in response.text
 
 
-
 def test_process_document_accepts_explicit_token_chunking_without_changing_legacy_post() -> None:
     kb_id = uuid4()
     doc_id = uuid4()

@@ -499,7 +499,8 @@ export function LiveChunkInspectorPage({ initialKnowledgeBaseId, initialDocument
                     <span>
                       Token count
                       <strong>
-                        {selectedChunk.token_count === undefined || selectedChunk.token_count === null
+                        {selectedChunk.token_count === undefined ||
+                        selectedChunk.token_count === null
                           ? "Unavailable"
                           : selectedChunk.token_count}
                       </strong>
@@ -515,7 +516,8 @@ export function LiveChunkInspectorPage({ initialKnowledgeBaseId, initialDocument
                   <p className="text-hint">
                     Token counts are calculated for the currently configured embedding-model
                     tokenizer, including historical chunks. If the model changes, an older
-                    version&apos;s displayed count is recalculated, not its original tokenizer metadata.
+                    version&apos;s displayed count is recalculated, not its original tokenizer
+                    metadata.
                   </p>
                 </Panel>
               ) : null}

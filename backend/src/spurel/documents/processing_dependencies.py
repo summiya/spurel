@@ -52,13 +52,9 @@ async def get_document_processing_service() -> AsyncIterator[DocumentProcessingS
     try:
         document_repository = SqlAlchemyDocumentRepository(async_session_factory)
         chunk_repository = SqlAlchemyDocumentChunkRepository(async_session_factory)
-        embedding_repository = SqlAlchemyChunkEmbeddingRepository(
-            async_session_factory
-        )
+        embedding_repository = SqlAlchemyChunkEmbeddingRepository(async_session_factory)
 
-        storage_root = Path(
-            os.getenv(LOCAL_STORAGE_ROOT_ENV, DEFAULT_LOCAL_STORAGE_ROOT)
-        )
+        storage_root = Path(os.getenv(LOCAL_STORAGE_ROOT_ENV, DEFAULT_LOCAL_STORAGE_ROOT))
         storage = LocalDocumentBlobStorage(storage_root)
 
         text_parser = TextDocumentParser()
