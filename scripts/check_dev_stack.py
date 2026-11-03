@@ -41,6 +41,12 @@ def check(root: Path) -> None:
         "Authenticated API access or PostgreSQL migrations failed"
     )
     assert _status(frontend) == 200, "Frontend health check failed"
+    assert _status(frontend + "/api/operator/session") == 200, (
+        "Frontend operator session endpoint failed"
+    )
+    assert _status(frontend + "/api/workspace/knowledge-bases") == 401, (
+        "Anonymous browser must not access the backend bearer proxy"
+    )
     print(f"Spurel is ready: frontend {frontend}, backend {api}/health")
 
 

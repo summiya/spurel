@@ -178,7 +178,10 @@ export function WorkbenchShell({ children }: { children: ReactNode }) {
                   <kbd>⌘ K</kbd>
                 </button>
                 <span className="top-demo-pill">
-                  <span /> INTERACTIVE DEMO
+                  <span />{" "}
+                  {pathname === "/knowledge-bases" || pathname === "/operator/login"
+                    ? "LIVE WORKSPACE"
+                    : "INTERACTIVE DEMO"}
                 </span>
                 <button
                   type="button"
@@ -197,7 +200,9 @@ export function WorkbenchShell({ children }: { children: ReactNode }) {
             <main id="main-content" className="page-content" tabIndex={-1}>
               {children}
               <footer className="page-footer">
-                SPUREL DESIGN PREVIEW · ALL METRICS AND DOCUMENTS ARE ILLUSTRATIVE
+                {pathname === "/knowledge-bases"
+                  ? "SPUREL · LIVE KNOWLEDGE BASES & DOCUMENTS · OTHER SCREENS USE SAMPLE DATA"
+                  : "SPUREL DESIGN PREVIEW · DEMO SCREENS USE ILLUSTRATIVE DATA"}
               </footer>
             </main>
           </div>

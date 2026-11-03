@@ -51,7 +51,15 @@ def test_bootstrap_does_not_overwrite_existing_secrets(tmp_path: Path) -> None:
 
     initialize_env(tmp_path)
 
-    assert target.read_text(encoding="utf-8") == original
+    updated = target.read_text(encoding="utf-8")
+    assert updated.startswith(original)
+    for field in ("SPUREL_FRONTEND_OPERATOR_PASSWORD", "SPUREL_FRONTEND_SESSION_SECRET"):
+        values = [
+            line.split("=", 1)[1] for line in updated.splitlines() if line.startswith(field + "=")
+        ]
+        assert len(values) == 1 and len(values[0]) >= 32
+    initialize_env(tmp_path)
+    assert target.read_text(encoding="utf-8") == updated
 
 
 @pytest.mark.parametrize(
@@ -92,3 +100,35 @@ def test_bootstrap_refuses_symlink_target(tmp_path: Path) -> None:
         initialize_env(tmp_path)
 
     assert external.read_text(encoding="utf-8") == "SPUREL_API_TOKEN=existing-secret\n"
+
+
+@pytest.mark.parametrize(
+    "field",
+    ["SPUREL_FRONTEND_OPERATOR_PASSWORD", "SPUREL_FRONTEND_SESSION_SECRET"],
+)
+def test_frontend_secrets_must_be_strong_and_unique(tmp_path: Path, field: str) -> None:
+    _template(tmp_path)
+    target = tmp_path / ".env"
+    token = "X" * 48
+    original = f"SPUREL_API_TOKEN={token}\n{field}=weak\n"
+    target.write_text(original, encoding="utf-8")
+    with pytest.raises(ValueError, match=field):
+        initialize_env(tmp_path)
+    assert target.read_text(encoding="utf-8") == original
+
+
+def test_frontend_secrets_are_distinct_from_api_token(tmp_path: Path) -> None:
+    _template(tmp_path)
+    initialize_env(tmp_path)
+    config = dict(
+        line.split("=", 1)
+        for line in (tmp_path / ".env").read_text(encoding="utf-8").splitlines()
+        if "=" in line and not line.startswith("#")
+    )
+    tokens = [
+        config["SPUREL_API_TOKEN"],
+        config["SPUREL_FRONTEND_OPERATOR_PASSWORD"],
+        config["SPUREL_FRONTEND_SESSION_SECRET"],
+    ]
+    assert len(set(tokens)) == 3
+    assert all(len(token) >= 32 for token in tokens)

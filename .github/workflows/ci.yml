@@ -372,6 +372,9 @@ jobs:
       - name: Smoke-test migrated database, bearer-protected API and frontend
         run: make status
 
+      - name: Verify live frontend operator session, CSRF, KB and document upload
+        run: python3 scripts/smoke_live_workspace.py
+
       - name: Inspect service logs on failure
         if: failure()
         run: |

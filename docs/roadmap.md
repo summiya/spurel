@@ -25,12 +25,14 @@ These tasks were prioritized first because the rest of the workbench depends on 
 
 ## Phase 2 — Functional frontend (next)
 
-SP-09 replaces the Next.js placeholder with an interactive **sample-only** shell and demo screens. Actual live backend integration remains **planned** in SP-10–SP-15, even where backend API routes already exist.
+SP-09 replaces the Next.js placeholder with an interactive shell and demo screens.
+SP-10 connects real knowledge bases and documents using a local operator session;
+retrieval/inspection/evaluation and RAG integrations remain **planned** in SP-11–SP-15, even where backend API routes already exist.
 
 | Task | Priority | Status | Scope / acceptance target |
 | --- | --- | --- | --- |
 | **SP-09** | **Critical — this PR** | ◐ In review | Approved responsive workbench shell, navigation, command palette, theme, demo-only interactive screens, reusable error/loading states and **server-only** backend boundary without exposing the shared API token |
-| SP-10 | High | ☐ Planned | Knowledge-base and document UI: list/create KBs, upload/list documents, processing state and error handling |
+| SP-10 | High | ◐ In review | Operator session and server-only bearer proxy; live KB create/list, document upload/list, indexing, errors and pagination. [PR pending] |
 | SP-11 | High | ☐ Planned | Chunk Inspector: display active chunks, offsets, version history, embedding availability and processing status |
 | SP-12 | High | ☐ Planned | Retrieval Playground: issue vector/keyword/hybrid queries and display ranks, scores, traces and configuration |
 | SP-13 | High | ☐ Planned | Trace Comparison UI: compare saved retrieval traces and explain candidate/ranking differences |

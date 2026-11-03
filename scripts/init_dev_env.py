@@ -7,7 +7,11 @@ import sys
 import tempfile
 from pathlib import Path
 
-_TOKEN_LINE = re.compile(r"(?m)^SPUREL_API_TOKEN=(.*)$")
+_SECRET_FIELDS = (
+    "SPUREL_API_TOKEN",
+    "SPUREL_FRONTEND_OPERATOR_PASSWORD",
+    "SPUREL_FRONTEND_SESSION_SECRET",
+)
 _MIN_TOKEN_LENGTH = 32
 
 
@@ -22,22 +26,29 @@ def initialize_env(root: Path) -> None:
     content = target.read_text(encoding="utf-8") if existed else example.read_text(
         encoding="utf-8"
     )
-    matches = list(_TOKEN_LINE.finditer(content))
-    if len(matches) != 1:
-        raise ValueError("Exactly one SPUREL_API_TOKEN setting is required")
+    for field in _SECRET_FIELDS:
+        expression = re.compile(rf"(?m)^{re.escape(field)}=(.*)$")
+        matches = list(expression.finditer(content))
+        if len(matches) > 1:
+            raise ValueError(f"Exactly one {field} setting is required")
 
-    match = matches[0]
-    token = match.group(1)
-    if not token:
-        token = secrets.token_urlsafe(48)
-        content = content[:match.start(1)] + token + content[match.end(1):]
-    elif (
-        len(token) < _MIN_TOKEN_LENGTH
-        or not token.isascii()
-        or not token.isprintable()
-        or any(character.isspace() for character in token)
-    ):
-        raise ValueError("SPUREL_API_TOKEN must be at least 32 printable ASCII characters")
+        if not matches:
+            content = content.rstrip("\n") + f"\n{field}={secrets.token_urlsafe(48)}\n"
+            continue
+
+        match = matches[0]
+        value = match.group(1)
+        if not value:
+            value = secrets.token_urlsafe(48)
+            content = content[:match.start(1)] + value + content[match.end(1):]
+        elif (
+            len(value) < _MIN_TOKEN_LENGTH
+            or len(value) > 512
+            or not value.isascii()
+            or not value.isprintable()
+            or any(character.isspace() for character in value)
+        ):
+            raise ValueError(f"{field} must be 32-512 printable ASCII characters")
 
     if not existed or target.read_text(encoding="utf-8") != content:
         # Atomic replacement avoids leaving half-written secrets after a crash.

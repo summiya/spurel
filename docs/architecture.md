@@ -2,7 +2,9 @@
 
 [← README](../README.md) · [Roadmap](roadmap.md) · [Local development](development.md)
 
-This document describes the **actual pre-alpha implementation**, not imagined product features. Spurel has working backend APIs; SP-09 introduces an interactive Next.js **demo shell** with fixture data but does not yet wire its UI screens to live backend operations.
+Spurel has working backend APIs and an interactive Next.js frontend. SP-10 wires the
+Knowledge Bases and Documents screen to the backend through local operator
+authentication. Other workbench screens continue to use clearly labeled fixtures.
 
 ## System boundary
 
@@ -42,7 +44,7 @@ FastAPI runs on Python 3.13 and uses Pydantic schemas, application services, int
 | [`evaluation_datasets/`](../backend/src/spurel/evaluation_datasets/) | Labeled data, benchmarks, baseline history, quality gates and CLI |
 | [`infrastructure/`](../backend/src/spurel/infrastructure/) | PDF/text parsers, fixed character chunker, local storage, OpenAI adapters |
 | [`backend/migrations/`](../backend/migrations/) | PostgreSQL schema migrations |
-| [`frontend/app/`](../frontend/app/) | Navigable frontend foundation with interactive **fixture-only** demo views; API-connected workbench screens remain future work |
+| [`frontend/app/`](../frontend/app/) | Live Knowledge Bases and Documents routes behind operator sign-in; other workbench views use fixtures pending later milestones |
 
 ## Ingestion and versioned indexing
 
@@ -100,6 +102,14 @@ POST /knowledge-bases/{knowledge_base_id}/rag/answer
 ```
 
 Except for `GET /health`, the business endpoints require a shared `SPUREL_API_TOKEN`. Swagger/OpenAPI are disabled by default and can be enabled for **trusted local** use with `SPUREL_ENABLE_DOCS=1`.
+
+**SP-10 frontend operator boundary:** The Knowledge Bases and Documents UI can now
+use live FastAPI data. It requires a strong locally generated operator password,
+verified by the Next.js server, which sets a signed, HTTP-only, SameSite=Strict
+cookie (8-hour TTL). The server sends the existing FastAPI bearer token only
+to explicit allowlisted source-management endpoints. Browser mutations are
+rejected on mismatched `Origin`. This provides a practical **single-operator
+development workflow**, not scalable user identity or tenant authorization.
 
 **Important:** Filtering repository operations by knowledge-base ID is not permission-aware tenant isolation. The current bearer token permits access to all knowledge-base routes. Do not deploy this as a public multi-tenant product without real user/session authentication and authorization.
 

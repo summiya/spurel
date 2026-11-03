@@ -39,7 +39,7 @@ make down     # Stop without deleting the local database or uploaded files
 
 | Local service | URL or port | Status |
 | --- | --- | --- |
-| Next.js interactive preview | http://127.0.0.1:3000 | Navigable demo using sample data, not live backend data |
+| Next.js frontend | http://127.0.0.1:3000 | Live KB/documents after local operator login; other screens are demos |
 | FastAPI health | http://127.0.0.1:8000/health | Public |
 | FastAPI business API | http://127.0.0.1:8000/knowledge-bases | Shared bearer token required |
 | PostgreSQL + pgvector | 127.0.0.1:5432 | Local development only |
@@ -65,10 +65,17 @@ Trace History, RAG Answers, and Settings. You can change retrieval mode and Top 
 different sample documents and chunk versions, compare sample runs, and explore cited example
 answers. **Every sample result, metric and document is fabricated for this design preview.**
 
-Frontend protected API calls are deliberately **not** enabled: a shared backend bearer token
-cannot safely be offered to anonymous browser users. The only planned server-only connector
-in SP-09 is a public health-check helper. SP-10–SP-15 will implement live workflows after
-an appropriate frontend authentication/session boundary is introduced.
+**SP-10 connects live Knowledge Bases and Documents** through a signed, HTTP-only local
+operator session. Create collections, upload files and process them directly against your
+PostgreSQL-backed FastAPI API. The backend bearer token is used **only in the Next.js server**,
+never sent to browser JavaScript. Retrieval, chunk inspection, evaluation, trace and RAG
+views remain illustrative demo screens until subsequent SP-11–SP-15 milestones.
+
+After `make up`, find your locally generated operator password in the ignored
+`.env` by running `grep '^SPUREL_FRONTEND_OPERATOR_PASSWORD=' .env` from the repo root.
+Open `http://localhost:3000/knowledge-bases` (or your configured frontend host port)
+and sign in. Never share the password or session signing secret. Use `make up` after
+pulling SP-10 to add the missing settings to **existing** `.env` files.
 
 ## Implemented today
 
@@ -83,9 +90,13 @@ an appropriate frontend authentication/session boundary is introduced.
 | Label consistency | Reject new judgments for inactive or foreign chunks; detect stale historical labels before live evaluations; judgment audit endpoint | [Judgment audit](backend/src/spurel/evaluation_datasets/judgment_integrity.py) |
 | RAG answers | Hybrid retrieval plus OpenAI text generation, bounded source excerpts and model-requested source labels | [RAG](backend/src/spurel/rag/) |
 | Reprocessing | Immutable chunk-set versions, stable UUIDs for unchanged chunks, staged embeddings, fenced retries and atomic activation | [Processing](backend/src/spurel/documents/processing.py) |
+| Live frontend source management | Local operator login, live knowledge-base creation/list, document upload/list and indexing, server-only backend proxy | [Knowledge bases](frontend/components/live/knowledge-bases.tsx) |
 | Local developer tools | Full-stack Docker Compose, Alembic, pytest/PostgreSQL integration checks, Ruff, frontend lint/types/tests/build | [Development](docs/development.md) |
 
-**Security boundary:** The frontend does not expose a protected API proxy or pass the backend token to the browser. Until a real user/session boundary is implemented, every interactive frontend screen uses local demo fixtures. Spurel currently authenticates the backend with **one shared bearer token**. Knowledge-base scoped queries are not user-specific tenant authorization. Do **not** expose it as a public multi-user service.
+**Security boundary:** A local operator password gates the Next.js source-management API. A
+signed, HTTP-only session allows the Next.js server to call FastAPI with its separate
+shared bearer token; no backend token is included in client code. This is **single-user
+local access**, not per-user authorization, RBAC, or permission-aware multi-tenancy. Knowledge-base scoped queries are not user-specific tenant authorization. Do **not** expose it as a public multi-user service.
 
 ## Not implemented yet
 
