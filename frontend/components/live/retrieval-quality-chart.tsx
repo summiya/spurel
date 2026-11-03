@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { EmptyState, ErrorState, LoadingState, Panel } from "@/components/ui";
 import type { EvaluationRunSummary } from "@/lib/evaluation-types";
@@ -161,8 +161,21 @@ export function RetrievalQualityChart({
   const [preferredConfig, setPreferredConfig] = useState("");
   const configs = qualityConfigurations(runs);
   const activeConfig = configs.find((config) => config.key === preferredConfig) ?? configs[0];
-  const nowMs = suppliedNowMs ?? Date.now();
-  const points = activeConfig ? qualityChartPoints(runs, activeConfig.key, days, nowMs) : [];
+  const [measuredAt, setMeasuredAt] = useState<number | null>(null);
+  useEffect(() => {
+    if (suppliedNowMs !== undefined) return;
+    let active = true;
+    void Promise.resolve().then(() => {
+      if (active) setMeasuredAt(Date.now());
+    });
+    return () => {
+      active = false;
+    };
+  }, [suppliedNowMs]);
+  const nowMs = suppliedNowMs ?? measuredAt;
+  const points = activeConfig && nowMs !== null
+    ? qualityChartPoints(runs, activeConfig.key, days, nowMs)
+    : [];
 
   return (
     <Panel
@@ -218,6 +231,8 @@ export function RetrievalQualityChart({
         <LoadingState label="Loading benchmark quality history" />
       ) : error ? (
         <ErrorState description={error} onRetry={refresh} />
+      ) : nowMs === null ? (
+        <LoadingState label="Preparing quality time window" />
       ) : runs.length === 0 ? (
         <EmptyState
           title="No benchmark history yet"
