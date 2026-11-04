@@ -14,6 +14,7 @@ import {
 } from "@/components/ui";
 import { useDemoToast } from "@/components/workbench-shell";
 import type { PersistedChunk } from "@/lib/chunk-inspection-types";
+import { qualityInterpretation } from "@/lib/quality-uncertainty";
 import {
   deltaPercent,
   percent,
@@ -128,6 +129,7 @@ export function LiveEvaluationsPage() {
   const persistedDetail = loadScope(runSnapshot, baseId, datasetId);
   const runDetail = persistedDetail?.run_id === selectedRun?.run_id ? persistedDetail : null;
   const currentRun = selectedRun ?? null;
+  const interpretation = qualityInterpretation(currentRun);
   const comparison = loadScope(comparisonSnapshot, baseId, datasetId);
   const compared =
     comparison?.first.run_id === selectedRun?.run_id &&
@@ -839,7 +841,33 @@ export function LiveEvaluationsPage() {
               icon="chart"
               direction="neutral"
             />
+            <MetricCard
+              label="Hit @ K"
+              value={percent(currentRun?.hit_rate_at_k)}
+              description="Fraction of labeled queries finding at least one relevant chunk"
+              icon="check"
+              direction="neutral"
+            />
+            <MetricCard
+              label="MAP @ K"
+              value={percent(currentRun?.mean_average_precision_at_k)}
+              description="Mean average precision over the ranked relevant chunks"
+              icon="layers"
+              direction="neutral"
+            />
           </div>
+
+          <Panel
+            title="Sample-aware quality interpretation"
+            hint="Measured metrics and explicit uncertainty, not calibrated model confidence"
+          >
+            <div className="eval-diagnostics">
+              <strong>Hit@K · 95% Wilson interval: {interpretation.interval}</strong>
+              <p>{interpretation.sample}</p>
+              <p>{interpretation.coverage}</p>
+              <p className="text-hint">{interpretation.disclaimer}</p>
+            </div>
+          </Panel>
 
           <Panel
             title="Persisted benchmark history"
@@ -865,6 +893,8 @@ export function LiveEvaluationsPage() {
                       <th>Precision</th>
                       <th>MRR</th>
                       <th>NDCG</th>
+                      <th>Hit@K</th>
+                      <th>MAP@K</th>
                       <th>Mean latency</th>
                     </tr>
                   </thead>
@@ -891,6 +921,8 @@ export function LiveEvaluationsPage() {
                         <td>{percent(item.mean_precision_at_k)}</td>
                         <td>{item.mrr_at_k.toFixed(3)}</td>
                         <td>{percent(item.mean_ndcg_at_k)}</td>
+                        <td>{percent(item.hit_rate_at_k)}</td>
+                        <td>{percent(item.mean_average_precision_at_k)}</td>
                         <td>{ms(item.mean_duration_ms)}</td>
                       </tr>
                     ))}
@@ -929,6 +961,8 @@ export function LiveEvaluationsPage() {
                         <th>Precision</th>
                         <th>RR</th>
                         <th>NDCG</th>
+                        <th>Hit</th>
+                        <th>AP@K</th>
                         <th>Coverage</th>
                         <th>Duration</th>
                       </tr>
@@ -941,6 +975,8 @@ export function LiveEvaluationsPage() {
                           <td>{percent(item.precision_at_k)}</td>
                           <td>{item.reciprocal_rank_at_k.toFixed(3)}</td>
                           <td>{percent(item.ndcg_at_k)}</td>
+                          <td>{item.hit_at_k == null ? "N/A" : item.hit_at_k ? "Yes" : "No"}</td>
+                          <td>{percent(item.average_precision_at_k)}</td>
                           <td>{percent(item.judgment_coverage_at_k)}</td>
                           <td>{ms(item.duration_ms)}</td>
                         </tr>
@@ -1077,6 +1113,18 @@ export function LiveEvaluationsPage() {
                               percent(compared.first.mean_ndcg_at_k),
                               percent(compared.second.mean_ndcg_at_k),
                               deltaPercent(compared.mean_ndcg_delta),
+                            ),
+                            metricRow(
+                              "Hit @ K",
+                              percent(compared.first.hit_rate_at_k),
+                              percent(compared.second.hit_rate_at_k),
+                              deltaPercent(compared.hit_rate_delta),
+                            ),
+                            metricRow(
+                              "MAP @ K",
+                              percent(compared.first.mean_average_precision_at_k),
+                              percent(compared.second.mean_average_precision_at_k),
+                              deltaPercent(compared.mean_average_precision_delta),
                             ),
                             metricRow(
                               "Mean latency",
