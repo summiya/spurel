@@ -40,7 +40,7 @@ export function qualityInterpretation(
     interval,
     sample:
       run.case_count < 20
-        ? `Small labeled sample (${run.case_count} cases); estimate is highly uncertain.`
+        ? `Small labeled sample (${run.case_count} ${run.case_count === 1 ? "case" : "cases"}); estimate is highly uncertain.`
         : `Evaluated ${run.case_count} labeled cases.`,
     coverage,
     disclaimer:

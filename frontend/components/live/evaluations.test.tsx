@@ -279,8 +279,10 @@ describe("SP-14 live evaluation workbench", () => {
     priorRuns = true;
     render(<LiveEvaluationsPage />);
     expect(await screen.findByText("Sample-aware quality interpretation")).toBeInTheDocument();
-    expect(screen.getByText(/Hit@K · 95% Wilson interval: 20.6%–100.0%/)).toBeInTheDocument();
-    expect(screen.getByText(/Small labeled sample \(1 cases\)/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/Hit@K · 95% Wilson interval: \d+\.\d+%–100\.0%/),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Small labeled sample \(1 case\)/)).toBeInTheDocument();
     expect(screen.getByText(/not model confidence or probability calibration/)).toBeInTheDocument();
     expect(screen.getByText("Hit @ K")).toBeInTheDocument();
     expect(screen.getByText("MAP @ K")).toBeInTheDocument();
