@@ -48,9 +48,7 @@ class VectorRetrievalService:
             or limit < 1
             or limit > MAX_VECTOR_RETRIEVAL_RESULTS
         ):
-            raise VectorRetrievalQueryError(
-                "retrieval result limit is outside the supported range"
-            )
+            raise VectorRetrievalQueryError("retrieval result limit is outside the supported range")
 
         batch = await self._provider.embed((normalized_query,))
 
