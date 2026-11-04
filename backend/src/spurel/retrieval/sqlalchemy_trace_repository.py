@@ -7,6 +7,7 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from spurel.retrieval.metadata_filters import RetrievalMetadataFilters
 from spurel.retrieval.trace_persistence import (
     RetrievalTraceRecord,
     RetrievalTraceResultRecord,
@@ -143,6 +144,10 @@ class SqlAlchemyRetrievalTraceRepository:
                 for result_record in result_records
             ),
             created_at=record.created_at,
+            metadata_filters=(
+                RetrievalMetadataFilters.from_snapshot(record.metadata_filters)
+                if record.metadata_filters is not None else None
+            ),
         )
 
 
@@ -165,4 +170,8 @@ def _to_summary(
         embedding_dimensions=record.embedding_dimensions,
         result_count=int(result_count),
         created_at=record.created_at,
+        metadata_filters=(
+            RetrievalMetadataFilters.from_snapshot(record.metadata_filters)
+            if record.metadata_filters is not None else None
+        ),
     )

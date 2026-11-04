@@ -389,6 +389,62 @@ async def _http_upload_process_retrieve(postgres_url: str, tmp_path: Path) -> No
                 assert persisted.results[0].document_id == uploaded_ids[0]
                 assert persisted.mode.value == mode
 
+            # SP-19: post-ranking filtering would incorrectly starve these results.
+            # Every retrieval mode must apply document metadata within SQL.
+            for mode in ("vector", "keyword", "hybrid"):
+                request = {
+                    "query": "refund",
+                    "top_k": 3,
+                    "filters": {
+                        "document_ids": [str(uploaded_ids[0])],
+                        "media_types": ["text/plain"],
+                        "filename_contains": "REFUND",
+                        "created_after": "2020-01-01T00:00:00Z",
+                        "created_before": "2030-01-01T00:00:00Z",
+                    },
+                }
+                if mode == "hybrid":
+                    request.update(candidate_k=3, rrf_k=60)
+                response = await client.post(
+                    f"/knowledge-bases/{public_kb}/retrieval/{mode}",
+                    json=request,
+                    headers=headers,
+                )
+                assert response.status_code == 200, response.text
+                assert response.json()["matches"]
+                assert all(
+                    match["document_id"] == str(uploaded_ids[0])
+                    for match in response.json()["matches"]
+                )
+                saved = await traces.get_by_id(
+                    knowledge_base_id=public_kb,
+                    trace_id=UUID(response.json()["trace_id"]),
+                )
+                assert saved.metadata_filters is not None
+                assert saved.metadata_filters.document_ids == (uploaded_ids[0],)
+                assert saved.metadata_filters.filename_contains == "REFUND"
+
+                # A document from another knowledge base cannot escape scope,
+                # even when an otherwise valid document UUID is supplied.
+                blocked = {**request, "filters": {"document_ids": [str(uploaded_ids[2])]}}
+                excluded = await client.post(
+                    f"/knowledge-bases/{public_kb}/retrieval/{mode}",
+                    json=blocked,
+                    headers=headers,
+                )
+                assert excluded.status_code == 200
+                assert excluded.json()["matches"] == []
+
+                # PDF is an allowed file type but none were indexed in this KB.
+                incompatible = {**request, "filters": {"media_types": ["application/pdf"]}}
+                excluded_type = await client.post(
+                    f"/knowledge-bases/{public_kb}/retrieval/{mode}",
+                    json=incompatible,
+                    headers=headers,
+                )
+                assert excluded_type.status_code == 200
+                assert excluded_type.json()["matches"] == []
+
             assert await traces.list_by_knowledge_base(knowledge_base_id=public_kb, limit=20)
             document = await SqlAlchemyDocumentRepository(database.sessions).get_by_id(
                 knowledge_base_id=public_kb, document_id=uploaded_ids[0]

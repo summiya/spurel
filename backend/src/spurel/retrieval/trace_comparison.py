@@ -4,6 +4,7 @@ import asyncio
 from dataclasses import dataclass
 from uuid import UUID
 
+from spurel.retrieval.metadata_filters import RetrievalMetadataFilters
 from spurel.retrieval.trace_service import RetrievalTraceService
 from spurel.retrieval.tracing import (
     RetrievalTrace,
@@ -35,6 +36,7 @@ class RetrievalTraceComparisonSide:
     embedding_model: str | None
     embedding_dimensions: int | None
     result_count: int
+    metadata_filters: RetrievalMetadataFilters | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -230,4 +232,5 @@ def _side(trace: RetrievalTrace) -> RetrievalTraceComparisonSide:
         embedding_model=trace.embedding_model,
         embedding_dimensions=trace.embedding_dimensions,
         result_count=len(trace.results),
+        metadata_filters=trace.metadata_filters,
     )

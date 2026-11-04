@@ -1,3 +1,5 @@
+import { parseRetrievalMetadataFilters, type RetrievalMetadataFilters } from "@/lib/retrieval-filter-types";
+
 export type RetrievalMode = "vector" | "keyword" | "hybrid";
 
 export interface RetrievalParameters {
@@ -5,6 +7,7 @@ export interface RetrievalParameters {
   top_k: number;
   candidate_k?: number;
   rrf_k?: number;
+  filters?: RetrievalMetadataFilters;
 }
 
 export interface RetrievalMatch {
@@ -46,6 +49,7 @@ export interface RetrievalTraceDetail {
   embedding_dimensions: number | null;
   created_at: string;
   results: RetrievalMatch[];
+  filters?: RetrievalMetadataFilters | null;
 }
 
 const MODES: ReadonlyArray<RetrievalMode> = ["vector", "keyword", "hybrid"];
@@ -71,14 +75,16 @@ export function parseRetrievalRequest(
   if (!isRecord(value)) return null;
   const required =
     mode === "hybrid" ? ["query", "top_k", "candidate_k", "rrf_k"] : ["query", "top_k"];
-  if (Object.keys(value).some((key) => !required.includes(key))) return null;
+  if (Object.keys(value).some((key) => ![...required, "filters"].includes(key))) return null;
+  const filters = "filters" in value ? parseRetrievalMetadataFilters(value.filters) : null;
+  if ("filters" in value && filters === null) return null;
   if (typeof value.query !== "string") return null;
   const query = value.query.trim();
   if (query.length < 1 || query.length > 8_000) return null;
   if (!boundedInteger(value.top_k, 1, 100)) return null;
 
   if (mode !== "hybrid") {
-    return { query, top_k: value.top_k };
+    return { query, top_k: value.top_k, ...(filters ? { filters } : {}) };
   }
   if (
     !boundedInteger(value.candidate_k, value.top_k, 100) ||
@@ -91,6 +97,7 @@ export function parseRetrievalRequest(
     top_k: value.top_k,
     candidate_k: value.candidate_k,
     rrf_k: value.rrf_k,
+    ...(filters ? { filters } : {}),
   };
 }
 
@@ -112,6 +119,11 @@ export function isRetrievalResult(value: unknown): value is RetrievalResult {
     (!boundedInteger(value.candidate_k, value.top_k, 100) || !boundedInteger(value.rrf_k, 1, 1_000))
   )
     return false;
+
+  if (
+    "filters" in value && value.filters !== null &&
+    parseRetrievalMetadataFilters(value.filters) === null
+  ) return false;
 
   return value.matches.every((item: unknown, index: number) => {
     if (!isRecord(item)) return false;

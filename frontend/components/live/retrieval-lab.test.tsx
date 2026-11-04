@@ -53,6 +53,21 @@ function fakeFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Respon
   if (url === "/api/workspace/knowledge-bases?offset=0") {
     return Promise.resolve(json({ items: [kb], limit: 50, offset: 0 }));
   }
+  if (url === `/api/workspace/knowledge-bases/${kb.id}/documents?offset=0`) {
+    return Promise.resolve(json({
+      items: [{
+        id: documentId,
+        knowledge_base_id: kb.id,
+        filename: "Operations manual.pdf",
+        media_type: "application/pdf",
+        size_bytes: 2048,
+        created_at: "2026-11-03T10:00:00Z",
+        active_chunk_version: 1,
+      }],
+      limit: 50,
+      offset: 0,
+    }));
+  }
   if (url === base + "/keyword" && init?.method === "POST") {
     const request = JSON.parse(String(init.body));
     return Promise.resolve(
@@ -61,6 +76,7 @@ function fakeFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Respon
         query: request.query,
         top_k: request.top_k,
         trace_id: traceId,
+        filters: request.filters ?? null,
         duration_ms: 13.33,
         matches:
           request.query === "nothing here"
@@ -80,6 +96,7 @@ function fakeFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Respon
         query: request.query,
         top_k: request.top_k,
         trace_id: traceId,
+        filters: request.filters ?? null,
         duration_ms: 91.5,
         matches: [
           { ...first, cosine_similarity: 0.9321 },
@@ -98,6 +115,7 @@ function fakeFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Respon
         candidate_k: request.candidate_k,
         rrf_k: request.rrf_k,
         trace_id: traceId,
+        filters: request.filters ?? null,
         duration_ms: 112.45,
         matches: [
           {
@@ -222,6 +240,45 @@ describe("live retrieval lab", () => {
       candidate_k: 14,
       rrf_k: 81,
     });
+  });
+
+  it("restricts search by document, type and filename without any automatic requests", async () => {
+    render(<LiveRetrievalLabPage />);
+    await ready();
+    // The document picker loads real selected-KB documents separately from search.
+    await screen.findByRole("option", { name: "Operations manual.pdf" });
+    fireEvent.change(screen.getByRole("combobox", { name: "Document" }), {
+      target: { value: documentId },
+    });
+    fireEvent.change(screen.getByRole("combobox", { name: "File type" }), {
+      target: { value: "application/pdf" },
+    });
+    fireEvent.change(screen.getByRole("textbox", { name: "Filename contains" }), {
+      target: { value: "manual" },
+    });
+    expect(vi.mocked(fetch).mock.calls.filter(([, init]) => init?.method === "POST"))
+      .toHaveLength(0);
+    fireEvent.change(screen.getByRole("textbox", { name: "Search query" }), {
+      target: { value: "retention" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Run live retrieval" }));
+    expect(await screen.findByText(/Applied document scope:/)).toBeInTheDocument();
+    const call = vi.mocked(fetch).mock.calls.find(([url]) => String(url) === base + "/keyword");
+    expect(JSON.parse(String(call?.[1]?.body))).toEqual({
+      query: "retention",
+      top_k: 10,
+      filters: {
+        document_ids: [documentId],
+        media_types: ["application/pdf"],
+        filename_contains: "manual",
+      },
+    });
+    fireEvent.change(screen.getByRole("textbox", { name: "Filename contains" }), {
+      target: { value: "another" },
+    });
+    expect(screen.getByText(/results below belong to the last completed run/)).toBeInTheDocument();
+    expect(vi.mocked(fetch).mock.calls.filter(([, init]) => init?.method === "POST"))
+      .toHaveLength(1);
   });
 
   it("retrieves real vector results and can reopen their persisted trace", async () => {

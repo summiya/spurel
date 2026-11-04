@@ -114,6 +114,7 @@ async def vector_retrieval(
             knowledge_base_id=knowledge_base_id,
             query=payload.query,
             limit=payload.top_k,
+            **({"filters": payload.filters.to_domain()} if payload.filters else {}),
         )
     except VectorRetrievalQueryError as exc:
         raise HTTPException(
@@ -153,6 +154,7 @@ async def vector_retrieval(
             )
             for rank, match in enumerate(execution.matches, start=1)
         ],
+        filters=payload.filters,
     )
 
 
@@ -168,6 +170,7 @@ async def keyword_retrieval(
             knowledge_base_id=knowledge_base_id,
             query=payload.query,
             limit=payload.top_k,
+            **({"filters": payload.filters.to_domain()} if payload.filters else {}),
         )
     except KeywordRetrievalQueryError as exc:
         raise HTTPException(
@@ -205,6 +208,7 @@ async def keyword_retrieval(
             )
             for rank, match in enumerate(execution.matches, start=1)
         ],
+        filters=payload.filters,
     )
 
 
@@ -222,6 +226,7 @@ async def hybrid_retrieval(
             limit=payload.top_k,
             candidate_limit=payload.candidate_k,
             rrf_k=payload.rrf_k,
+            **({"filters": payload.filters.to_domain()} if payload.filters else {}),
         )
     except HybridRetrievalQueryError as exc:
         raise HTTPException(
@@ -269,6 +274,7 @@ async def hybrid_retrieval(
             )
             for rank, match in enumerate(execution.matches, start=1)
         ],
+        filters=payload.filters,
     )
 
 
@@ -307,6 +313,7 @@ async def list_retrieval_traces(
                 embedding_dimensions=trace.embedding_dimensions,
                 result_count=trace.result_count,
                 created_at=trace.created_at,
+                filters=trace.metadata_filters.to_snapshot() if trace.metadata_filters else None,
             )
             for trace in traces
         ],
@@ -354,6 +361,7 @@ async def get_retrieval_trace(
         embedding_model=trace.embedding_model,
         embedding_dimensions=trace.embedding_dimensions,
         created_at=trace.created_at,
+        filters=trace.metadata_filters.to_snapshot() if trace.metadata_filters else None,
         results=[
             RetrievalTraceResultResponse(
                 rank=result.rank,
@@ -422,6 +430,10 @@ async def compare_retrieval_traces(
             embedding_model=comparison.first.embedding_model,
             embedding_dimensions=comparison.first.embedding_dimensions,
             result_count=comparison.first.result_count,
+            filters=(
+                comparison.first.metadata_filters.to_snapshot()
+                if comparison.first.metadata_filters else None
+            ),
         ),
         second=RetrievalTraceComparisonSideResponse(
             trace_id=comparison.second.trace_id,
@@ -435,6 +447,10 @@ async def compare_retrieval_traces(
             embedding_model=comparison.second.embedding_model,
             embedding_dimensions=comparison.second.embedding_dimensions,
             result_count=comparison.second.result_count,
+            filters=(
+                comparison.second.metadata_filters.to_snapshot()
+                if comparison.second.metadata_filters else None
+            ),
         ),
         same_query=comparison.same_query,
         overlap_count=comparison.overlap_count,

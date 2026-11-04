@@ -3531,3 +3531,31 @@ html[data-motion="reduce"] *::after {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* SP-19: additive metadata filter controls, without altering the Retrieval Lab layout. */
+.retrieval-filter-panel {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  margin: 14px 0;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel-alt);
+}
+.retrieval-filter-panel > strong {
+  font-size: 12px;
+}
+.retrieval-filter-panel > .text-hint {
+  margin: 0;
+  line-height: 1.6;
+}
+.retrieval-filter-panel .retrieval-config-grid {
+  grid-template-columns: repeat(auto-fit, minmax(165px, 1fr));
+  gap: 12px;
+}
+.retrieval-filter-panel input[type="date"] {
+  min-width: 0;
+}
+.retrieval-filter-panel .button {
+  justify-self: start;
+}

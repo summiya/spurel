@@ -94,6 +94,24 @@ describe("retrieval payloads and scores", () => {
     }
   });
 
+  it("validates opt-in metadata filters for all retrieval modes", () => {
+    const doc = "d98d2800-9df4-4f98-a397-0d0fd19ee032";
+    for (const mode of ["keyword", "vector", "hybrid"] as const) {
+      const request = {
+        query: "refund",
+        top_k: 5,
+        ...(mode === "hybrid" ? { candidate_k: 10, rrf_k: 60 } : {}),
+        filters: { document_ids: [doc], media_types: ["application/pdf"] },
+      };
+      const parsed = parseRetrievalRequest(mode, request);
+      expect(parsed?.filters?.document_ids).toEqual([doc]);
+      expect(parsed?.filters?.media_types).toEqual(["application/pdf"]);
+      expect(parseRetrievalRequest(mode, { ...request, filters: { sql: "anything" } }))
+        .toBeNull();
+      expect(parseRetrievalRequest(mode, { ...request, filters: {} })).toBeNull();
+    }
+  });
+
   it("rejects inconsistent or invented PDF page provenance", () => {
     const valid = {
       mode: "vector",

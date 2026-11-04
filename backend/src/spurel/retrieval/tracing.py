@@ -11,6 +11,7 @@ from spurel.embeddings.chunk import (
     MAX_EMBEDDING_PROVIDER_LENGTH,
 )
 from spurel.embeddings.domain import MAX_EMBEDDING_DIMENSIONS
+from spurel.retrieval.metadata_filters import RetrievalMetadataFilters
 
 
 class RetrievalTraceMode(StrEnum):
@@ -60,6 +61,7 @@ class RetrievalTraceSummary:
     embedding_dimensions: int | None
     result_count: int
     created_at: datetime
+    metadata_filters: RetrievalMetadataFilters | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -79,6 +81,7 @@ class RetrievalTrace:
     embedding_dimensions: int | None
     results: tuple[RetrievalTraceResult, ...]
     created_at: datetime
+    metadata_filters: RetrievalMetadataFilters | None = None
 
     @classmethod
     def create(
@@ -95,6 +98,7 @@ class RetrievalTrace:
         embedding_provider: str | None = None,
         embedding_model: str | None = None,
         embedding_dimensions: int | None = None,
+        metadata_filters: RetrievalMetadataFilters | None = None,
     ) -> "RetrievalTrace":
         """Create and validate one completed retrieval trace."""
         normalized_query = query.strip()
@@ -304,4 +308,5 @@ class RetrievalTrace:
             embedding_dimensions=embedding_dimensions,
             results=results,
             created_at=datetime.now(UTC),
+            metadata_filters=metadata_filters,
         )

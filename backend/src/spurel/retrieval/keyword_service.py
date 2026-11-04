@@ -9,6 +9,7 @@ from spurel.retrieval.keyword_domain import (
     KeywordRetrievalQueryError,
 )
 from spurel.retrieval.keyword_ports import KeywordRetrievalRepository
+from spurel.retrieval.metadata_filters import RetrievalMetadataFilters
 
 
 class KeywordRetrievalService:
@@ -23,6 +24,7 @@ class KeywordRetrievalService:
         knowledge_base_id: UUID,
         query: str,
         limit: int = 10,
+        filters: RetrievalMetadataFilters | None = None,
     ) -> Sequence[KeywordRetrievalMatch]:
         """Run bounded lexical retrieval."""
         normalized_query = query.strip()
@@ -45,4 +47,5 @@ class KeywordRetrievalService:
             knowledge_base_id=knowledge_base_id,
             query=normalized_query,
             limit=limit,
+            **({"filters": filters} if filters is not None else {}),
         )

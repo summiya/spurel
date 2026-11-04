@@ -280,3 +280,46 @@ def test_hybrid_search_rejects_inconsistent_shared_chunk_metadata() -> None:
                 query="query",
             )
         )
+
+
+def test_hybrid_filters_both_candidate_pools_before_rrf_fusion() -> None:
+    from spurel.documents.domain import DocumentMediaType
+    from spurel.retrieval.metadata_filters import RetrievalMetadataFilters
+
+    scope = RetrievalMetadataFilters(media_types=(DocumentMediaType.PDF,))
+    document = uuid4()
+
+    class FilteredVector(FakeVectorRetriever):
+        async def search(self, *, knowledge_base_id, query, limit, filters=None):
+            self.filters = filters
+            return await super().search(
+                knowledge_base_id=knowledge_base_id, query=query, limit=limit
+            )
+
+    class FilteredKeyword(FakeKeywordRetriever):
+        async def search(self, *, knowledge_base_id, query, limit, filters=None):
+            self.filters = filters
+            return await super().search(
+                knowledge_base_id=knowledge_base_id, query=query, limit=limit
+            )
+
+    shared = uuid4()
+    vector = FilteredVector(
+        (_vector_match(chunk_id=shared, document_id=document, index=0, score=0.9),)
+    )
+    keyword = FilteredKeyword(
+        (_keyword_match(chunk_id=shared, document_id=document, index=0, score=0.8),)
+    )
+    results = asyncio.run(
+        HybridRetrievalService(vector_retriever=vector, keyword_retriever=keyword).search(
+            knowledge_base_id=uuid4(),
+            query="policy",
+            limit=5,
+            candidate_limit=10,
+            filters=scope,
+        )
+    )
+    assert len(results) == 1
+    assert results[0].vector_rank == 1 and results[0].keyword_rank == 1
+    assert vector.filters is scope
+    assert keyword.filters is scope

@@ -11,6 +11,8 @@ from spurel.documents.chunk_persistence import DocumentChunkRecord
 from spurel.documents.persistence import DocumentRecord
 from spurel.retrieval.keyword_domain import KeywordRetrievalMatch
 from spurel.retrieval.keyword_ports import KeywordRetrievalRepositoryError
+from spurel.retrieval.metadata_filters import RetrievalMetadataFilters
+from spurel.retrieval.sql_metadata_filters import apply_document_metadata_filters
 
 
 class SqlAlchemyKeywordRetrievalRepository:
@@ -25,6 +27,7 @@ class SqlAlchemyKeywordRetrievalRepository:
         knowledge_base_id: UUID,
         query: str,
         limit: int,
+        filters: RetrievalMetadataFilters | None = None,
     ) -> Sequence[KeywordRetrievalMatch]:
         """Return cover-density ranked lexical chunk matches."""
         ts_query = func.websearch_to_tsquery(
@@ -65,6 +68,8 @@ class SqlAlchemyKeywordRetrievalRepository:
             )
             .limit(limit)
         )
+
+        statement = apply_document_metadata_filters(statement, filters)
 
         try:
             async with self._session_factory() as session:

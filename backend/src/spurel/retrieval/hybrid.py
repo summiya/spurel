@@ -8,6 +8,7 @@ from uuid import UUID
 
 from spurel.retrieval.domain import VectorRetrievalMatch
 from spurel.retrieval.keyword_domain import KeywordRetrievalMatch
+from spurel.retrieval.metadata_filters import RetrievalMetadataFilters
 
 MAX_HYBRID_RETRIEVAL_RESULTS = 100
 DEFAULT_HYBRID_CANDIDATE_LIMIT = 50
@@ -32,6 +33,7 @@ class VectorRetriever(Protocol):
         knowledge_base_id: UUID,
         query: str,
         limit: int,
+        filters: RetrievalMetadataFilters | None = None,
     ) -> Sequence[VectorRetrievalMatch]:
         """Return ranked vector matches."""
         ...
@@ -46,6 +48,7 @@ class KeywordRetriever(Protocol):
         knowledge_base_id: UUID,
         query: str,
         limit: int,
+        filters: RetrievalMetadataFilters | None = None,
     ) -> Sequence[KeywordRetrievalMatch]:
         """Return ranked keyword matches."""
         ...
@@ -109,6 +112,7 @@ class HybridRetrievalService:
         limit: int = 10,
         candidate_limit: int = DEFAULT_HYBRID_CANDIDATE_LIMIT,
         rrf_k: int = DEFAULT_RRF_K,
+        filters: RetrievalMetadataFilters | None = None,
     ) -> Sequence[HybridRetrievalMatch]:
         """Retrieve both sources concurrently and fuse their rankings."""
         normalized_query = query.strip()
@@ -124,11 +128,13 @@ class HybridRetrievalService:
                 knowledge_base_id=knowledge_base_id,
                 query=normalized_query,
                 limit=candidate_limit,
+                **({"filters": filters} if filters is not None else {}),
             ),
             self._keyword_retriever.search(
                 knowledge_base_id=knowledge_base_id,
                 query=normalized_query,
                 limit=candidate_limit,
+                **({"filters": filters} if filters is not None else {}),
             ),
         )
 

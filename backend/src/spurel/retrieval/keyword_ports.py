@@ -5,6 +5,7 @@ from typing import Protocol
 from uuid import UUID
 
 from spurel.retrieval.keyword_domain import KeywordRetrievalMatch
+from spurel.retrieval.metadata_filters import RetrievalMetadataFilters
 
 
 class KeywordRetrievalRepositoryError(RuntimeError):
@@ -20,6 +21,7 @@ class KeywordRetrievalRepository(Protocol):
         knowledge_base_id: UUID,
         query: str,
         limit: int,
+        filters: RetrievalMetadataFilters | None = None,
     ) -> Sequence[KeywordRetrievalMatch]:
         """Return ranked keyword matches for one knowledge base."""
         ...

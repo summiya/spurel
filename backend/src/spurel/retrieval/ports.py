@@ -6,6 +6,7 @@ from uuid import UUID
 
 from spurel.embeddings.domain import EmbeddingVector
 from spurel.retrieval.domain import VectorRetrievalMatch
+from spurel.retrieval.metadata_filters import RetrievalMetadataFilters
 
 
 class VectorRetrievalRepositoryError(RuntimeError):
@@ -24,6 +25,7 @@ class VectorRetrievalRepository(Protocol):
         model: str,
         dimensions: int,
         limit: int,
+        filters: RetrievalMetadataFilters | None = None,
     ) -> Sequence[VectorRetrievalMatch]:
         """Return the nearest chunks ordered by cosine similarity."""
         ...
