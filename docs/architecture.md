@@ -253,6 +253,17 @@ Retrieval Lab and Trace History. Legacy trace data stays NULL, never
 backfilled or inferred. Overall retrieval duration excludes trace
 persistence and frontend/browser time.
 
+### SP-23 claim-to-citation review (in review)
+
+RAG answer generation supports an explicit optional second pass using
+the existing generation provider to review the answer's claims against
+their **cited exact excerpt manifest**. Missing or unknown citations are
+flagged deterministically. Strict verdict parsing prevents malformed
+model output from masquerading as success. This is a bounded, fallible
+model assessment, **not independent fact verification**. No extra work
+occurs without opt-in, no new database columns or persisted full answers
+are added, and legacy retrieval/reranking semantics remain unchanged.
+
 ## What is planned, not implemented
 
 The frontend has live source, chunk, retrieval, trace-comparison, evaluation and provider-backed RAG answer inspection. A frontend follow-up summarizes real Overview data, including a 7/30-day retrieval-quality chart plotting persisted evaluation runs without inferred measurements or new backend APIs. The following are **not built on main**: opt-in scanned-PDF OCR (SP-18 in review), semantic/LLM-based chunking, BM25, pgvector ANN/HNSW, metadata filters, rerankers, independent citation/claim verification, non-OpenAI providers, data-source connectors, Redis-backed background jobs, experiment export and production auth/monitoring.

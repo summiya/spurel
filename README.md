@@ -98,6 +98,35 @@ An empty retrieval returns a clear no-context state without fabricating evidence
 Full answer transcripts are not persisted by this UI; retrieval trace snapshots
 are persisted by the backend.
 
+## SP-23: optional RAG citation support review (in review)
+
+The existing RAG answer, source excerpts, saved retrieval trace, PDF page
+provenance, and dashboard quality chart stay unchanged. The RAG Answers page
+adds a **Check citation support** checkbox, OFF by default. An explicit
+confirmation warns that enabling it makes an **additional, potentially paid
+generation-model call** after the original answer is generated. Merely
+opening the workbench, editing settings or viewing evidence never runs it.
+
+The backend first identifies sentence/line claims with no `[S1]`-style
+citation or a label absent from the **actual source manifest**. For valid
+labels, the configured **same generation model** performs a second-pass
+assessment of each claim against **only its cited, exact generator-visible
+excerpts**. Per-claim statuses are `model_supported`,
+`model_unsupported`, `model_uncertain`, `missing_citation`,
+`invalid_citation` and `not_checked`. The model's judgment can be
+wrong: **this is not a proof of truth or an independent evaluator**.
+Read the source excerpts and original documents before relying on an answer.
+
+The review is bounded to 16 sentence/line spans, with individual claim
+and whole-answer size limits. Any omitted or oversized content is openly
+marked not checked. The second call must return strict, complete JSON
+verdicts; malformed responses or provider failures produce an explicit
+`unavailable` review while retaining the already generated answer.
+No answer or verification transcripts are persisted: existing retrieval
+traces remain retrieval-only. No new database migrations, additional
+services or automatic provider calls are introduced. With empty retrieval
+there is no generation or verification call.
+
 ## Live Overview dashboard (frontend follow-up)
 
 Open [Overview](http://localhost:3000/) and sign in as the local operator to load
@@ -316,7 +345,7 @@ Migration **0015** adds nullable fields to traces and trace results;
 existing rows stay unchanged. No vector reindexing or automatic provider
 calls occur. RAG answers remain standard hybrid RRF, not reranked.
 
-## SP-22: measured retrieval stages (in review)
+## SP-22: measured retrieval stages (merged)
 
 The existing **total retrieval duration** remains visible. SP-22 additionally
 measures stage-boundary elapsed milliseconds for five possible operations:
