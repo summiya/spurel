@@ -91,9 +91,7 @@ class RetrievalTraceComparisonService:
     ) -> RetrievalTraceComparison:
         """Load two traces and describe ranking/result differences."""
         if first_trace_id == second_trace_id:
-            raise RetrievalTraceComparisonQueryError(
-                "comparison requires two distinct trace IDs"
-            )
+            raise RetrievalTraceComparisonQueryError("comparison requires two distinct trace IDs")
 
         first, second = await asyncio.gather(
             self._trace_service.get_by_id(
@@ -125,12 +123,8 @@ def _compare_traces(
     aligned = sorted(
         union_ids,
         key=lambda chunk_id: (
-            first_by_chunk[chunk_id].rank
-            if chunk_id in first_by_chunk
-            else 101,
-            second_by_chunk[chunk_id].rank
-            if chunk_id in second_by_chunk
-            else 101,
+            first_by_chunk[chunk_id].rank if chunk_id in first_by_chunk else 101,
+            second_by_chunk[chunk_id].rank if chunk_id in second_by_chunk else 101,
             chunk_id,
         ),
     )
@@ -183,9 +177,7 @@ def _compare_result(
     first_rank = first_result.rank if first_result is not None else None
     second_rank = second_result.rank if second_result is not None else None
     rank_delta = (
-        second_rank - first_rank
-        if first_rank is not None and second_rank is not None
-        else None
+        second_rank - first_rank if first_rank is not None and second_rank is not None else None
     )
 
     return RetrievalTraceComparisonResult(
@@ -204,18 +196,10 @@ def _compare_result(
         second_cosine_similarity=(
             second_result.cosine_similarity if second_result is not None else None
         ),
-        first_keyword_score=(
-            first_result.keyword_score if first_result is not None else None
-        ),
-        second_keyword_score=(
-            second_result.keyword_score if second_result is not None else None
-        ),
-        first_rrf_score=(
-            first_result.rrf_score if first_result is not None else None
-        ),
-        second_rrf_score=(
-            second_result.rrf_score if second_result is not None else None
-        ),
+        first_keyword_score=(first_result.keyword_score if first_result is not None else None),
+        second_keyword_score=(second_result.keyword_score if second_result is not None else None),
+        first_rrf_score=(first_result.rrf_score if first_result is not None else None),
+        second_rrf_score=(second_result.rrf_score if second_result is not None else None),
     )
 
 
