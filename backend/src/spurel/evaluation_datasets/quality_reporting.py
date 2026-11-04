@@ -29,4 +29,7 @@ def wilson_hit_rate_95(*, successes: int, trials: int) -> tuple[float, float]:
     half_width = (
         _WILSON_Z_95 * sqrt(p * (1 - p) / trials + z2 / (4 * trials * trials)) / denominator
     )
-    return max(0.0, center - half_width), min(1.0, center + half_width)
+    # Avoid roundoff like 6.9e-18 when the observed rate is exactly zero.
+    lower = 0.0 if successes == 0 else max(0.0, center - half_width)
+    upper = 1.0 if successes == trials else min(1.0, center + half_width)
+    return lower, upper
