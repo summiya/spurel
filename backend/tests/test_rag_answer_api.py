@@ -20,6 +20,9 @@ class FakeRAGAnswerService:
             excerpt="source excerpt",
             start_offset=100,
             end_offset=114,
+            page_start=3,
+            page_end=3,
+            ocr_used=False,
         )
         self.result = RAGAnswer(
             trace_id=uuid4(),
@@ -92,6 +95,9 @@ def test_rag_answer_returns_grounded_result_with_source_manifest() -> None:
                 "excerpt": "source excerpt",
                 "start_offset": 100,
                 "end_offset": 114,
+                "page_start": 3,
+                "page_end": 3,
+                "ocr_used": False,
             }
         ],
     }
@@ -144,7 +150,5 @@ def test_rag_answer_hides_generation_provider_errors() -> None:
     )
 
     assert response.status_code == 503
-    assert response.json() == {
-        "detail": "RAG service temporarily unavailable"
-    }
+    assert response.json() == {"detail": "RAG service temporarily unavailable"}
     assert "provider secret detail" not in response.text

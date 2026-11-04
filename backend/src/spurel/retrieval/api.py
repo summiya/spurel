@@ -146,6 +146,9 @@ async def vector_retrieval(
                 text=match.text,
                 start_offset=match.start_offset,
                 end_offset=match.end_offset,
+                page_start=match.page_start,
+                page_end=match.page_end,
+                ocr_used=match.ocr_used,
                 cosine_similarity=match.cosine_similarity,
             )
             for rank, match in enumerate(execution.matches, start=1)
@@ -195,6 +198,9 @@ async def keyword_retrieval(
                 text=match.text,
                 start_offset=match.start_offset,
                 end_offset=match.end_offset,
+                page_start=match.page_start,
+                page_end=match.page_end,
+                ocr_used=match.ocr_used,
                 keyword_score=match.keyword_score,
             )
             for rank, match in enumerate(execution.matches, start=1)
@@ -252,6 +258,9 @@ async def hybrid_retrieval(
                 text=match.text,
                 start_offset=match.start_offset,
                 end_offset=match.end_offset,
+                page_start=match.page_start,
+                page_end=match.page_end,
+                ocr_used=match.ocr_used,
                 rrf_score=match.rrf_score,
                 vector_rank=match.vector_rank,
                 keyword_rank=match.keyword_rank,

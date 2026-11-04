@@ -35,11 +35,22 @@ class DocumentExtractedTextLimitError(DocumentParseError):
 
 
 @dataclass(frozen=True, slots=True)
+class ParsedPageSpan:
+    """One original 1-based PDF page's slice in the normalized parsed text."""
+
+    page_number: int
+    start_offset: int
+    end_offset: int
+    used_ocr: bool = False
+
+
+@dataclass(frozen=True, slots=True)
 class ParsedDocument:
     """Normalized text produced by a document parser."""
 
     text: str
     media_type: DocumentMediaType
+    pages: tuple[ParsedPageSpan, ...] = ()
 
 
 class DocumentParser(Protocol):

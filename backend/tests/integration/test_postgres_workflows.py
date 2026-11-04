@@ -1174,3 +1174,93 @@ async def _judgment_scope_and_missing_round_trip(postgres_url: str, tmp_path: Pa
         with pytest.raises(EvaluationJudgmentStaleError):
             await runner.run(knowledge_base_id=own_kb, dataset_id=dataset.id, top_k=1)
         assert not await runs.list_by_dataset(knowledge_base_id=own_kb, dataset_id=dataset.id)
+
+
+def test_pdf_page_provenance_is_persisted_without_overwriting_existing_index(
+    postgres_url: str, tmp_path: Path
+) -> None:
+    """SP-18: new page annotations create safe versions; legacy rows remain intact."""
+    asyncio.run(_pdf_page_provenance_round_trip(postgres_url, tmp_path))
+
+
+async def _pdf_page_provenance_round_trip(postgres_url: str, tmp_path: Path) -> None:
+    async with _isolated_database(postgres_url) as database:
+        kb_id = await database.new_knowledge_base("PDF provenance test")
+        storage = LocalDocumentBlobStorage(tmp_path / "pdf-metadata")
+        provider = _DeterministicEmbeddings()
+        document_id = await _upload(database, storage, kb_id, "First policy page text.")
+        await _processor(database, storage, provider).process(
+            knowledge_base_id=kb_id, document_id=document_id
+        )
+
+        chunks = SqlAlchemyDocumentChunkRepository(database.sessions)
+        original = await chunks.list_stored_by_document(document_id=document_id, limit=10, offset=0)
+        assert len(original) == 1
+        assert original[0].chunk.page_start is None
+        legacy_id = original[0].id
+
+        annotated = DocumentChunk(
+            index=0,
+            text=original[0].chunk.text,
+            start_offset=original[0].chunk.start_offset,
+            end_offset=original[0].chunk.end_offset,
+            page_start=2,
+            page_end=3,
+            ocr_used=True,
+        )
+        staged = await chunks.replace_for_document(document_id=document_id, chunks=(annotated,))
+        assert staged.version == 2
+        assert staged.attempt_id is not None
+        assert not staged.reused_active
+
+        pending = await chunks.list_stored_by_document(
+            document_id=document_id, limit=10, offset=0, chunk_version=2
+        )
+        assert pending[0].chunk == annotated
+
+        embedded = await DocumentEmbeddingPipeline(
+            chunk_reader=chunks,
+            provider=provider,
+            embedding_service=ChunkEmbeddingService(
+                SqlAlchemyChunkEmbeddingRepository(database.sessions)
+            ),
+        ).run(document_id=document_id, chunk_version=2)
+        await chunks.promote_version(
+            document_id=document_id,
+            version=2,
+            attempt_id=staged.attempt_id,
+            provider=embedded.provider,
+            model=embedded.model,
+            dimensions=embedded.dimensions,
+        )
+
+        current = await chunks.list_stored_by_document(document_id=document_id, limit=10, offset=0)
+        assert len(current) == 1
+        assert current[0].id != legacy_id
+        assert current[0].chunk == annotated
+
+        reader = SqlAlchemyChunkInspectorRepository(database.sessions)
+        inspector = await reader.list_by_document(
+            knowledge_base_id=kb_id, document_id=document_id, limit=10, offset=0
+        )
+        assert len(inspector) == 1
+        assert (inspector[0].page_start, inspector[0].page_end) == (2, 3)
+        assert inspector[0].ocr_used is True
+        assert inspector[0].embedding_count == 1
+
+        history = SqlAlchemyDocumentVersionRepository(database.sessions)
+        legacy = await history.list_version_chunks(
+            knowledge_base_id=kb_id, document_id=document_id, version=1, limit=10, offset=0
+        )
+        assert legacy is not None and len(legacy) == 1
+        assert legacy[0].id == legacy_id
+        assert legacy[0].page_start is None
+        assert legacy[0].ocr_used is False
+
+        repeated = await chunks.replace_for_document(document_id=document_id, chunks=(annotated,))
+        assert repeated.reused_active
+        assert repeated.version == 2
+        unchanged = await chunks.list_stored_by_document(
+            document_id=document_id, limit=10, offset=0
+        )
+        assert unchanged[0].id == current[0].id

@@ -19,6 +19,9 @@ const source: RagSource = {
   excerpt: "Stored evidence from the active index.",
   start_offset: 0,
   end_offset: 38,
+  page_start: 1,
+  page_end: 1,
+  ocr_used: false,
 };
 const valid = {
   trace_id: trace,
@@ -90,6 +93,9 @@ describe("SP-15 RAG API contracts", () => {
       { ...valid, sources: [{ ...source, end_offset: -1 }] },
       { ...valid, sources: [source, source], retrieved_chunk_count: 2 },
       { ...valid, sources: [{ ...source, excerpt: "" }] },
+      { ...valid, sources: [{ ...source, page_start: 0 }] },
+      { ...valid, sources: [{ ...source, page_end: 0 }] },
+      { ...valid, sources: [{ ...source, page_start: null, page_end: null, ocr_used: true }] },
       { ...valid, generation_model: 123 },
     ];
     for (const value of wrong) expect(isRagAnswerResponse(value)).toBe(false);

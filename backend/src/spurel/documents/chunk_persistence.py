@@ -3,6 +3,7 @@
 from uuid import UUID, uuid4
 
 from sqlalchemy import (
+    Boolean,
     CheckConstraint,
     Computed,
     ForeignKey,
@@ -12,6 +13,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
     Uuid,
+    false,
     text,
 )
 from sqlalchemy.dialects.postgresql import TSVECTOR
@@ -53,6 +55,15 @@ class DocumentChunkRecord(Base):
             name="uq_document_chunks_document_version_index",
         ),
         CheckConstraint("chunk_version >= 1", name="ck_document_chunks_version"),
+        CheckConstraint(
+            "(page_start IS NULL AND page_end IS NULL) OR "
+            "(page_start >= 1 AND page_end >= page_start)",
+            name="ck_document_chunks_pdf_page_range",
+        ),
+        CheckConstraint(
+            "NOT ocr_used OR page_start IS NOT NULL",
+            name="ck_document_chunks_ocr_has_page",
+        ),
         ForeignKeyConstraint(
             ["document_id", "chunk_version"],
             ["document_chunk_versions.document_id", "document_chunk_versions.version"],
@@ -91,6 +102,9 @@ class DocumentChunkRecord(Base):
     )
     start_offset: Mapped[int] = mapped_column(Integer, nullable=False)
     end_offset: Mapped[int] = mapped_column(Integer, nullable=False)
+    page_start: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    page_end: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    ocr_used: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=false())
 
     @classmethod
     def from_domain(
@@ -109,6 +123,9 @@ class DocumentChunkRecord(Base):
             text=chunk.text,
             start_offset=chunk.start_offset,
             end_offset=chunk.end_offset,
+            page_start=chunk.page_start,
+            page_end=chunk.page_end,
+            ocr_used=chunk.ocr_used,
         )
 
     def to_domain(self) -> DocumentChunk:
@@ -118,4 +135,7 @@ class DocumentChunkRecord(Base):
             text=self.text,
             start_offset=self.start_offset,
             end_offset=self.end_offset,
+            page_start=self.page_start,
+            page_end=self.page_end,
+            ocr_used=self.ocr_used,
         )

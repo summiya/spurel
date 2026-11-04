@@ -113,3 +113,12 @@ def _validate_chunk_set(chunks: Sequence[DocumentChunk]) -> None:
 
         if chunk.end_offset - chunk.start_offset > MAX_CHUNK_SIZE_CHARACTERS:
             raise DocumentChunkSetError("chunk source span is too large")
+
+        if (chunk.page_start is None) != (chunk.page_end is None):
+            raise DocumentChunkSetError("PDF page provenance is incomplete")
+        if chunk.page_start is not None and (
+            chunk.page_start < 1 or chunk.page_end < chunk.page_start
+        ):
+            raise DocumentChunkSetError("PDF page provenance is invalid")
+        if chunk.ocr_used and chunk.page_start is None:
+            raise DocumentChunkSetError("OCR provenance requires a PDF page")
