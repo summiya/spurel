@@ -99,9 +99,16 @@ def test_exact_and_hnsw_queries_share_scope_but_only_approx_can_use_index() -> N
 
 
 def test_planner_detection_uses_actual_index_name_not_optimistic_label() -> None:
-    plan = [{"Plan": {"Node Type": "Limit", "Plans": [
-        {"Node Type": "Index Scan", "Index Name": "ix_spurel_hnsw_cosine_d3"},
-    ]}}]
+    plan = [
+        {
+            "Plan": {
+                "Node Type": "Limit",
+                "Plans": [
+                    {"Node Type": "Index Scan", "Index Name": "ix_spurel_hnsw_cosine_d3"},
+                ],
+            }
+        }
+    ]
     assert _plan_uses_index(plan, "ix_spurel_hnsw_cosine_d3")
     assert not _plan_uses_index(plan, "ix_spurel_hnsw_cosine_d1536")
     assert not _plan_uses_index({"Plan": {"Node Type": "Seq Scan"}}, "ix_spurel_hnsw_cosine_d3")

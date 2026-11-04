@@ -165,10 +165,7 @@ async def build_index(database_url: str, options: HnswIndexOptions) -> dict:
 def _retrieval_query(options: HnswBenchmarkOptions, *, exact: bool) -> str:
     """Keep the same scope and cosine distance; only the access path differs."""
     dimensions = options.dimensions
-    distance = (
-        f"ce.embedding::vector({dimensions}) "
-        f"<=> CAST(:query_vector AS vector({dimensions}))"
-    )
+    distance = f"ce.embedding::vector({dimensions}) <=> CAST(:query_vector AS vector({dimensions}))"
     order = f"({distance}) + 0" if exact else distance
     return (
         "SELECT ce.chunk_id FROM chunk_embeddings AS ce "
@@ -178,9 +175,7 @@ def _retrieval_query(options: HnswBenchmarkOptions, *, exact: bool) -> str:
         "AND dc.chunk_version = d.active_chunk_version "
         "AND ce.provider = :provider AND ce.model = :model "
         f"AND ce.dimensions = {dimensions} "
-        f"ORDER BY {order} ASC"
-        + (", ce.chunk_id ASC " if exact else " ")
-        + "LIMIT :top_k"
+        f"ORDER BY {order} ASC" + (", ce.chunk_id ASC " if exact else " ") + "LIMIT :top_k"
     )
 
 
@@ -196,9 +191,7 @@ _SAMPLE_SQL = text(
 )
 
 
-def _query_params(
-    options: HnswBenchmarkOptions, query_vector: str
-) -> dict[str, object]:
+def _query_params(options: HnswBenchmarkOptions, query_vector: str) -> dict[str, object]:
     return {
         "knowledge_base_id": options.knowledge_base_id,
         "provider": options.provider,
@@ -339,9 +332,7 @@ async def benchmark_index(database_url: str, options: HnswBenchmarkOptions) -> d
                     "samples": options.samples,
                 },
             )
-            vectors = tuple(
-                _vector_literal(row[0], options.dimensions) for row in result
-            )
+            vectors = tuple(_vector_literal(row[0], options.dimensions) for row in result)
         if not vectors:
             raise HnswBenchmarkError(
                 "no active stored vectors match the requested knowledge base and embedding space"

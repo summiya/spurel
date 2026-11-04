@@ -103,9 +103,7 @@ async def _perform(args, database_url: str) -> dict:
     raise HnswConfigurationError("unsupported command")
 
 
-def run_hnsw_cli(
-    argv: Sequence[str] | None = None, *, stdout=None, stderr=None
-) -> int:
+def run_hnsw_cli(argv: Sequence[str] | None = None, *, stdout=None, stderr=None) -> int:
     output = stdout or sys.stdout
     errors = stderr or sys.stderr
     try:

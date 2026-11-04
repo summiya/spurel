@@ -1343,12 +1343,14 @@ async def _hnsw_round_trip(postgres_url: str, tmp_path: Path) -> None:
             kb = await database.new_knowledge_base("HNSW recall integration")
             storage = LocalDocumentBlobStorage(tmp_path / "hnsw")
             doc = await _upload(
-                database, storage, kb,
+                database,
+                storage,
+                kb,
                 "Refund policy and backup procedures. " * 10,
             )
-            await _processor(
-                database, storage, _DeterministicEmbeddings(), chunk_size=48
-            ).process(knowledge_base_id=kb, document_id=doc)
+            await _processor(database, storage, _DeterministicEmbeddings(), chunk_size=48).process(
+                knowledge_base_id=kb, document_id=doc
+            )
 
             # The existing application adapter remains exact, even after an
             # experimental HNSW index is created in this test database.
@@ -1360,9 +1362,7 @@ async def _hnsw_round_trip(postgres_url: str, tmp_path: Path) -> None:
             assert built["size_bytes"] > 0
             exact_matches = await exact_repository.search(
                 knowledge_base_id=kb,
-                query_vector=EmbeddingVector.create(
-                    [1.0, 0.0, 0.0], expected_dimensions=3
-                ),
+                query_vector=EmbeddingVector.create([1.0, 0.0, 0.0], expected_dimensions=3),
                 provider="integration",
                 model="fixture-3d",
                 dimensions=3,
@@ -1404,4 +1404,3 @@ async def _hnsw_round_trip(postgres_url: str, tmp_path: Path) -> None:
                     )
             finally:
                 await engine.dispose()
-
