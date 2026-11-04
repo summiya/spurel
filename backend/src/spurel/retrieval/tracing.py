@@ -143,7 +143,9 @@ class RetrievalTrace:
                 raise RetrievalTraceValidationError("stage timing snapshot must not be empty")
             for stage, elapsed in stage_timings_ms.items():
                 if stage not in supported or (stage == "cross_encoder" and not reranker_model):
-                    raise RetrievalTraceValidationError("stage timing is incompatible with retrieval")
+                    raise RetrievalTraceValidationError(
+                        "stage timing is incompatible with retrieval"
+                    )
                 if (
                     isinstance(elapsed, bool)
                     or not isinstance(elapsed, (int, float))

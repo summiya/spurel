@@ -123,7 +123,13 @@ function fakeFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Respon
         trace_id: traceId,
         filters: request.filters ?? null,
         duration_ms: 112.45,
-        stage_timings_ms: { query_embedding: 52.0, vector_search: 20.1, keyword_search: 9.0, rrf_fusion: 0.2, ...(request.rerank ? { cross_encoder: 22.4 } : {}) },
+        stage_timings_ms: {
+          query_embedding: 52.0,
+          vector_search: 20.1,
+          keyword_search: 9.0,
+          rrf_fusion: 0.2,
+          ...(request.rerank ? { cross_encoder: 22.4 } : {}),
+        },
         rerank: request.rerank ?? false,
         reranker_model: request.rerank ? "local-test-cross-encoder" : null,
         matches: [

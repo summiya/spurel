@@ -15,8 +15,8 @@ from spurel.retrieval.reranking import (
     HttpCrossEncoderReranker,
     rerank_hybrid_matches,
 )
-from spurel.retrieval.trace_service import RetrievalTraceService
 from spurel.retrieval.timings import capture_stage_timings, time_stage
+from spurel.retrieval.trace_service import RetrievalTraceService
 from spurel.retrieval.tracing import (
     RetrievalTrace,
     RetrievalTraceMode,

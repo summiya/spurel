@@ -1,15 +1,7 @@
-import {
-  RETRIEVAL_STAGES,
-  displayStageTime,
-  type StageTimings,
-} from "@/lib/stage-timings";
+import { RETRIEVAL_STAGES, displayStageTime, type StageTimings } from "@/lib/stage-timings";
 
 /** Exact reported timings. Neither this view nor comparisons estimate missing values. */
-export function StageTimingBreakdown({
-  timings,
-}: {
-  timings?: StageTimings | null;
-}) {
+export function StageTimingBreakdown({ timings }: { timings?: StageTimings | null }) {
   const stages = RETRIEVAL_STAGES.filter((item) => timings?.[item.key] !== undefined);
   return (
     <section aria-label="Measured retrieval stage timings">
@@ -27,8 +19,8 @@ export function StageTimingBreakdown({
         <p className="text-hint">No stage timings were recorded for this run.</p>
       )}
       <p className="text-hint">
-        Measured service-stage elapsed time. Hybrid branches run concurrently, so stage times
-        can overlap and must not be added together. Total duration excludes saving the trace.
+        Measured service-stage elapsed time. Hybrid branches run concurrently, so stage times can
+        overlap and must not be added together. Total duration excludes saving the trace.
       </p>
     </section>
   );
@@ -56,8 +48,7 @@ export function StageTimingComparison({
             const delta = a == null || b == null ? null : b - a;
             return (
               <span key={stage.key}>
-                <strong>{stage.label}</strong> · A {displayStageTime(a)} / B{" "}
-                {displayStageTime(b)}
+                <strong>{stage.label}</strong> · A {displayStageTime(a)} / B {displayStageTime(b)}
                 {delta === null
                   ? " · Δ not available"
                   : ` · B − A ${delta > 0 ? "+" : ""}${displayStageTime(delta)}`}

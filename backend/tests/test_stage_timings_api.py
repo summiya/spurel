@@ -33,8 +33,16 @@ def test_all_retrieval_modes_expose_actual_stages_without_changing_requests() ->
         "keyword": (get_traced_keyword_retrieval_service, {"keyword_search": 5.0}),
         "hybrid": (get_traced_hybrid_retrieval_service, {"rrf_fusion": 0.5}),
     }
+    def provider_for(values):
+        fake = FakeTracedRetriever(values)
+
+        def provide():
+            return fake
+
+        return provide
+
     for dependency, values in scopes.values():
-        app.dependency_overrides[dependency] = lambda values=values: FakeTracedRetriever(values)
+        app.dependency_overrides[dependency] = provider_for(values)
 
     client = TestClient(app)
     for mode, (_, expected) in scopes.items():

@@ -139,8 +139,12 @@ export function isRetrievalResult(value: unknown): value is RetrievalResult {
   )
     return false;
 
-  if ("stage_timings_ms" in value && value.stage_timings_ms !== null &&
-    !isStageTimings(value.stage_timings_ms)) return false;
+  if (
+    "stage_timings_ms" in value &&
+    value.stage_timings_ms !== null &&
+    !isStageTimings(value.stage_timings_ms)
+  )
+    return false;
   if ("rerank" in value && typeof value.rerank !== "boolean") return false;
   if (
     value.rerank === true &&

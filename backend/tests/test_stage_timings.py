@@ -14,7 +14,11 @@ from spurel.retrieval.service import VectorRetrievalService
 from spurel.retrieval.timings import capture_stage_timings, time_stage
 from spurel.retrieval.trace_service import RetrievalTraceService
 from spurel.retrieval.traced import TracedHybridRetrievalService
-from spurel.retrieval.tracing import RetrievalTrace, RetrievalTraceMode, RetrievalTraceValidationError
+from spurel.retrieval.tracing import (
+    RetrievalTrace,
+    RetrievalTraceMode,
+    RetrievalTraceValidationError,
+)
 
 
 class EmbeddingProvider:
