@@ -15,6 +15,7 @@ from sqlalchemy import (
     UniqueConstraint,
     Uuid,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from spurel.db import Base
@@ -111,6 +112,7 @@ class RetrievalTraceRecord(Base):
     embedding_model: Mapped[str | None] = mapped_column(String(255))
     embedding_dimensions: Mapped[int | None] = mapped_column(Integer)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    metadata_filters: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
     @classmethod
     def from_domain(cls, trace: RetrievalTrace) -> "RetrievalTraceRecord":
@@ -128,6 +130,9 @@ class RetrievalTraceRecord(Base):
             embedding_model=trace.embedding_model,
             embedding_dimensions=trace.embedding_dimensions,
             created_at=trace.created_at,
+            metadata_filters=(
+                trace.metadata_filters.to_snapshot() if trace.metadata_filters else None
+            ),
         )
 
 

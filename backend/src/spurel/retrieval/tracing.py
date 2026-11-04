@@ -11,6 +11,7 @@ from spurel.embeddings.chunk import (
     MAX_EMBEDDING_PROVIDER_LENGTH,
 )
 from spurel.embeddings.domain import MAX_EMBEDDING_DIMENSIONS
+from spurel.retrieval.metadata_filters import RetrievalMetadataFilters
 
 
 class RetrievalTraceMode(StrEnum):
@@ -60,6 +61,7 @@ class RetrievalTraceSummary:
     embedding_dimensions: int | None
     result_count: int
     created_at: datetime
+    metadata_filters: RetrievalMetadataFilters | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -79,6 +81,7 @@ class RetrievalTrace:
     embedding_dimensions: int | None
     results: tuple[RetrievalTraceResult, ...]
     created_at: datetime
+    metadata_filters: RetrievalMetadataFilters | None = None
 
     @classmethod
     def create(
@@ -95,6 +98,7 @@ class RetrievalTrace:
         embedding_provider: str | None = None,
         embedding_model: str | None = None,
         embedding_dimensions: int | None = None,
+        metadata_filters: RetrievalMetadataFilters | None = None,
     ) -> "RetrievalTrace":
         """Create and validate one completed retrieval trace."""
         normalized_query = query.strip()
@@ -108,9 +112,7 @@ class RetrievalTrace:
             raise RetrievalTraceValidationError("trace duration is invalid")
 
         if len(results) > top_k:
-            raise RetrievalTraceValidationError(
-                "trace results exceed configured top_k"
-            )
+            raise RetrievalTraceValidationError("trace results exceed configured top_k")
 
         seen_chunk_ids: set[UUID] = set()
         for expected_rank, result in enumerate(results, start=1):
@@ -119,23 +121,15 @@ class RetrievalTrace:
                     "trace result ranks must be contiguous and start at one"
                 )
             if result.chunk_id in seen_chunk_ids:
-                raise RetrievalTraceValidationError(
-                    "trace results cannot contain duplicate chunks"
-                )
+                raise RetrievalTraceValidationError("trace results cannot contain duplicate chunks")
             seen_chunk_ids.add(result.chunk_id)
 
             if result.chunk_index < 0:
-                raise RetrievalTraceValidationError(
-                    "trace result chunk index is invalid"
-                )
+                raise RetrievalTraceValidationError("trace result chunk index is invalid")
             if result.start_offset < 0 or result.end_offset <= result.start_offset:
-                raise RetrievalTraceValidationError(
-                    "trace result source offsets are invalid"
-                )
+                raise RetrievalTraceValidationError("trace result source offsets are invalid")
             if not result.text:
-                raise RetrievalTraceValidationError(
-                    "trace result text must not be empty"
-                )
+                raise RetrievalTraceValidationError("trace result text must not be empty")
 
             if mode is RetrievalTraceMode.VECTOR:
                 if result.cosine_similarity is None:
@@ -179,15 +173,11 @@ class RetrievalTrace:
                 result.rrf_score,
             ):
                 if score is not None and not isfinite(score):
-                    raise RetrievalTraceValidationError(
-                        "trace result scores must be finite"
-                    )
+                    raise RetrievalTraceValidationError("trace result scores must be finite")
 
             if mode is RetrievalTraceMode.HYBRID:
                 if result.rrf_score is None:
-                    raise RetrievalTraceValidationError(
-                        "hybrid trace results require RRF score"
-                    )
+                    raise RetrievalTraceValidationError("hybrid trace results require RRF score")
                 if result.vector_rank is None and result.keyword_rank is None:
                     raise RetrievalTraceValidationError(
                         "hybrid trace results require at least one source rank"
@@ -214,17 +204,11 @@ class RetrievalTrace:
 
         if mode is RetrievalTraceMode.HYBRID:
             if candidate_k is None or rrf_k is None:
-                raise RetrievalTraceValidationError(
-                    "hybrid traces require candidate_k and rrf_k"
-                )
+                raise RetrievalTraceValidationError("hybrid traces require candidate_k and rrf_k")
             if candidate_k < top_k or candidate_k > 100:
-                raise RetrievalTraceValidationError(
-                    "hybrid trace candidate_k is invalid"
-                )
+                raise RetrievalTraceValidationError("hybrid trace candidate_k is invalid")
             if rrf_k < 1 or rrf_k > 1_000:
-                raise RetrievalTraceValidationError(
-                    "hybrid trace rrf_k is invalid"
-                )
+                raise RetrievalTraceValidationError("hybrid trace rrf_k is invalid")
         elif candidate_k is not None or rrf_k is not None:
             raise RetrievalTraceValidationError(
                 "non-hybrid traces cannot contain hybrid configuration"
@@ -247,9 +231,7 @@ class RetrievalTrace:
             )
         )
         if has_embedding_space != complete_embedding_space:
-            raise RetrievalTraceValidationError(
-                "embedding space metadata must be complete"
-            )
+            raise RetrievalTraceValidationError("embedding space metadata must be complete")
 
         if complete_embedding_space:
             assert embedding_provider is not None
@@ -260,25 +242,19 @@ class RetrievalTrace:
                 not embedding_provider.strip()
                 or len(embedding_provider.strip()) > MAX_EMBEDDING_PROVIDER_LENGTH
             ):
-                raise RetrievalTraceValidationError(
-                    "trace embedding provider is invalid"
-                )
+                raise RetrievalTraceValidationError("trace embedding provider is invalid")
             if (
                 not embedding_model.strip()
                 or len(embedding_model.strip()) > MAX_EMBEDDING_MODEL_LENGTH
             ):
-                raise RetrievalTraceValidationError(
-                    "trace embedding model is invalid"
-                )
+                raise RetrievalTraceValidationError("trace embedding model is invalid")
             if (
                 isinstance(embedding_dimensions, bool)
                 or not isinstance(embedding_dimensions, int)
                 or embedding_dimensions < 1
                 or embedding_dimensions > MAX_EMBEDDING_DIMENSIONS
             ):
-                raise RetrievalTraceValidationError(
-                    "trace embedding dimensions are invalid"
-                )
+                raise RetrievalTraceValidationError("trace embedding dimensions are invalid")
 
         if mode in {RetrievalTraceMode.VECTOR, RetrievalTraceMode.HYBRID}:
             if not complete_embedding_space:
@@ -304,4 +280,5 @@ class RetrievalTrace:
             embedding_dimensions=embedding_dimensions,
             results=results,
             created_at=datetime.now(UTC),
+            metadata_filters=metadata_filters,
         )

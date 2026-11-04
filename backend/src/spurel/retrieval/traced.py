@@ -9,6 +9,7 @@ from uuid import UUID
 from spurel.retrieval.domain import VectorRetrievalMatch
 from spurel.retrieval.hybrid import HybridRetrievalMatch
 from spurel.retrieval.keyword_domain import KeywordRetrievalMatch
+from spurel.retrieval.metadata_filters import RetrievalMetadataFilters
 from spurel.retrieval.trace_service import RetrievalTraceService
 from spurel.retrieval.tracing import (
     RetrievalTrace,
@@ -26,6 +27,7 @@ class VectorRetrievalRunner(Protocol):
         knowledge_base_id: UUID,
         query: str,
         limit: int,
+        filters: RetrievalMetadataFilters | None = None,
     ) -> Sequence[VectorRetrievalMatch]:
         """Return ranked vector matches."""
         ...
@@ -40,6 +42,7 @@ class KeywordRetrievalRunner(Protocol):
         knowledge_base_id: UUID,
         query: str,
         limit: int,
+        filters: RetrievalMetadataFilters | None = None,
     ) -> Sequence[KeywordRetrievalMatch]:
         """Return ranked keyword matches."""
         ...
@@ -56,6 +59,7 @@ class HybridRetrievalRunner(Protocol):
         limit: int,
         candidate_limit: int,
         rrf_k: int,
+        filters: RetrievalMetadataFilters | None = None,
     ) -> Sequence[HybridRetrievalMatch]:
         """Return ranked hybrid matches."""
         ...
@@ -94,6 +98,7 @@ class TracedVectorRetrievalService:
         knowledge_base_id: UUID,
         query: str,
         limit: int = 10,
+        filters: RetrievalMetadataFilters | None = None,
     ) -> TracedRetrievalResult[VectorRetrievalMatch]:
         """Run vector retrieval, persist its trace, then return both."""
         started = perf_counter()
@@ -102,6 +107,7 @@ class TracedVectorRetrievalService:
                 knowledge_base_id=knowledge_base_id,
                 query=query,
                 limit=limit,
+                **({"filters": filters} if filters is not None else {}),
             )
         )
         duration_ms = _elapsed_ms(started)
@@ -116,6 +122,7 @@ class TracedVectorRetrievalService:
             embedding_model=self._embedding_model,
             embedding_dimensions=self._embedding_dimensions,
             results=_vector_trace_results(matches),
+            metadata_filters=filters,
         )
         await self._trace_service.record(trace)
 
@@ -144,6 +151,7 @@ class TracedKeywordRetrievalService:
         knowledge_base_id: UUID,
         query: str,
         limit: int = 10,
+        filters: RetrievalMetadataFilters | None = None,
     ) -> TracedRetrievalResult[KeywordRetrievalMatch]:
         """Run keyword retrieval, persist its trace, then return both."""
         started = perf_counter()
@@ -152,6 +160,7 @@ class TracedKeywordRetrievalService:
                 knowledge_base_id=knowledge_base_id,
                 query=query,
                 limit=limit,
+                **({"filters": filters} if filters is not None else {}),
             )
         )
         duration_ms = _elapsed_ms(started)
@@ -163,6 +172,7 @@ class TracedKeywordRetrievalService:
             top_k=limit,
             duration_ms=duration_ms,
             results=_keyword_trace_results(matches),
+            metadata_filters=filters,
         )
         await self._trace_service.record(trace)
 
@@ -199,6 +209,7 @@ class TracedHybridRetrievalService:
         limit: int = 10,
         candidate_limit: int = 50,
         rrf_k: int = 60,
+        filters: RetrievalMetadataFilters | None = None,
     ) -> TracedRetrievalResult[HybridRetrievalMatch]:
         """Run hybrid retrieval, persist its trace, then return both."""
         started = perf_counter()
@@ -209,6 +220,7 @@ class TracedHybridRetrievalService:
                 limit=limit,
                 candidate_limit=candidate_limit,
                 rrf_k=rrf_k,
+                **({"filters": filters} if filters is not None else {}),
             )
         )
         duration_ms = _elapsed_ms(started)
@@ -225,6 +237,7 @@ class TracedHybridRetrievalService:
             embedding_model=self._embedding_model,
             embedding_dimensions=self._embedding_dimensions,
             results=_hybrid_trace_results(matches),
+            metadata_filters=filters,
         )
         await self._trace_service.record(trace)
 

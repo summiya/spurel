@@ -8,6 +8,7 @@ import { EmptyState, ErrorState, LoadingState, PageHeading, Panel } from "@/comp
 import { useDemoToast } from "@/components/workbench-shell";
 import { liveError, workspaceFetch } from "@/lib/live-client";
 import type { LiveKnowledgeBase } from "@/lib/live-types";
+import { describeRetrievalFilters, retrievalFiltersKey } from "@/lib/retrieval-filter-types";
 import { otherScore, type RetrievalTraceDetail } from "@/lib/retrieval-types";
 import {
   formatTraceScore,
@@ -356,6 +357,9 @@ export function LiveTraceHistoryPage({ initialKnowledgeBaseId, initialTraceId }:
                         <small>
                           ID {item.id.slice(0, 8)} · Top K {item.top_k}
                         </small>
+                        {item.filters ? (
+                          <small>Filtered · {describeRetrievalFilters(item.filters)}</small>
+                        ) : null}
                       </span>
                       <span className="trace-duration">{elapsed(item.duration_ms)}</span>
                     </button>
@@ -455,46 +459,56 @@ export function LiveTraceHistoryPage({ initialKnowledgeBaseId, initialTraceId }:
                   </div>
                 ) : null}
                 {detail ? (
-                  <div className="trace-evidence">
-                    {detail.results.length ? (
-                      detail.results.map((item) => (
-                        <div className="trace-evidence-row live-trace-evidence" key={item.chunk_id}>
-                          <span className="result-rank">{String(item.rank).padStart(2, "0")}</span>
-                          <div>
-                            <strong>
-                              Chunk {item.chunk_index + 1} · {item.chunk_id.slice(0, 8)}
-                            </strong>
-                            <p>{item.text}</p>
-                            <small>
-                              Source offsets {item.start_offset}–{item.end_offset}
-                            </small>
-                            <small>
-                              Raw {traceScoreLabel(detail.mode)}:{" "}
-                              {otherScore(
-                                detail.mode === "vector"
-                                  ? item.cosine_similarity
-                                  : detail.mode === "keyword"
-                                    ? item.keyword_score
-                                    : item.rrf_score,
-                                detail.mode === "hybrid" ? 6 : detail.mode === "keyword" ? 5 : 4,
-                              )}
-                            </small>
-                            <Link
-                              href={`/chunks?kb=${base.id}&doc=${item.document_id}`}
-                              className="text-hint"
-                            >
-                              Inspect original document
-                            </Link>
+                  <>
+                    <p className="text-hint">
+                      Saved retrieval scope: {describeRetrievalFilters(detail.filters)}
+                    </p>
+                    <div className="trace-evidence">
+                      {detail.results.length ? (
+                        detail.results.map((item) => (
+                          <div
+                            className="trace-evidence-row live-trace-evidence"
+                            key={item.chunk_id}
+                          >
+                            <span className="result-rank">
+                              {String(item.rank).padStart(2, "0")}
+                            </span>
+                            <div>
+                              <strong>
+                                Chunk {item.chunk_index + 1} · {item.chunk_id.slice(0, 8)}
+                              </strong>
+                              <p>{item.text}</p>
+                              <small>
+                                Source offsets {item.start_offset}–{item.end_offset}
+                              </small>
+                              <small>
+                                Raw {traceScoreLabel(detail.mode)}:{" "}
+                                {otherScore(
+                                  detail.mode === "vector"
+                                    ? item.cosine_similarity
+                                    : detail.mode === "keyword"
+                                      ? item.keyword_score
+                                      : item.rrf_score,
+                                  detail.mode === "hybrid" ? 6 : detail.mode === "keyword" ? 5 : 4,
+                                )}
+                              </small>
+                              <Link
+                                href={`/chunks?kb=${base.id}&doc=${item.document_id}`}
+                                className="text-hint"
+                              >
+                                Inspect original document
+                              </Link>
+                            </div>
                           </div>
-                        </div>
-                      ))
-                    ) : (
-                      <EmptyState
-                        title="Zero-result saved trace"
-                        description="This completed run returned no indexed chunks; its query and timing are still persisted."
-                      />
-                    )}
-                  </div>
+                        ))
+                      ) : (
+                        <EmptyState
+                          title="Zero-result saved trace"
+                          description="This completed run returned no indexed chunks; its query and timing are still persisted."
+                        />
+                      )}
+                    </div>
+                  </>
                 ) : null}
               </>
             ) : (
@@ -572,6 +586,14 @@ export function LiveTraceHistoryPage({ initialKnowledgeBaseId, initialTraceId }:
                   <Icon name="info" size={16} />
                   Different queries: overlap, rank and timing changes reflect both query and
                   retrieval differences. Do not interpret them as a controlled A/B improvement.
+                </div>
+              ) : null}
+              {retrievalFiltersKey(compared.first.filters) !==
+              retrievalFiltersKey(compared.second.filters) ? (
+                <div className="inline-notice">
+                  <Icon name="info" size={16} />
+                  Different document filters: these traces searched different document subsets. Rank
+                  changes cannot be attributed to ranking quality alone.
                 </div>
               ) : null}
               {compared.first.mode !== compared.second.mode ? (

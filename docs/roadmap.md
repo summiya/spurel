@@ -52,7 +52,7 @@ replaces illustrative Overview values with bounded, real data.
 | SP-16 | High | ✅ Merged | Opt-in model-token chunk sizing and overlap, preserved legacy character mode and versions, token counts in Chunk Inspector and frontend controls. [PR #78](https://github.com/summiya/spurel/pull/78) |
 | SP-17 | High | ✅ Merged | Optional recursive, Markdown-heading and sentence-aware strategies with safe boundaries and UI controls. [PR #79](https://github.com/summiya/spurel/pull/79) |
 | SP-18 | High | ◐ In review | PDF page provenance in immutable chunks, Retrieval Lab and RAG sources; opt-in pypdf layout extraction; bounded local Tesseract/Poppler OCR for textless pages, default disabled. Feature branch `feat/sp18-pdf-page-provenance-ocr`; PR review required. |
-| SP-19 | High | ☐ Planned | Consistent knowledge-base metadata filters across retrieval modes, with tests |
+| SP-19 | High | ◐ In review | Opt-in pre-ranking PostgreSQL filters over existing document metadata (ID, media type, filename substring, upload date), consistent across Keyword/Vector/Hybrid, persisted trace filter snapshots and Retrieval Lab UI. Feature branch `feat/sp19-retrieval-metadata-filters`, dependent on unmerged SP-18 PR #80. |
 | SP-20 | High | ☐ Planned | pgvector HNSW indexing, recall/latency benchmarks, indexing trade-offs |
 | SP-21 | High | ☐ Planned | Pluggable cross-encoder reranking with candidate/rerank/final ranks |
 | SP-22 | Medium | ☐ Planned | Per-stage timing and retrieval observability in API traces and workbench |

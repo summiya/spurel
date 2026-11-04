@@ -12,7 +12,9 @@ from spurel.documents.persistence import DocumentRecord
 from spurel.embeddings.domain import EmbeddingVector
 from spurel.embeddings.persistence import ChunkEmbeddingRecord
 from spurel.retrieval.domain import VectorRetrievalMatch
+from spurel.retrieval.metadata_filters import RetrievalMetadataFilters
 from spurel.retrieval.ports import VectorRetrievalRepositoryError
+from spurel.retrieval.sql_metadata_filters import apply_document_metadata_filters
 
 
 class SqlAlchemyVectorRetrievalRepository:
@@ -30,6 +32,7 @@ class SqlAlchemyVectorRetrievalRepository:
         model: str,
         dimensions: int,
         limit: int,
+        filters: RetrievalMetadataFilters | None = None,
     ) -> Sequence[VectorRetrievalMatch]:
         """Return exact cosine-ranked chunks."""
         distance = ChunkEmbeddingRecord.embedding.cosine_distance(list(query_vector.values)).label(
@@ -70,6 +73,8 @@ class SqlAlchemyVectorRetrievalRepository:
             )
             .limit(limit)
         )
+
+        statement = apply_document_metadata_filters(statement, filters)
 
         try:
             async with self._session_factory() as session:

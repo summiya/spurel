@@ -9,6 +9,7 @@ from spurel.retrieval.domain import (
     VectorRetrievalMatch,
     VectorRetrievalQueryError,
 )
+from spurel.retrieval.metadata_filters import RetrievalMetadataFilters
 from spurel.retrieval.ports import VectorRetrievalRepository
 
 
@@ -34,6 +35,7 @@ class VectorRetrievalService:
         knowledge_base_id: UUID,
         query: str,
         limit: int = 10,
+        filters: RetrievalMetadataFilters | None = None,
     ) -> Sequence[VectorRetrievalMatch]:
         """Run exact cosine retrieval in the provider's embedding space."""
         normalized_query = query.strip()
@@ -46,9 +48,7 @@ class VectorRetrievalService:
             or limit < 1
             or limit > MAX_VECTOR_RETRIEVAL_RESULTS
         ):
-            raise VectorRetrievalQueryError(
-                "retrieval result limit is outside the supported range"
-            )
+            raise VectorRetrievalQueryError("retrieval result limit is outside the supported range")
 
         batch = await self._provider.embed((normalized_query,))
 
@@ -74,4 +74,5 @@ class VectorRetrievalService:
             model=self._provider.model,
             dimensions=self._provider.dimensions,
             limit=limit,
+            **({"filters": filters} if filters is not None else {}),
         )
