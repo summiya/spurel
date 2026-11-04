@@ -2,7 +2,7 @@
 
 from uuid import UUID
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, StrictBool, model_validator
 
 
 class RAGAnswerRequest(BaseModel):
@@ -12,6 +12,7 @@ class RAGAnswerRequest(BaseModel):
     top_k: int = Field(default=8, ge=1, le=20)
     candidate_k: int = Field(default=50, ge=1, le=100)
     rrf_k: int = Field(default=60, ge=1, le=1_000)
+    verify_citations: StrictBool = False
 
     @model_validator(mode="after")
     def validate_candidate_pool(self) -> "RAGAnswerRequest":
@@ -37,6 +38,25 @@ class RAGSourceResponse(BaseModel):
     ocr_used: bool = False
 
 
+class ClaimAssessmentResponse(BaseModel):
+    """Deterministic citation integrity or optional model-assessed support."""
+
+    id: int = Field(ge=1, le=16)
+    text: str
+    cited_labels: list[str]
+    status: str
+    reason: str
+
+
+class CitationVerificationResponse(BaseModel):
+    """Model judgments are fallible and should be manually checked."""
+
+    status: str
+    verifier_model: str | None
+    omitted_claim_count: int = Field(ge=0)
+    claims: list[ClaimAssessmentResponse]
+
+
 class RAGAnswerResponse(BaseModel):
     """Public grounded-answer response."""
 
@@ -46,3 +66,4 @@ class RAGAnswerResponse(BaseModel):
     generation_provider: str | None
     generation_model: str | None
     sources: list[RAGSourceResponse]
+    verification: CitationVerificationResponse | None = None
