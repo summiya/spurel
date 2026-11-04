@@ -71,7 +71,7 @@ class VectorRetrievalService:
 
         with time_stage("vector_search"):
             return await self._repository.search(
-                    knowledge_base_id=knowledge_base_id,
+                knowledge_base_id=knowledge_base_id,
                 query_vector=batch.vectors[0],
                 provider=self._provider.provider,
                 model=self._provider.model,

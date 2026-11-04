@@ -71,6 +71,7 @@ class VectorRetrievalResponse(BaseModel):
     mode: Literal["vector"] = "vector"
     trace_id: UUID
     duration_ms: float = Field(ge=0)
+    stage_timings_ms: dict[str, float] | None = None
     query: str
     top_k: int
     matches: list[VectorRetrievalMatchResponse]
@@ -107,6 +108,7 @@ class KeywordRetrievalResponse(BaseModel):
     mode: Literal["keyword"] = "keyword"
     trace_id: UUID
     duration_ms: float = Field(ge=0)
+    stage_timings_ms: dict[str, float] | None = None
     query: str
     top_k: int
     matches: list[KeywordRetrievalMatchResponse]
@@ -160,6 +162,7 @@ class HybridRetrievalResponse(BaseModel):
     mode: Literal["hybrid"] = "hybrid"
     trace_id: UUID
     duration_ms: float = Field(ge=0)
+    stage_timings_ms: dict[str, float] | None = None
     query: str
     top_k: int
     candidate_k: int
@@ -180,6 +183,7 @@ class RetrievalTraceSummaryResponse(BaseModel):
     candidate_k: int | None
     rrf_k: int | None
     duration_ms: float = Field(ge=0)
+    stage_timings_ms: dict[str, float] | None = None
     embedding_provider: str | None
     embedding_model: str | None
     embedding_dimensions: int | None
@@ -228,6 +232,7 @@ class RetrievalTraceDetailResponse(BaseModel):
     candidate_k: int | None
     rrf_k: int | None
     duration_ms: float = Field(ge=0)
+    stage_timings_ms: dict[str, float] | None = None
     embedding_provider: str | None
     embedding_model: str | None
     embedding_dimensions: int | None
@@ -261,6 +266,7 @@ class RetrievalTraceComparisonSideResponse(BaseModel):
     candidate_k: int | None
     rrf_k: int | None
     duration_ms: float = Field(ge=0)
+    stage_timings_ms: dict[str, float] | None = None
     embedding_provider: str | None
     embedding_model: str | None
     embedding_dimensions: int | None

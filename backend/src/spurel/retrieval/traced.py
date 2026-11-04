@@ -271,7 +271,6 @@ class TracedHybridRetrievalService:
             metadata_filters=filters,
             stage_timings_ms=stage_timings,
             reranker_model=reranker.model if reranker is not None else None,
-            stage_timings_ms=stage_timings,
         )
         await self._trace_service.record(trace)
 

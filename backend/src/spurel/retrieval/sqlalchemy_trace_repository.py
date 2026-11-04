@@ -132,6 +132,7 @@ class SqlAlchemyRetrievalTraceRepository:
                 else None
             ),
             reranker_model=record.reranker_model,
+            stage_timings_ms=record.stage_timings_ms,
         )
 
 
@@ -160,4 +161,5 @@ def _to_summary(
             else None
         ),
         reranker_model=record.reranker_model,
+        stage_timings_ms=record.stage_timings_ms,
     )

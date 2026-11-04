@@ -137,6 +137,7 @@ async def vector_retrieval(
     return VectorRetrievalResponse(
         trace_id=execution.trace_id,
         duration_ms=execution.duration_ms,
+        stage_timings_ms=execution.stage_timings_ms,
         query=payload.query.strip(),
         top_k=payload.top_k,
         matches=[
@@ -191,6 +192,7 @@ async def keyword_retrieval(
     return KeywordRetrievalResponse(
         trace_id=execution.trace_id,
         duration_ms=execution.duration_ms,
+        stage_timings_ms=execution.stage_timings_ms,
         query=payload.query.strip(),
         top_k=payload.top_k,
         matches=[
@@ -253,6 +255,7 @@ async def hybrid_retrieval(
     return HybridRetrievalResponse(
         trace_id=execution.trace_id,
         duration_ms=execution.duration_ms,
+        stage_timings_ms=execution.stage_timings_ms,
         query=payload.query.strip(),
         top_k=payload.top_k,
         candidate_k=payload.candidate_k,
@@ -321,6 +324,7 @@ async def list_retrieval_traces(
                 embedding_dimensions=trace.embedding_dimensions,
                 result_count=trace.result_count,
                 reranker_model=trace.reranker_model,
+                stage_timings_ms=trace.stage_timings_ms,
                 created_at=trace.created_at,
                 filters=trace.metadata_filters.to_snapshot() if trace.metadata_filters else None,
             )
@@ -372,6 +376,7 @@ async def get_retrieval_trace(
         created_at=trace.created_at,
         filters=trace.metadata_filters.to_snapshot() if trace.metadata_filters else None,
         reranker_model=trace.reranker_model,
+        stage_timings_ms=trace.stage_timings_ms,
         results=[
             RetrievalTraceResultResponse(
                 rank=result.rank,
@@ -444,6 +449,7 @@ async def compare_retrieval_traces(
             embedding_dimensions=comparison.first.embedding_dimensions,
             result_count=comparison.first.result_count,
             reranker_model=comparison.first.reranker_model,
+            stage_timings_ms=comparison.first.stage_timings_ms,
             filters=(
                 comparison.first.metadata_filters.to_snapshot()
                 if comparison.first.metadata_filters
@@ -463,6 +469,7 @@ async def compare_retrieval_traces(
             embedding_dimensions=comparison.second.embedding_dimensions,
             result_count=comparison.second.result_count,
             reranker_model=comparison.second.reranker_model,
+            stage_timings_ms=comparison.second.stage_timings_ms,
             filters=(
                 comparison.second.metadata_filters.to_snapshot()
                 if comparison.second.metadata_filters

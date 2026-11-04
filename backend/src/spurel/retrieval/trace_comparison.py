@@ -38,6 +38,7 @@ class RetrievalTraceComparisonSide:
     result_count: int
     metadata_filters: RetrievalMetadataFilters | None = None
     reranker_model: str | None = None
+    stage_timings_ms: dict[str, float] | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -227,4 +228,5 @@ def _side(trace: RetrievalTrace) -> RetrievalTraceComparisonSide:
         result_count=len(trace.results),
         metadata_filters=trace.metadata_filters,
         reranker_model=trace.reranker_model,
+        stage_timings_ms=trace.stage_timings_ms,
     )

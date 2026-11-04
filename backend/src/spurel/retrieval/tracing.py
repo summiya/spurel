@@ -12,6 +12,7 @@ from spurel.embeddings.chunk import (
 )
 from spurel.embeddings.domain import MAX_EMBEDDING_DIMENSIONS
 from spurel.retrieval.metadata_filters import RetrievalMetadataFilters
+from spurel.retrieval.timings import STAGE_NAMES
 
 
 class RetrievalTraceMode(StrEnum):
@@ -66,6 +67,7 @@ class RetrievalTraceSummary:
     created_at: datetime
     metadata_filters: RetrievalMetadataFilters | None = None
     reranker_model: str | None = None
+    stage_timings_ms: dict[str, float] | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -87,6 +89,7 @@ class RetrievalTrace:
     created_at: datetime
     metadata_filters: RetrievalMetadataFilters | None = None
     reranker_model: str | None = None
+    stage_timings_ms: dict[str, float] | None = None
 
     @classmethod
     def create(
@@ -105,6 +108,7 @@ class RetrievalTrace:
         embedding_dimensions: int | None = None,
         metadata_filters: RetrievalMetadataFilters | None = None,
         reranker_model: str | None = None,
+        stage_timings_ms: dict[str, float] | None = None,
     ) -> "RetrievalTrace":
         """Create and validate one completed retrieval trace."""
         normalized_query = query.strip()
@@ -126,6 +130,28 @@ class RetrievalTrace:
             or len(reranker_model) > 255
         ):
             raise RetrievalTraceValidationError("trace reranker metadata is invalid")
+
+        # An absent snapshot means historical or uninstrumented work; never
+        # synthesize stage values or infer unmeasured work as 0 ms.
+        if stage_timings_ms is not None:
+            supported = {
+                RetrievalTraceMode.VECTOR: {"query_embedding", "vector_search"},
+                RetrievalTraceMode.KEYWORD: {"keyword_search"},
+                RetrievalTraceMode.HYBRID: STAGE_NAMES,
+            }[mode]
+            if not isinstance(stage_timings_ms, dict) or not stage_timings_ms:
+                raise RetrievalTraceValidationError("stage timing snapshot must not be empty")
+            for stage, elapsed in stage_timings_ms.items():
+                if stage not in supported or (stage == "cross_encoder" and not reranker_model):
+                    raise RetrievalTraceValidationError("stage timing is incompatible with retrieval")
+                if (
+                    isinstance(elapsed, bool)
+                    or not isinstance(elapsed, (int, float))
+                    or not isfinite(elapsed)
+                    or elapsed < 0
+                    or elapsed > duration_ms + 1
+                ):
+                    raise RetrievalTraceValidationError("stage timing must be a measured duration")
 
         seen_chunk_ids: set[UUID] = set()
         for expected_rank, result in enumerate(results, start=1):
@@ -310,4 +336,5 @@ class RetrievalTrace:
             created_at=datetime.now(UTC),
             metadata_filters=metadata_filters,
             reranker_model=reranker_model,
+            stage_timings_ms=(dict(stage_timings_ms) if stage_timings_ms else None),
         )
