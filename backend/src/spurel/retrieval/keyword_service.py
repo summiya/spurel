@@ -29,9 +29,7 @@ class KeywordRetrievalService:
         """Run bounded lexical retrieval."""
         normalized_query = query.strip()
         if not normalized_query:
-            raise KeywordRetrievalQueryError(
-                "keyword retrieval query must not be empty"
-            )
+            raise KeywordRetrievalQueryError("keyword retrieval query must not be empty")
 
         if (
             isinstance(limit, bool)
