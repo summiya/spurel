@@ -43,9 +43,7 @@ class SqlAlchemyRetrievalTraceRepository:
                     session.add(trace_record)
                     session.add_all(result_records)
         except SQLAlchemyError as exc:
-            raise RetrievalTracePersistenceError(
-                "failed to persist retrieval trace"
-            ) from exc
+            raise RetrievalTracePersistenceError("failed to persist retrieval trace") from exc
 
     async def list_by_knowledge_base(
         self,
@@ -57,9 +55,7 @@ class SqlAlchemyRetrievalTraceRepository:
         """Return newest traces without loading result snapshot text."""
         result_count = (
             select(func.count(RetrievalTraceResultRecord.id))
-            .where(
-                RetrievalTraceResultRecord.trace_id == RetrievalTraceRecord.id
-            )
+            .where(RetrievalTraceResultRecord.trace_id == RetrievalTraceRecord.id)
             .correlate(RetrievalTraceRecord)
             .scalar_subquery()
             .label("result_count")
@@ -70,9 +66,7 @@ class SqlAlchemyRetrievalTraceRepository:
                 RetrievalTraceRecord,
                 result_count,
             )
-            .where(
-                RetrievalTraceRecord.knowledge_base_id == knowledge_base_id
-            )
+            .where(RetrievalTraceRecord.knowledge_base_id == knowledge_base_id)
             .order_by(
                 RetrievalTraceRecord.created_at.desc(),
                 RetrievalTraceRecord.id.desc(),
@@ -85,13 +79,10 @@ class SqlAlchemyRetrievalTraceRepository:
             async with self._session_factory() as session:
                 rows = (await session.execute(statement)).all()
         except SQLAlchemyError as exc:
-            raise RetrievalTracePersistenceError(
-                "failed to list retrieval traces"
-            ) from exc
+            raise RetrievalTracePersistenceError("failed to list retrieval traces") from exc
 
         return tuple(
-            _to_summary(record=record, result_count=result_count)
-            for record, result_count in rows
+            _to_summary(record=record, result_count=result_count) for record, result_count in rows
         )
 
     async def get_by_id(
@@ -113,19 +104,13 @@ class SqlAlchemyRetrievalTraceRepository:
 
         try:
             async with self._session_factory() as session:
-                record = (
-                    await session.execute(trace_statement)
-                ).scalar_one_or_none()
+                record = (await session.execute(trace_statement)).scalar_one_or_none()
                 if record is None:
                     return None
 
-                result_records = (
-                    await session.execute(result_statement)
-                ).scalars().all()
+                result_records = (await session.execute(result_statement)).scalars().all()
         except SQLAlchemyError as exc:
-            raise RetrievalTracePersistenceError(
-                "failed to load retrieval trace"
-            ) from exc
+            raise RetrievalTracePersistenceError("failed to load retrieval trace") from exc
 
         return RetrievalTrace(
             id=record.id,
@@ -139,14 +124,12 @@ class SqlAlchemyRetrievalTraceRepository:
             embedding_provider=record.embedding_provider,
             embedding_model=record.embedding_model,
             embedding_dimensions=record.embedding_dimensions,
-            results=tuple(
-                result_record.to_domain()
-                for result_record in result_records
-            ),
+            results=tuple(result_record.to_domain() for result_record in result_records),
             created_at=record.created_at,
             metadata_filters=(
                 RetrievalMetadataFilters.from_snapshot(record.metadata_filters)
-                if record.metadata_filters is not None else None
+                if record.metadata_filters is not None
+                else None
             ),
         )
 
@@ -172,6 +155,7 @@ def _to_summary(
         created_at=record.created_at,
         metadata_filters=(
             RetrievalMetadataFilters.from_snapshot(record.metadata_filters)
-            if record.metadata_filters is not None else None
+            if record.metadata_filters is not None
+            else None
         ),
     )
