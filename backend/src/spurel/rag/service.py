@@ -146,10 +146,7 @@ class RAGAnswerService:
             TextGenerationRequest(
                 system_prompt=_SYSTEM_PROMPT,
                 user_prompt=(
-                    "QUESTION:\n"
-                    f"{normalized_query}\n\n"
-                    "KNOWLEDGE-BASE CONTEXT:\n"
-                    f"{context.text}"
+                    f"QUESTION:\n{normalized_query}\n\nKNOWLEDGE-BASE CONTEXT:\n{context.text}"
                 ),
             )
         )
@@ -185,9 +182,7 @@ def _validate_request(
     if top_k < 1 or top_k > MAX_RAG_TOP_K:
         raise RAGContextError("RAG top_k is outside the supported range")
     if candidate_k < top_k or candidate_k > 100:
-        raise RAGContextError(
-            "RAG candidate_k must be at least top_k and at most 100"
-        )
+        raise RAGContextError("RAG candidate_k must be at least top_k and at most 100")
     if rrf_k < 1 or rrf_k > 1_000:
         raise RAGContextError("RAG rrf_k is outside the supported range")
 

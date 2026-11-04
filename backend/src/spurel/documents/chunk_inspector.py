@@ -78,9 +78,7 @@ class ChunkInspectorService:
             )
 
         if isinstance(offset, bool) or not isinstance(offset, int) or offset < 0:
-            raise ChunkInspectionQueryError(
-                "chunk inspector page offset is invalid"
-            )
+            raise ChunkInspectionQueryError("chunk inspector page offset is invalid")
 
         return await self._repository.list_by_document(
             knowledge_base_id=knowledge_base_id,

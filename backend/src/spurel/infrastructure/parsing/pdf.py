@@ -90,9 +90,7 @@ class PdfDocumentParser:
                 # Tesseract commonly ends text with a form-feed. Normalize
                 # without modifying the source PDF or other extracted pages.
                 normalized = (
-                    detected.replace("\r\n", "\n")
-                    .replace("\r", "\n")
-                    .replace("\x0c", "\n")
+                    detected.replace("\r\n", "\n").replace("\r", "\n").replace("\x0c", "\n")
                 )
                 used_ocr = bool(normalized.strip())
 

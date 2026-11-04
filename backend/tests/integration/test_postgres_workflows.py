@@ -1176,7 +1176,6 @@ async def _judgment_scope_and_missing_round_trip(postgres_url: str, tmp_path: Pa
         assert not await runs.list_by_dataset(knowledge_base_id=own_kb, dataset_id=dataset.id)
 
 
-
 def test_pdf_page_provenance_is_persisted_without_overwriting_existing_index(
     postgres_url: str, tmp_path: Path
 ) -> None:
@@ -1195,9 +1194,7 @@ async def _pdf_page_provenance_round_trip(postgres_url: str, tmp_path: Path) -> 
         )
 
         chunks = SqlAlchemyDocumentChunkRepository(database.sessions)
-        original = await chunks.list_stored_by_document(
-            document_id=document_id, limit=10, offset=0
-        )
+        original = await chunks.list_stored_by_document(document_id=document_id, limit=10, offset=0)
         assert len(original) == 1
         assert original[0].chunk.page_start is None
         legacy_id = original[0].id
@@ -1211,9 +1208,7 @@ async def _pdf_page_provenance_round_trip(postgres_url: str, tmp_path: Path) -> 
             page_end=3,
             ocr_used=True,
         )
-        staged = await chunks.replace_for_document(
-            document_id=document_id, chunks=(annotated,)
-        )
+        staged = await chunks.replace_for_document(document_id=document_id, chunks=(annotated,))
         assert staged.version == 2
         assert staged.attempt_id is not None
         assert not staged.reused_active
@@ -1239,9 +1234,7 @@ async def _pdf_page_provenance_round_trip(postgres_url: str, tmp_path: Path) -> 
             dimensions=embedded.dimensions,
         )
 
-        current = await chunks.list_stored_by_document(
-            document_id=document_id, limit=10, offset=0
-        )
+        current = await chunks.list_stored_by_document(document_id=document_id, limit=10, offset=0)
         assert len(current) == 1
         assert current[0].id != legacy_id
         assert current[0].chunk == annotated
@@ -1257,17 +1250,14 @@ async def _pdf_page_provenance_round_trip(postgres_url: str, tmp_path: Path) -> 
 
         history = SqlAlchemyDocumentVersionRepository(database.sessions)
         legacy = await history.list_version_chunks(
-            knowledge_base_id=kb_id, document_id=document_id,
-            version=1, limit=10, offset=0
+            knowledge_base_id=kb_id, document_id=document_id, version=1, limit=10, offset=0
         )
         assert legacy is not None and len(legacy) == 1
         assert legacy[0].id == legacy_id
         assert legacy[0].page_start is None
         assert legacy[0].ocr_used is False
 
-        repeated = await chunks.replace_for_document(
-            document_id=document_id, chunks=(annotated,)
-        )
+        repeated = await chunks.replace_for_document(document_id=document_id, chunks=(annotated,))
         assert repeated.reused_active
         assert repeated.version == 2
         unchanged = await chunks.list_stored_by_document(

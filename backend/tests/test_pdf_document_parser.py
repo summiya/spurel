@@ -73,7 +73,6 @@ def test_generated_blank_pdf_is_valid_pdf() -> None:
     assert len(reader.pages) == 1
 
 
-
 def _pdf_with_text_pages(lines: list[str | None]) -> bytes:
     """Generate a real PDF containing independent plain-text and empty pages."""
     writer = PdfWriter()
@@ -91,14 +90,10 @@ def _pdf_with_text_pages(lines: list[str | None]) -> bytes:
             )
         )
         page[NameObject("/Resources")] = DictionaryObject(
-            {
-                NameObject("/Font"): DictionaryObject({NameObject("/F1"): font})
-            }
+            {NameObject("/Font"): DictionaryObject({NameObject("/F1"): font})}
         )
         stream = DecodedStreamObject()
-        stream.set_data(
-            b"BT /F1 12 Tf 20 150 Td (" + line.encode("ascii") + b") Tj ET"
-        )
+        stream.set_data(b"BT /F1 12 Tf 20 150 Td (" + line.encode("ascii") + b") Tj ET")
         page[NameObject("/Contents")] = writer._add_object(stream)
     buffer = BytesIO()
     writer.write(buffer)
@@ -117,8 +112,9 @@ def test_pdf_parser_preserves_actual_page_numbers_and_exact_source_spans(
     assert [page.page_number for page in parsed.pages] == [1, 3]
     assert all(not page.used_ocr for page in parsed.pages)
     for page in parsed.pages:
-        assert parsed.text[page.start_offset:page.end_offset] in {
-            "Policy on page one", "Requirements on page three"
+        assert parsed.text[page.start_offset : page.end_offset] in {
+            "Policy on page one",
+            "Requirements on page three",
         }
     assert parsed.pages[0].start_offset == 0
     assert parsed.pages[-1].end_offset == len(parsed.text)
@@ -158,9 +154,11 @@ def test_pdf_parser_uses_opt_in_ocr_only_for_textless_pages(
     assert scanned == [2]
     assert parsed.text == "Normal layer\n\nRecovered scan text.\n\n\nMore normal text"
     assert [(page.page_number, page.used_ocr) for page in parsed.pages] == [
-        (1, False), (2, True), (3, False)
+        (1, False),
+        (2, True),
+        (3, False),
     ]
-    assert parsed.text[parsed.pages[1].start_offset:parsed.pages[1].end_offset].startswith(
+    assert parsed.text[parsed.pages[1].start_offset : parsed.pages[1].end_offset].startswith(
         "Recovered scan text."
     )
 
@@ -237,7 +235,6 @@ def test_ocr_enabled_rejects_unsafe_language_and_excessive_page_limit(
             content=_pdf_with_text_pages([None]),
             media_type=DocumentMediaType.PDF,
         )
-
 
 
 def test_pdf_parser_enforces_combined_text_limit_after_local_ocr(

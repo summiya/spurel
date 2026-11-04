@@ -18,12 +18,8 @@ depends_on: str | Sequence[str] | None = None
 
 def upgrade() -> None:
     """Add nullable provenance to existing rows without modifying their index state."""
-    op.add_column(
-        "document_chunks", sa.Column("page_start", sa.Integer(), nullable=True)
-    )
-    op.add_column(
-        "document_chunks", sa.Column("page_end", sa.Integer(), nullable=True)
-    )
+    op.add_column("document_chunks", sa.Column("page_start", sa.Integer(), nullable=True))
+    op.add_column("document_chunks", sa.Column("page_end", sa.Integer(), nullable=True))
     op.add_column(
         "document_chunks",
         sa.Column("ocr_used", sa.Boolean(), nullable=False, server_default=sa.false()),
@@ -31,8 +27,7 @@ def upgrade() -> None:
     op.create_check_constraint(
         "ck_document_chunks_pdf_page_range",
         "document_chunks",
-        "(page_start IS NULL AND page_end IS NULL) "
-        "OR (page_start >= 1 AND page_end >= page_start)",
+        "(page_start IS NULL AND page_end IS NULL) OR (page_start >= 1 AND page_end >= page_start)",
     )
     op.create_check_constraint(
         "ck_document_chunks_ocr_has_page",
@@ -43,12 +38,8 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     """Undo only the optional SP-18 metadata columns (not document versions)."""
-    op.drop_constraint(
-        "ck_document_chunks_ocr_has_page", "document_chunks", type_="check"
-    )
-    op.drop_constraint(
-        "ck_document_chunks_pdf_page_range", "document_chunks", type_="check"
-    )
+    op.drop_constraint("ck_document_chunks_ocr_has_page", "document_chunks", type_="check")
+    op.drop_constraint("ck_document_chunks_pdf_page_range", "document_chunks", type_="check")
     op.drop_column("document_chunks", "ocr_used")
     op.drop_column("document_chunks", "page_end")
     op.drop_column("document_chunks", "page_start")

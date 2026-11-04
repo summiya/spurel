@@ -150,7 +150,5 @@ def test_rag_answer_hides_generation_provider_errors() -> None:
     )
 
     assert response.status_code == 503
-    assert response.json() == {
-        "detail": "RAG service temporarily unavailable"
-    }
+    assert response.json() == {"detail": "RAG service temporarily unavailable"}
     assert "provider secret detail" not in response.text

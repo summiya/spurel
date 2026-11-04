@@ -104,9 +104,7 @@ class DocumentChunkRecord(Base):
     end_offset: Mapped[int] = mapped_column(Integer, nullable=False)
     page_start: Mapped[int | None] = mapped_column(Integer, nullable=True)
     page_end: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    ocr_used: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, server_default=false()
-    )
+    ocr_used: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=false())
 
     @classmethod
     def from_domain(

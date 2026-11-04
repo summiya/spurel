@@ -189,9 +189,7 @@ def _validate_hybrid_query(
     rrf_k: int,
 ) -> None:
     if not query:
-        raise HybridRetrievalQueryError(
-            "hybrid retrieval query must not be empty"
-        )
+        raise HybridRetrievalQueryError("hybrid retrieval query must not be empty")
 
     for name, value in (
         ("result limit", limit),
@@ -202,22 +200,15 @@ def _validate_hybrid_query(
             raise HybridRetrievalQueryError(f"{name} must be an integer")
 
     if limit < 1 or limit > MAX_HYBRID_RETRIEVAL_RESULTS:
-        raise HybridRetrievalQueryError(
-            "hybrid result limit is outside the supported range"
-        )
+        raise HybridRetrievalQueryError("hybrid result limit is outside the supported range")
 
-    if (
-        candidate_limit < limit
-        or candidate_limit > MAX_HYBRID_RETRIEVAL_RESULTS
-    ):
+    if candidate_limit < limit or candidate_limit > MAX_HYBRID_RETRIEVAL_RESULTS:
         raise HybridRetrievalQueryError(
             "hybrid candidate limit must be at least the result limit and at most 100"
         )
 
     if rrf_k < 1 or rrf_k > MAX_RRF_K:
-        raise HybridRetrievalQueryError(
-            "RRF k is outside the supported range"
-        )
+        raise HybridRetrievalQueryError("RRF k is outside the supported range")
 
 
 def _get_or_create_candidate(

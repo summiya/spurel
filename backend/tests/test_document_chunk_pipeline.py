@@ -284,7 +284,6 @@ def test_pipeline_can_opt_in_to_new_chunker_without_replacing_default() -> None:
     assert repository.items[document.id][0].text == "abcdefgh"
 
 
-
 def test_pdf_page_spans_annotate_chunks_without_changing_offsets_or_text() -> None:
     source = "Page one.\n\nPage two."
     page_two = source.index("Page two")
@@ -296,9 +295,7 @@ def test_pdf_page_spans_annotate_chunks_without_changing_offsets_or_text() -> No
     )
     pages = (
         ParsedPageSpan(page_number=1, start_offset=0, end_offset=9),
-        ParsedPageSpan(
-            page_number=2, start_offset=page_two, end_offset=len(source), used_ocr=True
-        ),
+        ParsedPageSpan(page_number=2, start_offset=page_two, end_offset=len(source), used_ocr=True),
     )
     result = _apply_pdf_page_spans(parts, pages)
     assert result[0].page_start == 1
@@ -323,7 +320,5 @@ def test_pdf_chunks_spanning_two_pages_have_a_real_page_range() -> None:
 
 
 def test_non_pdf_chunk_pipeline_stays_identical_without_page_metadata() -> None:
-    chunks = (
-        DocumentChunk(index=0, text="Plain text", start_offset=0, end_offset=10),
-    )
+    chunks = (DocumentChunk(index=0, text="Plain text", start_offset=0, end_offset=10),)
     assert _apply_pdf_page_spans(chunks, ()) == chunks
