@@ -44,9 +44,7 @@ class FakeTraceComparisonService:
 def _client(service: FakeTraceComparisonService) -> TestClient:
     application = create_app()
     application.dependency_overrides[require_api_token] = lambda: None
-    application.dependency_overrides[
-        get_retrieval_trace_comparison_service
-    ] = lambda: service
+    application.dependency_overrides[get_retrieval_trace_comparison_service] = lambda: service
     return TestClient(application)
 
 
@@ -180,9 +178,7 @@ def test_trace_comparison_returns_scoped_not_found() -> None:
 
 def test_trace_comparison_hides_snapshot_integrity_errors() -> None:
     service = FakeTraceComparisonService()
-    service.error = RetrievalTraceComparisonIntegrityError(
-        "historical snapshot internals"
-    )
+    service.error = RetrievalTraceComparisonIntegrityError("historical snapshot internals")
     client = _client(service)
 
     response = client.post(
@@ -194,7 +190,5 @@ def test_trace_comparison_hides_snapshot_integrity_errors() -> None:
     )
 
     assert response.status_code == 503
-    assert response.json() == {
-        "detail": "retrieval trace comparison temporarily unavailable"
-    }
+    assert response.json() == {"detail": "retrieval trace comparison temporarily unavailable"}
     assert "historical snapshot internals" not in response.text

@@ -44,7 +44,7 @@ class KeywordRetrievalService:
 
         with time_stage("keyword_search"):
             return await self._repository.search(
-                    knowledge_base_id=knowledge_base_id,
+                knowledge_base_id=knowledge_base_id,
                 query=normalized_query,
                 limit=limit,
                 **({"filters": filters} if filters is not None else {}),

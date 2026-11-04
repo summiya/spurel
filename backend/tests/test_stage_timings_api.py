@@ -20,7 +20,9 @@ class FakeTracedRetriever:
 
     async def search(self, **kwargs):
         return TracedRetrievalResult(
-            trace_id=uuid4(), duration_ms=8.0, matches=(),
+            trace_id=uuid4(),
+            duration_ms=8.0,
+            matches=(),
             stage_timings_ms=self.stage_timings_ms,
         )
 
@@ -33,6 +35,7 @@ def test_all_retrieval_modes_expose_actual_stages_without_changing_requests() ->
         "keyword": (get_traced_keyword_retrieval_service, {"keyword_search": 5.0}),
         "hybrid": (get_traced_hybrid_retrieval_service, {"rrf_fusion": 0.5}),
     }
+
     def provider_for(values):
         fake = FakeTracedRetriever(values)
 

@@ -96,9 +96,7 @@ def _service(trace_repo, reranker=None):
             provider=EmbeddingProvider(),
             repository=VectorRepository(chunk_id, doc_id),
         ),
-        keyword_retriever=KeywordRetrievalService(
-            KeywordRepository(chunk_id, doc_id)
-        ),
+        keyword_retriever=KeywordRetrievalService(KeywordRepository(chunk_id, doc_id)),
     )
     return TracedHybridRetrievalService(
         retriever=hybrid,
@@ -114,9 +112,7 @@ def test_real_hybrid_services_measure_all_stages_and_preserve_ranking() -> None:
     repo = TraceRepository()
     service = _service(repo)
     result = asyncio.run(
-        service.search(
-            knowledge_base_id=uuid4(), query="which", limit=3, candidate_limit=4
-        )
+        service.search(knowledge_base_id=uuid4(), query="which", limit=3, candidate_limit=4)
     )
     assert len(result.matches) == 1
     assert result.matches[0].rrf_score > 0
@@ -137,7 +133,10 @@ def test_rerank_stage_only_exists_after_explicit_rerank_call() -> None:
     service = _service(repo, reranker=Reranker())
     result = asyncio.run(
         service.search(
-            knowledge_base_id=uuid4(), query="which", limit=1, candidate_limit=4,
+            knowledge_base_id=uuid4(),
+            query="which",
+            limit=1,
+            candidate_limit=4,
             rerank=True,
         )
     )
@@ -167,8 +166,12 @@ def test_context_scoping_prevents_concurrent_request_timing_leaks() -> None:
 def _create(stage_timings_ms, *, mode=RetrievalTraceMode.KEYWORD, reranker_model=None):
     is_hybrid = mode is RetrievalTraceMode.HYBRID
     return RetrievalTrace.create(
-        knowledge_base_id=uuid4(), mode=mode, query="test", top_k=2,
-        duration_ms=12.5, results=(),
+        knowledge_base_id=uuid4(),
+        mode=mode,
+        query="test",
+        top_k=2,
+        duration_ms=12.5,
+        results=(),
         candidate_k=4 if is_hybrid else None,
         rrf_k=60 if is_hybrid else None,
         embedding_provider="fixture" if is_hybrid else None,
@@ -210,6 +213,7 @@ def test_trace_rejects_cross_encoder_stage_without_reranking() -> None:
     with pytest.raises(RetrievalTraceValidationError):
         _create({"cross_encoder": 1.0}, mode=RetrievalTraceMode.HYBRID)
     assert _create(
-        {"cross_encoder": 1.0}, mode=RetrievalTraceMode.HYBRID,
-        reranker_model="test-local-cross-encoder"
+        {"cross_encoder": 1.0},
+        mode=RetrievalTraceMode.HYBRID,
+        reranker_model="test-local-cross-encoder",
     ).stage_timings_ms == {"cross_encoder": 1.0}
