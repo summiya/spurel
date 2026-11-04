@@ -51,6 +51,8 @@ class RetrievalMetricValues:
     recall_at_k: float
     reciprocal_rank_at_k: float
     ndcg_at_k: float
+    hit_at_k: bool | None = None
+    average_precision_at_k: float | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -69,6 +71,8 @@ class RetrievalEvaluation:
     recall_at_k: float
     reciprocal_rank_at_k: float
     ndcg_at_k: float
+    hit_at_k: bool | None = None
+    average_precision_at_k: float | None = None
 
 
 class RetrievalEvaluationService:
@@ -103,7 +107,7 @@ def evaluate_trace(
     cutoff: int,
     judgments: tuple[RelevanceJudgment, ...],
 ) -> RetrievalEvaluation:
-    """Compute Precision@K, Recall@K, Reciprocal Rank@K, and nDCG@K."""
+    """Compute measured per-trace ranking metrics from explicit judgments."""
     _validate_trace_inputs(trace=trace, cutoff=cutoff, judgments=judgments)
 
     metrics = calculate_retrieval_metrics(
@@ -127,6 +131,8 @@ def evaluate_trace(
         recall_at_k=metrics.recall_at_k,
         reciprocal_rank_at_k=metrics.reciprocal_rank_at_k,
         ndcg_at_k=metrics.ndcg_at_k,
+        hit_at_k=metrics.hit_at_k,
+        average_precision_at_k=metrics.average_precision_at_k,
     )
 
 
@@ -181,6 +187,17 @@ def calculate_retrieval_metrics(
         sorted(relevance_by_chunk.values(), reverse=True)[:cutoff]
     )
     ideal_dcg = _dcg(ideal_relevances)
+    # Binary relevance is grade > 0. Unjudged retrieved chunks are treated
+    # as nonrelevant, as in the existing precision/recall calculations.
+    # AP@K normalizes by min(total relevant judgments, K): relevant matches
+    # beyond the cutoff do not inflate the denominator.
+    relevant_so_far = 0
+    precision_sum = 0.0
+    for rank, relevance in enumerate(retrieved_relevances, start=1):
+        if relevance > 0:
+            relevant_so_far += 1
+            precision_sum += relevant_so_far / rank
+    average_precision = precision_sum / min(relevant_count, cutoff)
 
     return RetrievalMetricValues(
         cutoff=cutoff,
@@ -198,6 +215,8 @@ def calculate_retrieval_metrics(
             1.0 / first_relevant_rank if first_relevant_rank is not None else 0.0
         ),
         ndcg_at_k=dcg / ideal_dcg,
+        hit_at_k=relevant_retrieved > 0,
+        average_precision_at_k=average_precision,
     )
 
 

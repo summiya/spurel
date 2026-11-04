@@ -8,6 +8,7 @@ from typing import Protocol
 from uuid import UUID
 
 from spurel.evaluation_datasets.domain import EvaluationCase
+from spurel.evaluation_datasets.quality_reporting import wilson_hit_rate_95
 from spurel.evaluation_datasets.ports import (
     EvaluationDatasetLoadLimitError,
     EvaluationJudgmentStaleError,
@@ -149,6 +150,10 @@ class DatasetEvaluationResult:
     mrr_at_k: float
     mean_ndcg_at_k: float
     cases: tuple[DatasetEvaluationCaseResult, ...]
+    hit_rate_at_k: float | None = None
+    mean_average_precision_at_k: float | None = None
+    hit_rate_wilson_95_lower: float | None = None
+    hit_rate_wilson_95_upper: float | None = None
 
 
 class VectorDatasetRetriever:
@@ -447,6 +452,16 @@ def _aggregate(
         if case.metrics.judgment_coverage_at_k is not None
     )
     mean_rr = sum(case.metrics.reciprocal_rank_at_k for case in cases) / case_count
+    # New runs have a per-case hit and AP; keep older caller contracts safe.
+    measured_hits = [case.metrics.hit_at_k for case in cases]
+    measured_ap = [case.metrics.average_precision_at_k for case in cases]
+    has_hit_measurements = all(value is not None for value in measured_hits)
+    has_ap_measurements = all(value is not None for value in measured_ap)
+    hit_count = sum(value is True for value in measured_hits)
+    interval = (
+        wilson_hit_rate_95(successes=hit_count, trials=case_count)
+        if has_hit_measurements else None
+    )
 
     return DatasetEvaluationResult(
         dataset_id=dataset_id,
@@ -468,5 +483,12 @@ def _aggregate(
         mean_recall_at_k=sum(case.metrics.recall_at_k for case in cases) / case_count,
         mrr_at_k=mean_rr,
         mean_ndcg_at_k=sum(case.metrics.ndcg_at_k for case in cases) / case_count,
+        hit_rate_at_k=hit_count / case_count if has_hit_measurements else None,
+        mean_average_precision_at_k=(
+            sum(value for value in measured_ap if value is not None) / case_count
+            if has_ap_measurements else None
+        ),
+        hit_rate_wilson_95_lower=interval[0] if interval else None,
+        hit_rate_wilson_95_upper=interval[1] if interval else None,
         cases=cases,
     )
