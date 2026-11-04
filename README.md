@@ -278,7 +278,7 @@ Indexes are never dropped by the tool. A production-like rollout should
 first confirm sufficient representative recall/latency before any future
 opt-in change to live search.
 
-## SP-21: explicit cross-encoder reranking in Retrieval Lab (in review)
+## SP-21: explicit cross-encoder reranking in Retrieval Lab (merged)
 
 Reranking is **off by default**. Keyword, vector, hybrid RRF, HNSW
 benchmarking, RAG, evaluations and Overview quality chart are unchanged.
@@ -315,6 +315,36 @@ rather than silently falling back to nonreranked search.
 Migration **0015** adds nullable fields to traces and trace results;
 existing rows stay unchanged. No vector reindexing or automatic provider
 calls occur. RAG answers remain standard hybrid RRF, not reranked.
+
+## SP-22: measured retrieval stages (in review)
+
+The existing **total retrieval duration** remains visible. SP-22 additionally
+measures stage-boundary elapsed milliseconds for five possible operations:
+`query_embedding` (embedding provider round trip), `vector_search`
+(vector repository), `keyword_search` (PostgreSQL full-text repository),
+`rrf_fusion` (local hybrid fusion), and `cross_encoder` (opt-in reranker
+scoring). Only stages actually entered are recorded; a legacy trace with no
+measurements returns `stage_timings_ms: null`, not made-up zeros. Stages
+are captured only for explicitly executed retrieval requests, including
+retrieval invoked by RAG. Reading the dashboard or trace history never calls
+a provider.
+
+An additive Alembic migration **0016** adds nullable JSONB
+`retrieval_traces.stage_timings_ms`. The POST Keyword/Vector/Hybrid retrieval
+responses and the authenticated trace history, detail and comparison
+endpoints expose the same measured breakdown. Retrieval Lab shows the
+stages of its completed run; Trace History displays the saved breakdown and
+an A/B stage comparison where both records have values. No existing
+traces, result scores, source metadata, documents, embeddings or chart
+data are altered or recalculated.
+
+**Interpretation:** Hybrid vector and keyword searches run concurrently.
+Their elapsed times overlap, so adding stage values can exceed the overall
+wall-clock duration. Each repository measurement includes adapter/data
+transfer latency, not just database server execution time. The existing
+total `duration_ms` measures retrieval work through optional reranking;
+it does **not** include later trace persistence, HTTP response serialization
+or browser rendering. No p95, throughput or speedup values are invented.
 
 ## Inspect real chunks (SP-11)
 

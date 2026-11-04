@@ -10,6 +10,7 @@ from spurel.retrieval.keyword_domain import (
 )
 from spurel.retrieval.keyword_ports import KeywordRetrievalRepository
 from spurel.retrieval.metadata_filters import RetrievalMetadataFilters
+from spurel.retrieval.timings import time_stage
 
 
 class KeywordRetrievalService:
@@ -41,9 +42,10 @@ class KeywordRetrievalService:
                 "keyword retrieval result limit is outside the supported range"
             )
 
-        return await self._repository.search(
-            knowledge_base_id=knowledge_base_id,
-            query=normalized_query,
-            limit=limit,
-            **({"filters": filters} if filters is not None else {}),
-        )
+        with time_stage("keyword_search"):
+            return await self._repository.search(
+                knowledge_base_id=knowledge_base_id,
+                query=normalized_query,
+                limit=limit,
+                **({"filters": filters} if filters is not None else {}),
+            )

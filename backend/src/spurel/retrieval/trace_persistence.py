@@ -114,6 +114,7 @@ class RetrievalTraceRecord(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     metadata_filters: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     reranker_model: Mapped[str | None] = mapped_column(String(255))
+    stage_timings_ms: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
     @classmethod
     def from_domain(cls, trace: RetrievalTrace) -> "RetrievalTraceRecord":
@@ -135,6 +136,7 @@ class RetrievalTraceRecord(Base):
                 trace.metadata_filters.to_snapshot() if trace.metadata_filters else None
             ),
             reranker_model=trace.reranker_model,
+            stage_timings_ms=trace.stage_timings_ms,
         )
 
 

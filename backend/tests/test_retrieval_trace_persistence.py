@@ -36,6 +36,7 @@ def test_trace_persistence_keeps_result_snapshots_independent_of_live_chunks() -
         candidate_k=50,
         rrf_k=60,
         duration_ms=15.5,
+        stage_timings_ms={"query_embedding": 3.0, "rrf_fusion": 0.2},
         embedding_provider="openai",
         embedding_model="model",
         embedding_dimensions=1536,
@@ -50,6 +51,7 @@ def test_trace_persistence_keeps_result_snapshots_independent_of_live_chunks() -
 
     assert trace_record.id == trace.id
     assert trace_record.mode == "hybrid"
+    assert trace_record.stage_timings_ms == {"query_embedding": 3.0, "rrf_fusion": 0.2}
     assert result_record.trace_id == trace.id
     assert result_record.chunk_id == chunk_id
     assert result_record.document_id == document_id

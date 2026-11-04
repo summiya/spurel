@@ -2,6 +2,7 @@ import {
   parseRetrievalMetadataFilters,
   type RetrievalMetadataFilters,
 } from "@/lib/retrieval-filter-types";
+import { isStageTimings, type StageTimings } from "@/lib/stage-timings";
 
 export type RetrievalMode = "vector" | "keyword" | "hybrid";
 
@@ -39,6 +40,7 @@ export interface RetrievalResult extends RetrievalParameters {
   mode: RetrievalMode;
   trace_id: string;
   duration_ms: number;
+  stage_timings_ms?: StageTimings | null;
   matches: RetrievalMatch[];
   reranker_model?: string | null;
 }
@@ -55,6 +57,7 @@ export interface RetrievalTraceDetail {
   embedding_provider: string | null;
   embedding_model: string | null;
   embedding_dimensions: number | null;
+  stage_timings_ms?: StageTimings | null;
   created_at: string;
   reranker_model?: string | null;
   results: RetrievalMatch[];
@@ -136,6 +139,12 @@ export function isRetrievalResult(value: unknown): value is RetrievalResult {
   )
     return false;
 
+  if (
+    "stage_timings_ms" in value &&
+    value.stage_timings_ms !== null &&
+    !isStageTimings(value.stage_timings_ms)
+  )
+    return false;
   if ("rerank" in value && typeof value.rerank !== "boolean") return false;
   if (
     value.rerank === true &&

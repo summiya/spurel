@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRef, useState, type FormEvent } from "react";
 
 import { Icon } from "@/components/icons";
+import { StageTimingBreakdown } from "@/components/live/stage-timings";
 import { EmptyState, ErrorState, LoadingState, PageHeading, Panel } from "@/components/ui";
 import { useDemoToast } from "@/components/workbench-shell";
 import { liveError, workspaceFetch } from "@/lib/live-client";
@@ -718,6 +719,7 @@ export function LiveRetrievalLabPage({ initialKnowledgeBaseId }: Props) {
                 <span>Cross-encoder: {trace.reranker_model ?? "Not used"}</span>
               </div>
             ) : null}
+            <StageTimingBreakdown timings={result.stage_timings_ms} />
           </Panel>
           <div className="results-grid">
             <Panel

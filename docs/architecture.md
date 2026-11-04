@@ -240,6 +240,19 @@ provenance and pass representative recall/latency gates. HNSW adds build,
 memory/disk and write costs, has a 2,000-dimension limit for full vector
 indexing, and can undersample post-filtered KB matches.
 
+### SP-22 retrieval-stage provenance (in review)
+
+Traced retrieval wraps request execution in an isolated context-local
+timing collector. Embedding, vector repository, keyword repository,
+in-process RRF fusion and optional cross-encoder calls record only observed
+elapsed milliseconds; no provider credentials or result text are copied
+into the stage data. Hybrid branches overlap in wall time. Stage breakdowns
+are stored as nullable JSONB on existing trace rows via additive migration
+0016, returned through protected APIs, and inspected in the existing
+Retrieval Lab and Trace History. Legacy trace data stays NULL, never
+backfilled or inferred. Overall retrieval duration excludes trace
+persistence and frontend/browser time.
+
 ## What is planned, not implemented
 
 The frontend has live source, chunk, retrieval, trace-comparison, evaluation and provider-backed RAG answer inspection. A frontend follow-up summarizes real Overview data, including a 7/30-day retrieval-quality chart plotting persisted evaluation runs without inferred measurements or new backend APIs. The following are **not built on main**: opt-in scanned-PDF OCR (SP-18 in review), semantic/LLM-based chunking, BM25, pgvector ANN/HNSW, metadata filters, rerankers, independent citation/claim verification, non-OpenAI providers, data-source connectors, Redis-backed background jobs, experiment export and production auth/monitoring.

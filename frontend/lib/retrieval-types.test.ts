@@ -178,6 +178,9 @@ describe("retrieval payloads and scores", () => {
       matches: [{ ...chunk, keyword_score: 0.00004 }],
     };
     expect(isRetrievalResult(keyword)).toBe(true);
+    expect(isRetrievalResult({ ...keyword, stage_timings_ms: { keyword_search: 3.1 } })).toBe(true);
+    expect(isRetrievalResult({ ...keyword, stage_timings_ms: { bogus: 1 } })).toBe(false);
+    expect(isRetrievalResult({ ...keyword, stage_timings_ms: { keyword_search: -2 } })).toBe(false);
     expect(isRetrievalResult({ ...keyword, matches: [{ ...chunk, rank: 2 }] })).toBe(false);
     expect(isRetrievalResult({ ...keyword, duration_ms: null })).toBe(false);
     expect(isRetrievalResult({ ...keyword, duration_ms: -1 })).toBe(false);

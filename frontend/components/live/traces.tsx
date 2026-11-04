@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
 
 import { Icon } from "@/components/icons";
+import { StageTimingBreakdown, StageTimingComparison } from "@/components/live/stage-timings";
 import { EmptyState, ErrorState, LoadingState, PageHeading, Panel } from "@/components/ui";
 import { useDemoToast } from "@/components/workbench-shell";
 import { liveError, workspaceFetch } from "@/lib/live-client";
@@ -472,6 +473,7 @@ export function LiveTraceHistoryPage({ initialKnowledgeBaseId, initialTraceId }:
                       Saved retrieval scope: {describeRetrievalFilters(detail.filters)}
                       {detail.reranker_model ? ` · Cross-encoder: ${detail.reranker_model}` : ""}
                     </p>
+                    <StageTimingBreakdown timings={detail.stage_timings_ms} />
                     <div className="trace-evidence">
                       {detail.results.length ? (
                         detail.results.map((item) => (
@@ -677,6 +679,10 @@ export function LiveTraceHistoryPage({ initialKnowledgeBaseId, initialTraceId }:
                   </div>
                 ))}
               </div>
+              <StageTimingComparison
+                first={compared.first.stage_timings_ms}
+                second={compared.second.stage_timings_ms}
+              />
               <h3 className="subsection-title">Aligned ranked evidence</h3>
               {compared.results.length === 0 ? (
                 <EmptyState
