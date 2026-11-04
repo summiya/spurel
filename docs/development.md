@@ -403,6 +403,32 @@ SP-20 does **not** introduce ANN to normal Retrieval Lab, RAG or stored
 evaluation traces; an eventual live opt-in requires independent quality
 approval and explicit algorithm provenance.
 
+## SP-21: optional cross-encoder reranking
+
+A separate provider port and HTTP adapter allow reranking hybrid candidates
+after existing metadata-scoped vector + keyword RRF fusion. The current exact
+retrieval and RAG path remain untouched when `rerank` is omitted or false.
+The Retrieval Lab explicitly submits `rerank: true` to the authenticated
+hybrid endpoint only after confirmation.
+
+Set `SPUREL_RERANKER_URL` to a trusted operator-controlled cross-encoder
+scoring service endpoint, and `SPUREL_RERANKER_MODEL` to its model ID. Set
+`SPUREL_RERANKER_TOKEN` only if your service requires a bearer token.
+These are never passed from browser request fields. HTTP(S) is supported.
+The configured endpoint takes `model`, `query`, `documents` JSON and
+returns a JSON `scores` array, one finite raw score per supplied document.
+It must not issue redirects. Do not point this at an untrusted service:
+up to 100 source chunks, truncated to 4,000 text characters each for
+scoring, leave the backend when a user explicitly requests reranking.
+
+The original full chunk excerpts, vector/keyword ranks and RRF scores are
+preserved. The resulting rank and score are persisted in additive migration
+0015, alongside the model identifier. Invalid adapter output fails closed
+without writing a misleading trace. No background model download or
+automatic requests are introduced. Real calls may incur embedding and
+cross-encoder service charges. The adapter requires a separately deployed
+compatible model service; Spurel does not launch one.
+
 ## Environment and secrets
 
 `make init` copies `.env.example` to the ignored `.env` on first use, generates a strong random `SPUREL_API_TOKEN`, and restricts its permissions to the file owner on POSIX systems. It **does not replace** an existing valid token or provider key. Do not print, commit, or share your `.env`.
@@ -423,6 +449,8 @@ approval and explicit algorithm provenance.
 | `OPENAI_API_KEY` | OpenAI embeddings and generation | Optional for startup, needed for model-backed calls |
 | `SPUREL_EMBEDDING_MODEL` / `SPUREL_EMBEDDING_DIMENSIONS` | Embedding provider configuration | Defaults in `.env.example` |
 | `SPUREL_GENERATION_MODEL` / `SPUREL_GENERATION_MAX_OUTPUT_TOKENS` | Model-backed RAG answer generation | Set appropriate provider configuration before use |
+| `SPUREL_RERANKER_URL` / `SPUREL_RERANKER_MODEL` | Explicit hybrid cross-encoder scoring adapter | Both required only for reranking, server-only; no default service |
+| `SPUREL_RERANKER_TOKEN` | Optional upstream reranker bearer credential | Never send to frontend or commit to Git |
 
 After `make up`, this command checks the public API liveness:
 

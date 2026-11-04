@@ -121,9 +121,12 @@ function fakeFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Respon
         trace_id: traceId,
         filters: request.filters ?? null,
         duration_ms: 112.45,
+        rerank: request.rerank ?? false,
+        reranker_model: request.rerank ? "local-test-cross-encoder" : null,
         matches: [
           {
             ...first,
+            ...(request.rerank ? { candidate_rank: 2, rerank_rank: 1, rerank_score: 0.8542 } : {}),
             rrf_score: 0.032786,
             vector_rank: 1,
             keyword_rank: 2,
@@ -167,6 +170,7 @@ describe("live retrieval lab", () => {
   });
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.restoreAllMocks();
   });
 
   it("does not issue queries automatically and defaults to free keyword mode", async () => {
@@ -244,6 +248,33 @@ describe("live retrieval lab", () => {
       candidate_k: 14,
       rrf_k: 81,
     });
+  });
+
+  it("reranks only after explicit opt-in and confirmation, retaining original RRF ranks", async () => {
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
+    render(<LiveRetrievalLabPage />);
+    await ready();
+    fireEvent.change(screen.getByRole("textbox", { name: "Search query" }), {
+      target: { value: "rank documents" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Hybrid" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: /Cross-encoder reranking/ }));
+    expect(vi.mocked(fetch).mock.calls.filter(([, init]) => init?.method === "POST")).toHaveLength(0);
+    fireEvent.click(screen.getByRole("button", { name: "Run live retrieval" }));
+    expect(confirm).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(fetch).mock.calls.filter(([, init]) => init?.method === "POST")).toHaveLength(0);
+
+    confirm.mockReturnValue(true);
+    fireEvent.click(screen.getByRole("button", { name: "Run live retrieval" }));
+    expect(await screen.findByText(/Cross-encoder score: 0.85420/)).toBeInTheDocument();
+    expect(screen.getByText(/RRF candidate #2/)).toBeInTheDocument();
+    const call = vi.mocked(fetch).mock.calls.find(([url]) => String(url) === base + "/hybrid");
+    expect(JSON.parse(String(call?.[1]?.body))).toMatchObject({
+      query: "rank documents",
+      rerank: true,
+      candidate_k: 50,
+    });
+    expect(screen.getByText(/Cross-encoder score \(raw\)/)).toBeInTheDocument();
   });
 
   it("restricts search by document, type and filename without any automatic requests", async () => {

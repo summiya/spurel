@@ -111,6 +111,29 @@ describe("retrieval payloads and scores", () => {
     }
   });
 
+  it("accepts explicit hybrid reranking, never on keyword/vector or with fake scores", () => {
+    const request = { query: "q", top_k: 2, candidate_k: 5, rrf_k: 60, rerank: true };
+    expect(parseRetrievalRequest("hybrid", request)).toEqual(request);
+    expect(parseRetrievalRequest("vector", { query: "q", top_k: 2, rerank: true })).toBeNull();
+    expect(parseRetrievalRequest("hybrid", { ...request, rerank: "true" })).toBeNull();
+    const result = {
+      ...request,
+      mode: "hybrid",
+      trace_id: "id",
+      duration_ms: 10,
+      reranker_model: "local-test-cross-encoder",
+      matches: [{ ...chunk, candidate_rank: 2, rerank_rank: 1, rerank_score: 0.71 }],
+    };
+    expect(isRetrievalResult(result)).toBe(true);
+    expect(mainScore(result.matches[0], "hybrid")).toEqual({
+      label: "Cross-encoder score",
+      value: "0.71000",
+    });
+    expect(isRetrievalResult({ ...result, reranker_model: null })).toBe(false);
+    expect(isRetrievalResult({ ...result, matches: [{ ...result.matches[0], rerank_score: NaN }] })).toBe(false);
+    expect(isRetrievalResult({ ...result, matches: [{ ...result.matches[0], candidate_rank: 0 }] })).toBe(false);
+  });
+
   it("rejects inconsistent or invented PDF page provenance", () => {
     const valid = {
       mode: "vector",

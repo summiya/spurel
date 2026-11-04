@@ -230,7 +230,7 @@ Alembic migration **0014**. The PR is **based on SP-18 PR #80**, which adds
 migration 0013; merge SP-18 first, then merge SP-19. Existing trace snapshots
 remain untouched with `filters: null`.
 
-## SP-20: explicitly built HNSW index and real recall/latency benchmark (in review)
+## SP-20: explicitly built HNSW index and real recall/latency benchmark (merged)
 
 The existing **exact** vector/hybrid retrieval and live dashboard remain unchanged.
 SP-20 adds a separate operator-only index/benchmark utility for exploring
@@ -277,6 +277,44 @@ refuses larger dimensions rather than silently truncate or re-embed.
 Indexes are never dropped by the tool. A production-like rollout should
 first confirm sufficient representative recall/latency before any future
 opt-in change to live search.
+
+## SP-21: explicit cross-encoder reranking in Retrieval Lab (in review)
+
+Reranking is **off by default**. Keyword, vector, hybrid RRF, HNSW
+benchmarking, RAG, evaluations and Overview quality chart are unchanged.
+The hybrid Retrieval Lab gains an opt-in Cross-encoder checkbox. Submitting a
+reranked query requires a confirmation because the saved source excerpts may
+be sent to a separate scoring service (potential charges and data sharing).
+Editing the checkbox or opening the page never calls a reranker.
+
+Configure an operator-controlled cross-encoder scoring service in the backend
+process (these are **server-only** environment variables, not NEXT_PUBLIC_*):
+```dotenv
+SPUREL_RERANKER_URL=http://reranker:8080/rerank
+SPUREL_RERANKER_MODEL=your-local-cross-encoder
+# SPUREL_RERANKER_TOKEN=optional-service-bearer-secret
+```
+
+This is a **pluggable HTTP adapter**, not a built-in model server; you must
+provide your own compatible service reachable from the backend container.
+It must accept `POST {"model":"...","query":"...","documents":["..."]}`
+and return `{"scores":[0.2,-0.3]}` in the **same order** (arbitrary finite
+raw relevance scores, not calibrated probabilities). It must not redirect.
+Up to 100 fused candidates are scored, each using at most 4,000 characters
+of original excerpt text. The displayed/persisted original excerpt is
+not truncated.
+
+Reranking applies only after the original metadata-filtered candidate pools
+and RRF fusion. It never makes a new query against unrelated documents.
+The final Top K is sorted by cross-encoder score descending with stable
+RRF tie order. The UI and saved trace record original RRF candidate rank,
+reranked final rank, raw cross-encoder score and model, plus original vector,
+keyword and RRF scores. Failure or missing configuration returns an error
+rather than silently falling back to nonreranked search.
+
+Migration **0015** adds nullable fields to traces and trace results;
+existing rows stay unchanged. No vector reindexing or automatic provider
+calls occur. RAG answers remain standard hybrid RRF, not reranked.
 
 ## Inspect real chunks (SP-11)
 

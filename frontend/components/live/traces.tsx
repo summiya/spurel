@@ -360,6 +360,9 @@ export function LiveTraceHistoryPage({ initialKnowledgeBaseId, initialTraceId }:
                         {item.filters ? (
                           <small>Filtered · {describeRetrievalFilters(item.filters)}</small>
                         ) : null}
+                        {item.reranker_model ? (
+                          <small>Cross-encoder · {item.reranker_model}</small>
+                        ) : null}
                       </span>
                       <span className="trace-duration">{elapsed(item.duration_ms)}</span>
                     </button>
@@ -425,6 +428,9 @@ export function LiveTraceHistoryPage({ initialKnowledgeBaseId, initialTraceId }:
                       </strong>
                     </span>
                   ) : null}
+                  {first.reranker_model ? (
+                    <span>Reranker <strong>{first.reranker_model}</strong></span>
+                  ) : null}
                   <span>
                     Embedding{" "}
                     <strong>
@@ -462,6 +468,7 @@ export function LiveTraceHistoryPage({ initialKnowledgeBaseId, initialTraceId }:
                   <>
                     <p className="text-hint">
                       Saved retrieval scope: {describeRetrievalFilters(detail.filters)}
+                      {detail.reranker_model ? ` · Cross-encoder: ${detail.reranker_model}` : ""}
                     </p>
                     <div className="trace-evidence">
                       {detail.results.length ? (
@@ -492,6 +499,11 @@ export function LiveTraceHistoryPage({ initialKnowledgeBaseId, initialTraceId }:
                                   detail.mode === "hybrid" ? 6 : detail.mode === "keyword" ? 5 : 4,
                                 )}
                               </small>
+                              {item.candidate_rank != null ? (
+                                <small>
+                                  RRF candidate #{item.candidate_rank} → reranked #{item.rerank_rank} · cross-encoder score {otherScore(item.rerank_score, 5)}
+                                </small>
+                              ) : null}
                               <Link
                                 href={`/chunks?kb=${base.id}&doc=${item.document_id}`}
                                 className="text-hint"
@@ -644,6 +656,9 @@ export function LiveTraceHistoryPage({ initialKnowledgeBaseId, initialTraceId }:
                     <small>
                       Top {side.top_k} · {side.result_count} result(s) · {elapsed(side.duration_ms)}
                     </small>
+                    {side.reranker_model ? (
+                      <small>Cross-encoder · {side.reranker_model}</small>
+                    ) : null}
                     {side.mode === "hybrid" ? (
                       <small>
                         Candidate K {side.candidate_k} · RRF K {side.rrf_k}
