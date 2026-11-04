@@ -79,13 +79,6 @@ function EvidenceItem({
         <span className="tag">
           Source {item.start_offset}–{item.end_offset}
         </span>
-        {item.page_start != null ? (
-          <span className="tag">
-            PDF page {item.page_start}
-            {item.page_end !== item.page_start ? `–${item.page_end}` : ""}
-            {item.ocr_used ? " · OCR" : ""}
-          </span>
-        ) : null}
         {mode === "hybrid" ? (
           <>
             <span className="tag">
@@ -587,16 +580,6 @@ export function LiveRetrievalLabPage({ initialKnowledgeBaseId }: Props) {
                         {chosen.start_offset}–{chosen.end_offset}
                       </strong>
                     </div>
-                    {chosen.page_start != null ? (
-                      <div>
-                        <small>PDF source page</small>
-                        <strong>
-                          {chosen.page_start}
-                          {chosen.page_end !== chosen.page_start ? `–${chosen.page_end}` : ""}
-                          {chosen.ocr_used ? " · OCR" : ""}
-                        </strong>
-                      </div>
-                    ) : null}
                     <div>
                       <small>Document ID</small>
                       <strong>{chosen.document_id}</strong>

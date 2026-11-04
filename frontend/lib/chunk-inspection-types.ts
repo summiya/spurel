@@ -18,9 +18,6 @@ export interface PersistedChunk {
   embedding_count: number;
   token_count?: number | null;
   tokenizer_encoding?: string | null;
-  page_start?: number | null;
-  page_end?: number | null;
-  ocr_used?: boolean;
 }
 
 export interface InspectedChunksPage {

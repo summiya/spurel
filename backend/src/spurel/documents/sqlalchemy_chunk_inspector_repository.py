@@ -47,9 +47,6 @@ class SqlAlchemyChunkInspectorRepository:
                 DocumentChunkRecord.text,
                 DocumentChunkRecord.start_offset,
                 DocumentChunkRecord.end_offset,
-                DocumentChunkRecord.page_start,
-                DocumentChunkRecord.page_end,
-                DocumentChunkRecord.ocr_used,
                 embedding_count,
             )
             .join(
@@ -81,9 +78,6 @@ class SqlAlchemyChunkInspectorRepository:
                 start_offset=row.start_offset,
                 end_offset=row.end_offset,
                 embedding_count=int(row.embedding_count),
-                page_start=row.page_start,
-                page_end=row.page_end,
-                ocr_used=row.ocr_used,
             )
             for row in rows
         )

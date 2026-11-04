@@ -50,14 +50,14 @@ replaces illustrative Overview values with bounded, real data.
 | Task | Priority | Status | Scope / acceptance target |
 | --- | --- | --- | --- |
 | SP-16 | High | ✅ Merged | Opt-in model-token chunk sizing and overlap, preserved legacy character mode and versions, token counts in Chunk Inspector and frontend controls. [PR #78](https://github.com/summiya/spurel/pull/78) |
-| SP-17 | High | ✅ Merged | Optional recursive, Markdown-heading and sentence-aware strategies with safe boundaries and UI controls. [PR #79](https://github.com/summiya/spurel/pull/79) |
-| SP-18 | High | ◐ In review | PDF page provenance in immutable chunks, Retrieval Lab and RAG sources; opt-in pypdf layout extraction; bounded local Tesseract/Poppler OCR for textless pages, default disabled. Feature branch `feat/sp18-pdf-page-provenance-ocr`; PR review required. |
+| SP-17 | High | ◐ In review | Opt-in recursive, fenced-code-aware Markdown-heading and sentence-based character-bounded chunking; safe fallback, validated overlap, frontend options and tests. Branch `feat/sp17-structured-chunking`; PR review required. |
+| SP-18 | High | ☐ Planned | PDF page references, structured extraction and an explicitly configured OCR fallback |
 | SP-19 | High | ☐ Planned | Consistent knowledge-base metadata filters across retrieval modes, with tests |
 | SP-20 | High | ☐ Planned | pgvector HNSW indexing, recall/latency benchmarks, indexing trade-offs |
 | SP-21 | High | ☐ Planned | Pluggable cross-encoder reranking with candidate/rerank/final ranks |
 | SP-22 | Medium | ☐ Planned | Per-stage timing and retrieval observability in API traces and workbench |
 
-**Current `main` baseline:** optional character, model-token, recursive, Markdown and sentence-aware chunking, unencrypted text-extractable PDFs, exact pgvector cosine ranking, PostgreSQL **full-text `ts_rank_cd`** keyword ranking, and RRF. There is **no BM25 implementation** even though PostgreSQL keyword search already exists.
+**Current `main` baseline:** optional character or model-token chunking, unencrypted text-extractable PDFs, exact pgvector cosine ranking, PostgreSQL **full-text `ts_rank_cd`** keyword ranking, and RRF. There is **no BM25 implementation** even though PostgreSQL keyword search already exists.
 
 ## Phase 4 — Quality, extensibility and release
 
@@ -79,7 +79,7 @@ These are cross-cutting technical debts, **not completed roadmap tasks**:
 1. **Authentication:** One shared API bearer token, no per-user sessions, RBAC or actual tenant authorization. Local work is bound to loopback, not exposed as a public service.
 2. **Evaluation race:** Stale judgment checks occur before and after retrieval but run persistence is a separate transaction; a narrow activation window remains. Version pinning or atomic snapshot/persist is future hardening.
 3. **Ingestion execution:** Processing still runs in an HTTP request. Lease renewal occurs between embedding batches, so a single provider call longer than the lease can be reclaimed; stale workers are fenced at promotion.
-4. **Parsing:** OCR is disabled on `main` and encrypted PDFs remain unsupported. SP-18 introduces opt-in local OCR for bounded textless PDF pages plus per-chunk page provenance; older versions are not automatically backfilled.
+4. **Parsing:** No OCR/scanned PDFs; encrypted PDFs are unsupported. Character and token windows are available, while SP-17 adds optional structure-aware boundaries under review.
 5. **Retrieval:** Exact pgvector search only; Postgres keyword scoring is not BM25; no HNSW, filters or reranking.
 6. **Frontend:** Live source, chunk, retrieval, trace comparison, evaluation and RAG use a single-operator local session; the Overview frontend follow-up is in review. Counts reflect loaded pages for one selected knowledge base. The session is not production identity, RBAC or multi-tenant authorization.
 7. **Dependency reproducibility:** Frontend does not yet commit a `package-lock.json`; `npm install` is used, and Docker image tags are not digest-pinned.

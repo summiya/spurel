@@ -15,9 +15,6 @@ export interface RetrievalMatch {
   text: string;
   start_offset: number;
   end_offset: number;
-  page_start?: number | null;
-  page_end?: number | null;
-  ocr_used?: boolean;
   cosine_similarity?: number | null;
   keyword_score?: number | null;
   rrf_score?: number | null;
@@ -125,16 +122,6 @@ export function isRetrievalResult(value: unknown): value is RetrievalResult {
       typeof item.end_offset !== "number"
     )
       return false;
-    const pageStart = item.page_start ?? null;
-    const pageEnd = item.page_end ?? null;
-    if (!(
-      (pageStart === null && pageEnd === null && item.ocr_used !== true) ||
-      (boundedInteger(pageStart, 1, 500) &&
-        boundedInteger(pageEnd, pageStart, 500) &&
-        (item.ocr_used === undefined || typeof item.ocr_used === "boolean"))
-    ))
-      return false;
-
     const primary =
       value.mode === "vector"
         ? item.cosine_similarity

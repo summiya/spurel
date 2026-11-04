@@ -27,9 +27,6 @@ const first = {
   text: "Actual saved evidence from PostgreSQL.",
   start_offset: 120,
   end_offset: 158,
-  page_start: 2,
-  page_end: 3,
-  ocr_used: false,
 };
 const second = {
   rank: 2,
@@ -168,7 +165,6 @@ describe("live retrieval lab", () => {
     fireEvent.click(screen.getByRole("button", { name: "Run live retrieval" }));
 
     expect(await screen.findByText(/Keyword · PostgreSQL FTS/)).toBeInTheDocument();
-    expect(screen.getAllByText(/PDF page 2–3/).length).toBeGreaterThan(0);
     expect(container.querySelectorAll(".evidence-result")).toHaveLength(2);
     expect(screen.getByText(/PostgreSQL FTS: 0.08394/)).toBeInTheDocument();
     expect(screen.getByText(/13.3 ms/)).toBeInTheDocument();

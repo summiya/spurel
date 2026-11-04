@@ -441,10 +441,6 @@ export function LiveChunkInspectorPage({ initialKnowledgeBaseId, initialDocument
                         <p>{item.text}</p>
                         <small className="text-hint">
                           Source offsets {item.start_offset}–{item.end_offset}
-                          {item.page_start != null
-                            ? ` · PDF page ${item.page_start}${item.page_end !== item.page_start ? "–" + item.page_end : ""}`
-                            : ""}
-                          {item.ocr_used ? " · OCR" : ""}
                           {item.token_count !== null && item.token_count !== undefined
                             ? ` · ${item.token_count} tokens (${item.tokenizer_encoding})`
                             : ""}
@@ -500,25 +496,6 @@ export function LiveChunkInspectorPage({ initialKnowledgeBaseId, initialDocument
                     <span>
                       Excerpt characters <strong>{selectedChunk.text.length}</strong>
                     </span>
-                    {selectedChunk.page_start != null ? (
-                      <>
-                        <span>
-                          PDF source page
-                          <strong>
-                            {selectedChunk.page_start}
-                            {selectedChunk.page_end !== selectedChunk.page_start
-                              ? `–${selectedChunk.page_end}`
-                              : ""}
-                          </strong>
-                        </span>
-                        <span>
-                          PDF extraction
-                          <strong>
-                            {selectedChunk.ocr_used ? "Includes OCR text" : "Text layer"}
-                          </strong>
-                        </span>
-                      </>
-                    ) : null}
                     <span>
                       Token count
                       <strong>
@@ -536,12 +513,6 @@ export function LiveChunkInspectorPage({ initialKnowledgeBaseId, initialDocument
                       Embedding records <strong>{selectedChunk.embedding_count}</strong>
                     </span>
                   </div>
-                  {selectedChunk.ocr_used ? (
-                    <p className="text-hint">
-                      This excerpt contains text recovered by optical character recognition. Check
-                      the original PDF for recognition errors before relying on a citation.
-                    </p>
-                  ) : null}
                   <p className="text-hint">
                     Token counts are calculated for the currently configured embedding-model
                     tokenizer, including historical chunks. If the model changes, an older

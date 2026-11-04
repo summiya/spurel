@@ -63,8 +63,6 @@ def test_document_chunk_table_has_defense_in_depth_constraints() -> None:
         "ck_document_chunks_offset_span",
         "ck_document_chunks_text_length",
         "ck_document_chunks_version",
-        "ck_document_chunks_pdf_page_range",
-        "ck_document_chunks_ocr_has_page",
     }
 
 

@@ -31,9 +31,6 @@ class VectorRetrievalMatchResponse(BaseModel):
     start_offset: int
     end_offset: int
     cosine_similarity: float
-    page_start: int | None = Field(default=None, ge=1)
-    page_end: int | None = Field(default=None, ge=1)
-    ocr_used: bool = False
 
 
 class VectorRetrievalResponse(BaseModel):
@@ -65,9 +62,6 @@ class KeywordRetrievalMatchResponse(BaseModel):
     start_offset: int
     end_offset: int
     keyword_score: float
-    page_start: int | None = Field(default=None, ge=1)
-    page_end: int | None = Field(default=None, ge=1)
-    ocr_used: bool = False
 
 
 class KeywordRetrievalResponse(BaseModel):
@@ -112,9 +106,6 @@ class HybridRetrievalMatchResponse(BaseModel):
     keyword_rank: int | None
     cosine_similarity: float | None
     keyword_score: float | None
-    page_start: int | None = Field(default=None, ge=1)
-    page_end: int | None = Field(default=None, ge=1)
-    ocr_used: bool = False
 
 
 class HybridRetrievalResponse(BaseModel):

@@ -32,9 +32,6 @@ class RAGSourceResponse(BaseModel):
     excerpt: str = Field(min_length=1)
     start_offset: int = Field(ge=0)
     end_offset: int = Field(ge=0)
-    page_start: int | None = Field(default=None, ge=1)
-    page_end: int | None = Field(default=None, ge=1)
-    ocr_used: bool = False
 
 
 class RAGAnswerResponse(BaseModel):

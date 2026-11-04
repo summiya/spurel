@@ -45,9 +45,6 @@ class SqlAlchemyKeywordRetrievalRepository:
                 DocumentChunkRecord.text,
                 DocumentChunkRecord.start_offset,
                 DocumentChunkRecord.end_offset,
-                DocumentChunkRecord.page_start,
-                DocumentChunkRecord.page_end,
-                DocumentChunkRecord.ocr_used,
                 keyword_score,
             )
             .join(
@@ -81,9 +78,6 @@ class SqlAlchemyKeywordRetrievalRepository:
                 start_offset=row.start_offset,
                 end_offset=row.end_offset,
                 keyword_score=float(row.keyword_score),
-                page_start=row.page_start,
-                page_end=row.page_end,
-                ocr_used=row.ocr_used,
             )
             for row in rows
         )

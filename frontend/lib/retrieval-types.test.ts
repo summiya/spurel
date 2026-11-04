@@ -17,9 +17,6 @@ const chunk: RetrievalMatch = {
   text: "A stored excerpt",
   start_offset: 10,
   end_offset: 26,
-  page_start: 2,
-  page_end: 3,
-  ocr_used: true,
   cosine_similarity: 0.91426,
   keyword_score: 0.08942,
   rrf_score: 0.032786,
@@ -92,36 +89,6 @@ describe("retrieval payloads and scores", () => {
         }),
       ).toBeNull();
     }
-  });
-
-  it("rejects inconsistent or invented PDF page provenance", () => {
-    const valid = {
-      mode: "vector",
-      trace_id: "trace-test",
-      duration_ms: 1.5,
-      query: "test",
-      top_k: 5,
-      matches: [chunk],
-    };
-    expect(isRetrievalResult(valid)).toBe(true);
-    expect(
-      isRetrievalResult({
-        ...valid,
-        matches: [{ ...chunk, page_start: 0 }],
-      }),
-    ).toBe(false);
-    expect(
-      isRetrievalResult({
-        ...valid,
-        matches: [{ ...chunk, page_end: 1 }],
-      }),
-    ).toBe(false);
-    expect(
-      isRetrievalResult({
-        ...valid,
-        matches: [{ ...chunk, page_start: null, page_end: null, ocr_used: true }],
-      }),
-    ).toBe(false);
   });
 
   it("validates real response shape without fabricating scores", () => {

@@ -21,6 +21,3 @@ class KeywordRetrievalMatch:
     start_offset: int
     end_offset: int
     keyword_score: float
-    page_start: int | None = None
-    page_end: int | None = None
-    ocr_used: bool = False

@@ -46,7 +46,7 @@ FastAPI runs on Python 3.13 and uses Pydantic schemas, application services, int
 | [`backend/migrations/`](../backend/migrations/) | PostgreSQL schema migrations |
 | [`frontend/app/`](../frontend/app/) | Operator-protected source management, chunks, retrieval, traces and evaluations; RAG answers connected by SP-15 branch |
 
-### SP-17 structured chunking (merged)
+### SP-17 structured chunking (in review)
 
 A separate infrastructure adapter provides recursive paragraph/line/space,
 Markdown-heading, and sentence-aware chunking. It runs after the same text
@@ -61,26 +61,6 @@ The `ChunkStrategy` enum and secured processing payload gain only additive
 values; no API path, chunk persistence table, existing strategy, or document
 versioning behavior is replaced. Staging, embeddings, activation and
 historical reads remain handled by the existing pipeline and repositories.
-
-
-### SP-18 PDF page provenance and optional OCR (in review)
-
-The PDF parser preserves the original pypdf text-mode behavior by default.
-Its normalized text now carries 1-based page spans, which the chunk pipeline
-maps to nullable immutable `document_chunks.page_start/page_end/ocr_used`
-columns. Existing rows remain null/false under a non-destructive migration.
-New/reprocessed chunk sets retain the current staged embedding and atomic
-activation lifecycle. Page ranges are exposed in Chunk Inspector, live
-retrieval and RAG source metadata (not retroactively invented for old
-trace snapshots).
-
-Layout-preserving pypdf extraction is an explicit server config switch.
-OCR is another **explicit disabled-by-default** server switch: only pages
-with no text layer are rasterized by Poppler, bounded and recognized by
-local Tesseract, with page-count and timeout limits. Both flags are read
-only during explicit document processing, not upload or retrieval.
-Encrypted PDFs remain unsupported. PDF page attribution is not equivalent
-to validating generated-answer citations; that is separate SP-23 work.
 
 ### SP-16 token-aware chunking (merged)
 
@@ -206,6 +186,6 @@ development workflow**, not scalable user identity or tenant authorization.
 
 ## What is planned, not implemented
 
-The frontend has live source, chunk, retrieval, trace-comparison, evaluation and provider-backed RAG answer inspection. A frontend follow-up summarizes real Overview data, including a 7/30-day retrieval-quality chart plotting persisted evaluation runs without inferred measurements or new backend APIs. The following are **not built on main**: opt-in scanned-PDF OCR (SP-18 in review), semantic/LLM-based chunking, BM25, pgvector ANN/HNSW, metadata filters, rerankers, independent citation/claim verification, non-OpenAI providers, data-source connectors, Redis-backed background jobs, experiment export and production auth/monitoring.
+The frontend has live source, chunk, retrieval, trace-comparison, evaluation and provider-backed RAG answer inspection. A frontend follow-up summarizes real Overview data, including a 7/30-day retrieval-quality chart plotting persisted evaluation runs without inferred measurements or new backend APIs. The following are **not built on main**: structured (SP-17 in review) or semantic/LLM-based chunking, scanned-PDF OCR, BM25, pgvector ANN/HNSW, metadata filters, rerankers, independent citation/claim verification, non-OpenAI providers, data-source connectors, Redis-backed background jobs, experiment export and production auth/monitoring.
 
 For the exact implementation order and deliverables, use [SP-01–SP-28 roadmap](roadmap.md).

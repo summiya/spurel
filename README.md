@@ -116,7 +116,7 @@ only loaded benchmark pages (50 runs per page) and does not imply identical
 query/judgment sets merely because settings match. Additional pages can be
 loaded where supported; link through to Evaluations for run comparisons.
 No database migrations, new provider adapters or backend changes are required.
-This Overview work is separate from the merged SP-16/SP-17 chunking strategies and the SP-18 PDF-processing review branch.
+This Overview work is separate from merged SP-16 token-aware chunking and the SP-17 structured-chunking review branch.
 
 ## SP-16: opt-in token-aware chunking (merged)
 
@@ -141,7 +141,7 @@ POSTs keep the original character defaults. This integration adds no database
 migration and does not delete old versions or automatically reindex documents.
 
 
-## SP-17: structure-aware chunking (merged)
+## SP-17: structure-aware chunking (in review)
 
 The Knowledge Bases screen gains **three additional**, opt-in chunking methods:
 **Recursive** (prefers paragraphs, then sentences, lines and spaces),
@@ -164,41 +164,6 @@ versions, dashboard and quality graph stay intact. Only an explicit action
 (with confirmation for non-default settings) triggers re-indexing and may
 incur embedding API charges. No database schema change or automatic
 reprocessing is introduced.
-
-
-## SP-18: PDF pages and optional scanned-PDF OCR (in review)
-
-PDF ingestion in this branch continues using the existing pypdf text extraction
-by default. Each processed PDF chunk additionally receives immutable **1-based
-PDF page numbers** and an **includes OCR text** marker where applicable.
-Chunk Inspector, Retrieval Lab and RAG source evidence display those references,
-while keeping existing source text, UUIDs, scores and citation labels.
-Previously indexed PDF chunk versions are not modified or falsely backfilled:
-new page metadata appears only after an explicit successful reprocessing run.
-
-For a text-heavy PDF with unusual columns or spacing, opt into layout-preserving
-extraction using `SPUREL_PDF_EXTRACTION_MODE=layout` in your server's
-local `.env`. Default is `plain`, preserving previous extraction semantics.
-
-Scanned PDFs need OCR. Local **Tesseract + Poppler** are included in the
-development backend image but **OCR is disabled by default**. To opt in,
-add these settings to the local `.env` and restart the backend:
-
-```dotenv
-SPUREL_PDF_OCR_ENABLED=true
-SPUREL_PDF_OCR_LANGUAGE=eng
-SPUREL_PDF_OCR_MAX_PAGES=5
-```
-
-Only pages with no extractable text are OCR candidates, with a maximum of
-20 per processing request, limited PDF size, raster dimensions and per-page
-timeouts. OCR runs **only during explicit Process/Reprocess**, not on upload,
-open, search or inspection; it makes no remote OCR API call. Recognition can
-be inaccurate, so check page citations against the original PDF. Encrypted
-PDFs remain unsupported. Processing still needs the configured embedding
-provider and may incur charges; failed attempts never activate partial indexes.
-The new nullable page columns are added through a **non-destructive Alembic
-migration**, preserving existing document/chunk versions. Never reset volumes.
 
 ## Inspect real chunks (SP-11)
 
@@ -282,7 +247,7 @@ local access**, not per-user authorization, RBAC, or permission-aware multi-tena
 
 ## Not implemented yet
 
-The following are roadmap items, **not current capabilities on main**: scanned-PDF OCR (SP-18 under review), BM25, HNSW/ANN indexing, metadata retrieval filters, cross-encoder reranking, citation/claim verification, additional hosted/local model adapters, multi-source connectors, experiment export, durable background ingestion and production-grade multi-user authorization.
+The following are roadmap items, **not current capabilities on main**: structured chunking (SP-17 under review), OCR or scanned-PDF support, BM25, HNSW/ANN indexing, metadata retrieval filters, cross-encoder reranking, citation/claim verification, additional hosted/local model adapters, multi-source connectors, experiment export, durable background ingestion and production-grade multi-user authorization.
 
 For task scope and order, see the [maintained roadmap](docs/roadmap.md).
 
@@ -338,7 +303,7 @@ The workbench already makes source candidates, chunk boundaries, saved retrieval
 
 ## Roadmap and contributing
 
-The [roadmap](docs/roadmap.md) tracks **SP-01–SP-28** by phase. SP-09–SP-15 are merged, including live evaluations (PR #74) and RAG answers (PR #75). The Overview follow-up and SP-16 token-aware chunking are merged. SP-17 is merged. SP-18 adds opt-in PDF layout/OCR and saved PDF page references in its review branch.
+The [roadmap](docs/roadmap.md) tracks **SP-01–SP-28** by phase. SP-09–SP-15 are merged, including live evaluations (PR #74) and RAG answers (PR #75). The Overview follow-up and SP-16 token-aware chunking are merged. SP-17 adds optional structure-aware chunking in its own review branch.
 
 Spurel is being built in public. For substantial changes, open an issue first and follow the existing architecture and tests. Good contribution areas include retrieval strategies, parsers, evaluation methods, reliable ingestion, UI, and documentation.
 

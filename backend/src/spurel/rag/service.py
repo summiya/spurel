@@ -67,9 +67,6 @@ class RAGSource:
     excerpt: str
     start_offset: int
     end_offset: int
-    page_start: int | None = None
-    page_end: int | None = None
-    ocr_used: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -146,7 +143,10 @@ class RAGAnswerService:
             TextGenerationRequest(
                 system_prompt=_SYSTEM_PROMPT,
                 user_prompt=(
-                    f"QUESTION:\n{normalized_query}\n\nKNOWLEDGE-BASE CONTEXT:\n{context.text}"
+                    "QUESTION:\n"
+                    f"{normalized_query}\n\n"
+                    "KNOWLEDGE-BASE CONTEXT:\n"
+                    f"{context.text}"
                 ),
             )
         )
@@ -182,7 +182,9 @@ def _validate_request(
     if top_k < 1 or top_k > MAX_RAG_TOP_K:
         raise RAGContextError("RAG top_k is outside the supported range")
     if candidate_k < top_k or candidate_k > 100:
-        raise RAGContextError("RAG candidate_k must be at least top_k and at most 100")
+        raise RAGContextError(
+            "RAG candidate_k must be at least top_k and at most 100"
+        )
     if rrf_k < 1 or rrf_k > 1_000:
         raise RAGContextError("RAG rrf_k is outside the supported range")
 
@@ -203,10 +205,6 @@ def _build_context(matches: Sequence[HybridRetrievalMatch]) -> _RAGContext:
             f"document_id={match.document_id}\n"
             f"chunk_id={match.chunk_id}\n"
         )
-        if match.page_start is not None:
-            header += f"pdf_pages={match.page_start}-{match.page_end}\n"
-            if match.ocr_used:
-                header += "ocr_used=true\n"
         footer = f"\n[/{label}]"
         remaining = MAX_RAG_CONTEXT_CHARACTERS - used
         available_excerpt = remaining - len(header) - len(footer)
@@ -238,9 +236,6 @@ def _build_context(matches: Sequence[HybridRetrievalMatch]) -> _RAGContext:
                 excerpt=excerpt,
                 start_offset=match.start_offset,
                 end_offset=excerpt_end_offset,
-                page_start=match.page_start,
-                page_end=match.page_end,
-                ocr_used=match.ocr_used,
             )
         )
 

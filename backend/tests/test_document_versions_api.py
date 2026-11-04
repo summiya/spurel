@@ -80,9 +80,6 @@ class FakeVersionService:
                 start_offset=0,
                 end_offset=22,
                 embedding_count=1,
-                page_start=5,
-                page_end=6,
-                ocr_used=False,
             ),
         )
 
@@ -114,9 +111,6 @@ def test_version_history_and_chunk_inspection_use_scoped_ids() -> None:
     assert history.json()["version"] == 1
     assert history.json()["items"][0]["id"] == str(service.chunk_id)
     assert history.json()["items"][0]["has_embeddings"] is True
-    assert history.json()["items"][0]["page_start"] == 5
-    assert history.json()["items"][0]["page_end"] == 6
-    assert history.json()["items"][0]["ocr_used"] is False
     assert service.calls[0]["knowledge_base_id"] == knowledge_base_id
     assert service.calls[1]["document_id"] == document_id
     assert service.calls[1]["version"] == 1

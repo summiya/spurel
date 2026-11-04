@@ -27,9 +27,6 @@ class ChunkInspectionItem:
     start_offset: int
     end_offset: int
     embedding_count: int
-    page_start: int | None = None
-    page_end: int | None = None
-    ocr_used: bool = False
 
     @property
     def has_embeddings(self) -> bool:
@@ -78,7 +75,9 @@ class ChunkInspectorService:
             )
 
         if isinstance(offset, bool) or not isinstance(offset, int) or offset < 0:
-            raise ChunkInspectionQueryError("chunk inspector page offset is invalid")
+            raise ChunkInspectionQueryError(
+                "chunk inspector page offset is invalid"
+            )
 
         return await self._repository.list_by_document(
             knowledge_base_id=knowledge_base_id,

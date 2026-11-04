@@ -6,12 +6,6 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# OCR is opt-in. Local Poppler/Tesseract are present when enabled via .env;
-# neither tool is executed on upload or normal text-only processing.
-RUN apt-get update \
-    && apt-get install --yes --no-install-recommends poppler-utils tesseract-ocr tesseract-ocr-eng \
-    && rm -rf /var/lib/apt/lists/*
-
 COPY pyproject.toml ./
 COPY src ./src
 RUN python -m pip install --no-cache-dir -e .

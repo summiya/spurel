@@ -88,9 +88,6 @@ async def answer_with_rag(
                 excerpt=source.excerpt,
                 start_offset=source.start_offset,
                 end_offset=source.end_offset,
-                page_start=source.page_start,
-                page_end=source.page_end,
-                ocr_used=source.ocr_used,
             )
             for source in result.sources
         ],

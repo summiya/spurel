@@ -54,9 +54,6 @@ class ChunkInspectionResponse(BaseModel):
     embedding_count: int
     token_count: int | None = Field(default=None, ge=0)
     tokenizer_encoding: str | None = None
-    page_start: int | None = Field(default=None, ge=1)
-    page_end: int | None = Field(default=None, ge=1)
-    ocr_used: bool = False
 
 
 class ChunkInspectionListResponse(BaseModel):

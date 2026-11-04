@@ -5,12 +5,12 @@ from uuid import UUID, uuid4
 import pytest
 
 from spurel.documents.chunk_models import StagedDocumentChunkSet
-from spurel.documents.chunk_pipeline import DocumentChunkPipeline, _apply_pdf_page_spans
+from spurel.documents.chunk_pipeline import DocumentChunkPipeline
 from spurel.documents.chunk_service import DocumentChunkService
 from spurel.documents.chunking import DocumentChunk, DocumentChunker
 from spurel.documents.domain import Document, DocumentMediaType
 from spurel.documents.ingestion_service import DocumentIngestionService
-from spurel.documents.parsing import DocumentParser, ParsedDocument, ParsedPageSpan
+from spurel.documents.parsing import DocumentParser, ParsedDocument
 from spurel.documents.ports import DocumentRepository
 from spurel.documents.storage import DocumentBlobStorage, document_object_key
 from spurel.infrastructure.chunking.fixed import FixedSizeDocumentChunker
@@ -282,43 +282,3 @@ def test_pipeline_can_opt_in_to_new_chunker_without_replacing_default() -> None:
     # The configured default chunker was not mutated by the opt-in run.
     asyncio.run(pipeline.run(knowledge_base_id=document.knowledge_base_id, document_id=document.id))
     assert repository.items[document.id][0].text == "abcdefgh"
-
-
-def test_pdf_page_spans_annotate_chunks_without_changing_offsets_or_text() -> None:
-    source = "Page one.\n\nPage two."
-    page_two = source.index("Page two")
-    parts = (
-        DocumentChunk(index=0, text=source[:page_two], start_offset=0, end_offset=page_two),
-        DocumentChunk(
-            index=1, text=source[page_two:], start_offset=page_two, end_offset=len(source)
-        ),
-    )
-    pages = (
-        ParsedPageSpan(page_number=1, start_offset=0, end_offset=9),
-        ParsedPageSpan(page_number=2, start_offset=page_two, end_offset=len(source), used_ocr=True),
-    )
-    result = _apply_pdf_page_spans(parts, pages)
-    assert result[0].page_start == 1
-    assert result[0].page_end == 1
-    assert not result[0].ocr_used
-    assert result[1].page_start == 2
-    assert result[1].page_end == 2
-    assert result[1].ocr_used
-    assert [(chunk.text, chunk.start_offset, chunk.end_offset) for chunk in result] == [
-        (part.text, part.start_offset, part.end_offset) for part in parts
-    ]
-
-
-def test_pdf_chunks_spanning_two_pages_have_a_real_page_range() -> None:
-    parts = (DocumentChunk(index=0, text="AA\n\nBB", start_offset=0, end_offset=6),)
-    pages = (
-        ParsedPageSpan(page_number=1, start_offset=0, end_offset=2),
-        ParsedPageSpan(page_number=3, start_offset=4, end_offset=6, used_ocr=True),
-    )
-    [result] = _apply_pdf_page_spans(parts, pages)
-    assert (result.page_start, result.page_end, result.ocr_used) == (1, 3, True)
-
-
-def test_non_pdf_chunk_pipeline_stays_identical_without_page_metadata() -> None:
-    chunks = (DocumentChunk(index=0, text="Plain text", start_offset=0, end_offset=10),)
-    assert _apply_pdf_page_spans(chunks, ()) == chunks

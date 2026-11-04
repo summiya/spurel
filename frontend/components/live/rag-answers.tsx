@@ -423,10 +423,6 @@ export function LiveRagAnswersPage({ initialKnowledgeBaseId }: Props) {
                           <small>
                             Retrieval rank #{source.retrieval_rank} · offsets {source.start_offset}–
                             {source.end_offset}
-                            {source.page_start != null
-                              ? ` · PDF page ${source.page_start}${source.page_end !== source.page_start ? "–" + source.page_end : ""}`
-                              : ""}
-                            {source.ocr_used ? " · OCR" : ""}
                           </small>
                         </span>
                         <Icon name="chevron-right" size={15} />
@@ -442,23 +438,8 @@ export function LiveRagAnswersPage({ initialKnowledgeBaseId }: Props) {
                         <small>
                           Source offsets: {selectedSource.start_offset}–{selectedSource.end_offset}
                         </small>
-                        {selectedSource.page_start != null ? (
-                          <small>
-                            PDF page {selectedSource.page_start}
-                            {selectedSource.page_end !== selectedSource.page_start
-                              ? `–${selectedSource.page_end}`
-                              : ""}
-                            {selectedSource.ocr_used ? " · includes OCR text" : ""}
-                          </small>
-                        ) : null}
                       </div>
                       <pre className="rag-live-excerpt">{selectedSource.excerpt}</pre>
-                      {selectedSource.ocr_used ? (
-                        <p className="text-hint">
-                          OCR-derived text can contain recognition errors; check the original PDF
-                          before relying on this source.
-                        </p>
-                      ) : null}
                       <Link
                         className="button ghost compact"
                         href={`/chunks?kb=${base.id}&doc=${selectedSource.document_id}`}
