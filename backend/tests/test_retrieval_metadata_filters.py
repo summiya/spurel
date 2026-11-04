@@ -97,7 +97,8 @@ def test_sql_predicates_are_applied_before_limit_and_escape_like_operators() -> 
     assert "documents.created_at >=" in sql
     assert "LIMIT" in sql
     assert any(value == "%100\\%\\_report\\\\%" for value in compiled.params.values())
-    assert any(value == doc_id for value in compiled.params.values())
+    bound_lists = (value for value in compiled.params.values() if isinstance(value, (list, tuple)))
+    assert any(doc_id in values for values in bound_lists)
     assert any(value == date for value in compiled.params.values())
     assert apply_document_metadata_filters(original, None) is original
 
