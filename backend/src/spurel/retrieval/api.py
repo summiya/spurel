@@ -432,7 +432,8 @@ async def compare_retrieval_traces(
             result_count=comparison.first.result_count,
             filters=(
                 comparison.first.metadata_filters.to_snapshot()
-                if comparison.first.metadata_filters else None
+                if comparison.first.metadata_filters
+                else None
             ),
         ),
         second=RetrievalTraceComparisonSideResponse(
@@ -449,7 +450,8 @@ async def compare_retrieval_traces(
             result_count=comparison.second.result_count,
             filters=(
                 comparison.second.metadata_filters.to_snapshot()
-                if comparison.second.metadata_filters else None
+                if comparison.second.metadata_filters
+                else None
             ),
         ),
         same_query=comparison.same_query,
