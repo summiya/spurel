@@ -113,6 +113,7 @@ class RetrievalTraceRecord(Base):
     embedding_dimensions: Mapped[int | None] = mapped_column(Integer)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     metadata_filters: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    reranker_model: Mapped[str | None] = mapped_column(String(255))
 
     @classmethod
     def from_domain(cls, trace: RetrievalTrace) -> "RetrievalTraceRecord":
@@ -133,6 +134,7 @@ class RetrievalTraceRecord(Base):
             metadata_filters=(
                 trace.metadata_filters.to_snapshot() if trace.metadata_filters else None
             ),
+            reranker_model=trace.reranker_model,
         )
 
 
@@ -156,6 +158,12 @@ class RetrievalTraceResultRecord(Base):
         CheckConstraint(
             "char_length(text) > 0",
             name="ck_retrieval_trace_results_text",
+        ),
+        CheckConstraint(
+            "(candidate_rank IS NULL AND rerank_rank IS NULL AND rerank_score IS NULL) "
+            "OR (candidate_rank BETWEEN 1 AND 100 AND rerank_rank BETWEEN 1 AND 100 "
+            "AND rerank_rank = rank AND rerank_score IS NOT NULL)",
+            name="ck_retrieval_trace_results_rerank",
         ),
         UniqueConstraint(
             "trace_id",
@@ -196,6 +204,9 @@ class RetrievalTraceResultRecord(Base):
     rrf_score: Mapped[float | None] = mapped_column(Float)
     vector_rank: Mapped[int | None] = mapped_column(Integer)
     keyword_rank: Mapped[int | None] = mapped_column(Integer)
+    candidate_rank: Mapped[int | None] = mapped_column(Integer)
+    rerank_rank: Mapped[int | None] = mapped_column(Integer)
+    rerank_score: Mapped[float | None] = mapped_column(Float)
 
     @classmethod
     def from_domain(
@@ -220,6 +231,9 @@ class RetrievalTraceResultRecord(Base):
             rrf_score=result.rrf_score,
             vector_rank=result.vector_rank,
             keyword_rank=result.keyword_rank,
+            candidate_rank=result.candidate_rank,
+            rerank_rank=result.rerank_rank,
+            rerank_score=result.rerank_score,
         )
 
     def to_domain(self) -> RetrievalTraceResult:
@@ -237,4 +251,7 @@ class RetrievalTraceResultRecord(Base):
             rrf_score=self.rrf_score,
             vector_rank=self.vector_rank,
             keyword_rank=self.keyword_rank,
+            candidate_rank=self.candidate_rank,
+            rerank_rank=self.rerank_rank,
+            rerank_score=self.rerank_score,
         )

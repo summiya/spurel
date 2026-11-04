@@ -72,6 +72,9 @@ class HybridRetrievalMatch:
     page_start: int | None = None
     page_end: int | None = None
     ocr_used: bool = False
+    candidate_rank: int | None = None
+    rerank_rank: int | None = None
+    rerank_score: float | None = None
 
 
 @dataclass(slots=True)

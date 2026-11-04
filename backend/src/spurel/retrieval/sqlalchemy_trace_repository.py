@@ -131,6 +131,7 @@ class SqlAlchemyRetrievalTraceRepository:
                 if record.metadata_filters is not None
                 else None
             ),
+            reranker_model=record.reranker_model,
         )
 
 
@@ -158,4 +159,5 @@ def _to_summary(
             if record.metadata_filters is not None
             else None
         ),
+        reranker_model=record.reranker_model,
     )
