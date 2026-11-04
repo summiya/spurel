@@ -68,7 +68,11 @@ class SqlAlchemyVectorRetrievalRepository:
                 ChunkEmbeddingRecord.dimensions == dimensions,
             )
             .order_by(
-                distance.asc(),
+                # An HNSW operator index supports a bare distance ORDER BY.
+                # Adding zero preserves exact cosine ordering while preventing
+                # the planner from silently substituting approximate retrieval
+                # after an operator explicitly builds an HNSW index.
+                (distance + 0).asc(),
                 DocumentChunkRecord.id.asc(),
             )
             .limit(limit)

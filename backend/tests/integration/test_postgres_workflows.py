@@ -103,6 +103,12 @@ from spurel.retrieval.dependencies import (
     get_traced_vector_retrieval_service,
 )
 from spurel.retrieval.evaluation import RelevanceJudgment
+from spurel.retrieval.hnsw import (
+    HnswBenchmarkOptions,
+    HnswIndexOptions,
+    benchmark_index,
+    build_index,
+)
 from spurel.retrieval.hybrid import HybridRetrievalService
 from spurel.retrieval.keyword_service import KeywordRetrievalService
 from spurel.retrieval.service import VectorRetrievalService
@@ -1320,3 +1326,82 @@ async def _pdf_page_provenance_round_trip(postgres_url: str, tmp_path: Path) -> 
             document_id=document_id, limit=10, offset=0
         )
         assert unchanged[0].id == current[0].id
+
+
+def test_hnsw_operator_build_and_benchmark_use_real_postgres_without_provider(
+    postgres_url: str, tmp_path: Path
+) -> None:
+    """Compare real ANN/exact query plans; never create embeddings with OpenAI."""
+    asyncio.run(_hnsw_round_trip(postgres_url, tmp_path))
+
+
+async def _hnsw_round_trip(postgres_url: str, tmp_path: Path) -> None:
+    options = HnswIndexOptions(dimensions=3)
+    created = False
+    try:
+        async with _isolated_database(postgres_url) as database:
+            kb = await database.new_knowledge_base("HNSW recall integration")
+            storage = LocalDocumentBlobStorage(tmp_path / "hnsw")
+            doc = await _upload(
+                database, storage, kb,
+                "Refund policy and backup procedures. " * 10,
+            )
+            await _processor(
+                database, storage, _DeterministicEmbeddings(), chunk_size=48
+            ).process(knowledge_base_id=kb, document_id=doc)
+
+            # The existing application adapter remains exact, even after an
+            # experimental HNSW index is created in this test database.
+            exact_repository = SqlAlchemyVectorRetrievalRepository(database.sessions)
+            built = await build_index(postgres_url, options)
+            created = built["created"]
+            assert built["valid"]
+            assert built["dimensions"] == 3
+            assert built["size_bytes"] > 0
+            exact_matches = await exact_repository.search(
+                knowledge_base_id=kb,
+                query_vector=EmbeddingVector.create(
+                    [1.0, 0.0, 0.0], expected_dimensions=3
+                ),
+                provider="integration",
+                model="fixture-3d",
+                dimensions=3,
+                limit=2,
+            )
+            assert len(exact_matches) >= 1
+            again = await build_index(postgres_url, options)
+            assert again["created"] is False
+
+            result = await benchmark_index(
+                postgres_url,
+                HnswBenchmarkOptions(
+                    knowledge_base_id=kb,
+                    provider="integration",
+                    model="fixture-3d",
+                    dimensions=3,
+                    top_k=2,
+                    samples=3,
+                    ef_search=80,
+                ),
+            )
+            assert result["planner_used_hnsw"] is True
+            assert result["measured_queries"] >= 1
+            assert 0.0 <= result["mean_recall_at_k"] <= 1.0
+            assert result["exact_median_ms"] >= 0.0
+            assert result["hnsw_median_ms"] >= 0.0
+            assert result["index"] == options.index_name
+    finally:
+        if created:
+            # Clean up only the index this test itself created in a *_test DB.
+            from sqlalchemy import text as sql_text
+
+            engine = create_async_engine(postgres_url)
+            try:
+                async with engine.connect() as connection:
+                    await connection.execution_options(isolation_level="AUTOCOMMIT")
+                    await connection.execute(
+                        sql_text(f"DROP INDEX CONCURRENTLY IF EXISTS {options.index_name}")
+                    )
+            finally:
+                await engine.dispose()
+
