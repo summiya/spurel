@@ -31,10 +31,15 @@ class RetrievalMetadataFilters:
     created_before: datetime | None = None
 
     def __post_init__(self) -> None:
-        if not any((
-            self.document_ids, self.media_types, self.filename_contains is not None,
-            self.created_after is not None, self.created_before is not None,
-        )):
+        if not any(
+            (
+                self.document_ids,
+                self.media_types,
+                self.filename_contains is not None,
+                self.created_after is not None,
+                self.created_before is not None,
+            )
+        ):
             raise RetrievalMetadataFilterError("metadata filter cannot be empty")
         if len(self.document_ids) > MAX_FILTERED_DOCUMENTS or len(set(self.document_ids)) != len(
             self.document_ids
@@ -57,9 +62,7 @@ class RetrievalMetadataFilters:
             raise RetrievalMetadataFilterError("filename filter is invalid")
         for date in (self.created_after, self.created_before):
             if date is not None and (
-                not isinstance(date, datetime)
-                or date.tzinfo is None
-                or date.utcoffset() is None
+                not isinstance(date, datetime) or date.tzinfo is None or date.utcoffset() is None
             ):
                 raise RetrievalMetadataFilterError("date filters require timezone offsets")
         if (
@@ -88,9 +91,13 @@ class RetrievalMetadataFilters:
     def from_snapshot(cls, data: dict[str, Any]) -> "RetrievalMetadataFilters":
         """Revalidate stored metadata without permitting unknown filter dimensions."""
         if not isinstance(data, dict) or any(
-            key not in {
-                "document_ids", "media_types", "filename_contains",
-                "created_after", "created_before",
+            key
+            not in {
+                "document_ids",
+                "media_types",
+                "filename_contains",
+                "created_after",
+                "created_before",
             }
             for key in data
         ):
@@ -106,11 +113,13 @@ class RetrievalMetadataFilters:
                 filename_contains=data.get("filename_contains"),
                 created_after=(
                     datetime.fromisoformat(data["created_after"])
-                    if "created_after" in data else None
+                    if "created_after" in data
+                    else None
                 ),
                 created_before=(
                     datetime.fromisoformat(data["created_before"])
-                    if "created_before" in data else None
+                    if "created_before" in data
+                    else None
                 ),
             )
         except (ValueError, TypeError, KeyError) as exc:
