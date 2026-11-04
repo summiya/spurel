@@ -346,3 +346,5 @@ class RetrievalEvaluationResponse(BaseModel):
     recall_at_k: float = Field(ge=0, le=1)
     reciprocal_rank_at_k: float = Field(ge=0, le=1)
     ndcg_at_k: float = Field(ge=0, le=1)
+    hit_at_k: bool | None = None
+    average_precision_at_k: float | None = Field(default=None, ge=0, le=1)

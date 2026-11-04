@@ -67,6 +67,8 @@ def test_retrieval_evaluation_returns_deterministic_metrics() -> None:
         recall_at_k=0.75,
         reciprocal_rank_at_k=0.5,
         ndcg_at_k=0.82,
+        hit_at_k=True,
+        average_precision_at_k=0.65,
     )
     client = _client(service)
 
@@ -97,6 +99,8 @@ def test_retrieval_evaluation_returns_deterministic_metrics() -> None:
         "recall_at_k": 0.75,
         "reciprocal_rank_at_k": 0.5,
         "ndcg_at_k": 0.82,
+        "hit_at_k": True,
+        "average_precision_at_k": 0.65,
     }
 
     assert service.last_call is not None
