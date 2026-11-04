@@ -160,7 +160,6 @@ def test_rag_answer_hides_generation_provider_errors() -> None:
     assert "provider secret detail" not in response.text
 
 
-
 def test_rag_opt_in_review_returns_per_claim_support_without_claiming_proof() -> None:
     knowledge_base_id = uuid4()
     service = FakeRAGAnswerService()

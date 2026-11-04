@@ -57,11 +57,17 @@ class FakeGenerator:
             return TextGenerationResult(
                 provider=self.provider,
                 model=self.model,
-                text=json.dumps({
-                    "assessments": [
-                        {"id": 1, "verdict": "uncertain", "reason": "Insufficient cited evidence."}
-                    ]
-                }),
+                text=json.dumps(
+                    {
+                        "assessments": [
+                            {
+                                "id": 1,
+                                "verdict": "uncertain",
+                                "reason": "Insufficient cited evidence.",
+                            }
+                        ]
+                    }
+                ),
             )
         return TextGenerationResult(
             provider=self.provider,
@@ -239,7 +245,6 @@ def test_rag_sources_keep_pdf_page_and_ocr_provenance() -> None:
     assert result.sources[0].ocr_used is True
     assert "pdf_pages=4-5" in generator.requests[0].user_prompt
     assert "ocr_used=true" in generator.requests[0].user_prompt
-
 
 
 def test_opt_in_support_review_uses_same_exact_sources_with_second_model_pass() -> None:

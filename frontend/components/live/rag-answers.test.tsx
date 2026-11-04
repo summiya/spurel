@@ -179,7 +179,9 @@ describe("SP-15 live RAG answer frontend", () => {
     render(<LiveRagAnswersPage />);
     await screen.findByRole("option", { name: "Employee handbook" });
     fireEvent.click(screen.getByRole("checkbox", { name: /Check citation support/ }));
-    expect(vi.mocked(fetch).mock.calls.filter(([, init]) => init?.method === "POST")).toHaveLength(0);
+    expect(vi.mocked(fetch).mock.calls.filter(([, init]) => init?.method === "POST")).toHaveLength(
+      0,
+    );
     ask();
     expect(await screen.findByText("Citation support review")).toBeInTheDocument();
     expect(screen.getByText(/Model suggests supported/)).toBeInTheDocument();
@@ -198,13 +200,15 @@ describe("SP-15 live RAG answer frontend", () => {
         status: "unavailable",
         verifier_model: "review-model",
         omitted_claim_count: 0,
-        claims: [{
-          id: 1,
-          text: "Employees receive 30 days of leave .",
-          cited_labels: ["S1"],
-          status: "not_checked",
-          reason: "Awaiting source-support assessment.",
-        }],
+        claims: [
+          {
+            id: 1,
+            text: "Employees receive 30 days of leave .",
+            cited_labels: ["S1"],
+            status: "not_checked",
+            reason: "Awaiting source-support assessment.",
+          },
+        ],
       },
     };
     render(<LiveRagAnswersPage />);

@@ -135,15 +135,24 @@ describe("SP-15 RAG API contracts", () => {
       ],
     };
     expect(isRagAnswerResponse({ ...valid, verification: review })).toBe(true);
-    expect(isRagAnswerResponse({ ...valid, verification: { ...review, claims: [
-      { ...review.claims[0], status: "proved_true" },
-    ] } })).toBe(false);
-    expect(isRagAnswerResponse({ ...valid, verification: { ...review, claims: [
-      { ...review.claims[0], cited_labels: ["S99"] },
-    ] } })).toBe(false);
-    expect(isRagAnswerResponse({ ...valid, verification: { ...review, claims: [
-      { ...review.claims[0], reason: 404 },
-    ] } })).toBe(false);
+    expect(
+      isRagAnswerResponse({
+        ...valid,
+        verification: { ...review, claims: [{ ...review.claims[0], status: "proved_true" }] },
+      }),
+    ).toBe(false);
+    expect(
+      isRagAnswerResponse({
+        ...valid,
+        verification: { ...review, claims: [{ ...review.claims[0], cited_labels: ["S99"] }] },
+      }),
+    ).toBe(false);
+    expect(
+      isRagAnswerResponse({
+        ...valid,
+        verification: { ...review, claims: [{ ...review.claims[0], reason: 404 }] },
+      }),
+    ).toBe(false);
   });
 
   it("makes only backend-provided source labels navigable", () => {

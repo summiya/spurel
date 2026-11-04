@@ -97,7 +97,8 @@ async def answer_with_rag(
                     for claim in result.verification.claims
                 ],
             )
-            if result.verification else None
+            if result.verification
+            else None
         ),
         sources=[
             RAGSourceResponse(

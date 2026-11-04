@@ -160,7 +160,8 @@ class RAGAnswerService:
                 sources=context.sources,
                 provider=self._generator,
             )
-            if verify_citations else None
+            if verify_citations
+            else None
         )
 
         return RAGAnswer(

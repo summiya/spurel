@@ -74,8 +74,8 @@ function uuid(value: unknown): value is string {
 export function parseRagAnswerRequest(value: unknown): RagAnswerRequest | null {
   if (!record(value)) return null;
   if (
-    Object.keys(value).some((key) =>
-      !["query", "top_k", "candidate_k", "rrf_k", "verify_citations"].includes(key),
+    Object.keys(value).some(
+      (key) => !["query", "top_k", "candidate_k", "rrf_k", "verify_citations"].includes(key),
     ) ||
     typeof value.query !== "string"
   )
@@ -180,15 +180,22 @@ const CLAIM_STATUSES: ReadonlyArray<RagClaimStatus> = [
   "not_checked",
 ];
 
-function isRagCitationVerification(value: unknown, sourceLabels: ReadonlySet<string>): value is RagCitationVerification {
+function isRagCitationVerification(
+  value: unknown,
+  sourceLabels: ReadonlySet<string>,
+): value is RagCitationVerification {
   if (!record(value)) return false;
   if (
     !["completed", "partial", "unavailable", "not_applicable"].includes(String(value.status)) ||
-    !(value.verifier_model === null || (typeof value.verifier_model === "string" && value.verifier_model.length > 0)) ||
+    !(
+      value.verifier_model === null ||
+      (typeof value.verifier_model === "string" && value.verifier_model.length > 0)
+    ) ||
     !integer(value.omitted_claim_count, 0, 100_000) ||
     !Array.isArray(value.claims) ||
     value.claims.length > 16
-  ) return false;
+  )
+    return false;
 
   const ids = new Set<number>();
   return value.claims.every((claim: unknown) => {
@@ -205,10 +212,25 @@ function isRagCitationVerification(value: unknown, sourceLabels: ReadonlySet<str
       claim.reason.length < 1 ||
       claim.reason.length > 240 ||
       !CLAIM_STATUSES.includes(claim.status as RagClaimStatus)
-    ) return false;
-    if (!claim.cited_labels.every((label: unknown) => typeof label === "string" && /^S\d{1,8}$/.test(label))) return false;
-    if (claim.status === "model_supported" || claim.status === "model_unsupported" || claim.status === "model_uncertain") {
-      if (!value.verifier_model || !claim.cited_labels.length || !claim.cited_labels.every((label: string) => sourceLabels.has(label))) return false;
+    )
+      return false;
+    if (
+      !claim.cited_labels.every(
+        (label: unknown) => typeof label === "string" && /^S\d{1,8}$/.test(label),
+      )
+    )
+      return false;
+    if (
+      claim.status === "model_supported" ||
+      claim.status === "model_unsupported" ||
+      claim.status === "model_uncertain"
+    ) {
+      if (
+        !value.verifier_model ||
+        !claim.cited_labels.length ||
+        !claim.cited_labels.every((label: string) => sourceLabels.has(label))
+      )
+        return false;
     }
     ids.add(claim.id);
     return true;

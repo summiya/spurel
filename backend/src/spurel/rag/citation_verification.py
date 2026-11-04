@@ -77,8 +77,15 @@ def _claims(answer: str, sources: Sequence[CitedSource]) -> tuple[list[ClaimAsse
     pieces = [item.strip() for item in _SENTENCES_RE.split(answer) if item.strip()]
     if len(answer) > MAX_ANSWER_CHARS:
         return (
-            [ClaimAssessment(1, answer[:MAX_CLAIM_CHARS], (), "not_checked",
-                             "Answer exceeds the bounded review size.")],
+            [
+                ClaimAssessment(
+                    1,
+                    answer[:MAX_CLAIM_CHARS],
+                    (),
+                    "not_checked",
+                    "Answer exceeds the bounded review size.",
+                )
+            ],
             max(0, len(pieces) - 1),
         )
     findings: list[ClaimAssessment] = []
@@ -98,9 +105,7 @@ def _claims(answer: str, sources: Sequence[CitedSource]) -> tuple[list[ClaimAsse
             )
         else:
             status, reason = "not_checked", "Awaiting source-support assessment."
-        findings.append(
-            ClaimAssessment(index, clean[:MAX_CLAIM_CHARS], labels, status, reason)
-        )
+        findings.append(ClaimAssessment(index, clean[:MAX_CLAIM_CHARS], labels, status, reason))
     return findings, max(0, len(pieces) - MAX_REVIEWED_CLAIMS)
 
 
@@ -148,12 +153,14 @@ async def review_answer_citations(
     """
     findings, omitted = _claims(answer, sources)
     reviewable = [
-        claim for claim in findings
+        claim
+        for claim in findings
         if claim.status == "not_checked" and claim.reason == "Awaiting source-support assessment."
     ]
     if not reviewable:
         return CitationVerification(
-            status="partial" if omitted or any(c.status == "not_checked" for c in findings)
+            status="partial"
+            if omitted or any(c.status == "not_checked" for c in findings)
             else "not_applicable",
             verifier_model=None,
             claims=tuple(findings),
@@ -168,7 +175,8 @@ async def review_answer_citations(
         ],
         "sources": [
             {"label": source.label, "excerpt": source.excerpt}
-            for source in sources if source.label in labels
+            for source in sources
+            if source.label in labels
         ],
     }
     system = (
@@ -208,11 +216,14 @@ async def review_answer_citations(
             claim,
             status=status_by_verdict[verdicts[claim.id][0]],
             reason=verdicts[claim.id][1],
-        ) if claim.id in verdicts else claim
+        )
+        if claim.id in verdicts
+        else claim
         for claim in findings
     )
     return CitationVerification(
-        status="partial" if omitted or any(c.status == "not_checked" for c in finished)
+        status="partial"
+        if omitted or any(c.status == "not_checked" for c in finished)
         else "completed",
         verifier_model=result.model,
         claims=finished,

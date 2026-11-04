@@ -147,8 +147,10 @@ export function LiveRagAnswersPage({ initialKnowledgeBaseId }: Props) {
           body: JSON.stringify(request),
         },
       );
-      if (!isRagAnswerResponse(data) ||
-        (request.verify_citations && data.retrieved_chunk_count > 0 && !data.verification)) {
+      if (
+        !isRagAnswerResponse(data) ||
+        (request.verify_citations && data.retrieved_chunk_count > 0 && !data.verification)
+      ) {
         throw new Error("The RAG backend returned an invalid evidence response.");
       }
       if (requestSequence.current !== sequence) return;
@@ -321,10 +323,10 @@ export function LiveRagAnswersPage({ initialKnowledgeBaseId }: Props) {
                 Check citation support with an additional model pass (optional)
               </label>
               <p className="text-hint">
-                Flags uncited or unknown source labels, then asks the configured generation model
-                to assess each cited claim against the exact source excerpt. An extra paid call
-                occurs only after you confirm generation. Model judgments can be wrong and need
-                manual review; no checks run while editing or browsing.
+                Flags uncited or unknown source labels, then asks the configured generation model to
+                assess each cited claim against the exact source excerpt. An extra paid call occurs
+                only after you confirm generation. Model judgments can be wrong and need manual
+                review; no checks run while editing or browsing.
               </p>
             </div>
             <div className="rag-actions">
@@ -515,14 +517,16 @@ export function LiveRagAnswersPage({ initialKnowledgeBaseId }: Props) {
                 {answer.verification.verifier_model ?? "Not called"}.
                 {answer.verification.omitted_claim_count > 0
                   ? ` ${answer.verification.omitted_claim_count} additional claim(s) were not checked.`
-                  : ""}
-                {" "}This is a model&apos;s assessment, not independent proof or a factual guarantee.
+                  : ""}{" "}
+                This is a model&apos;s assessment, not independent proof or a factual guarantee.
               </p>
               {answer.verification.claims.length ? (
                 <div className="source-list">
                   {answer.verification.claims.map((claim) => (
                     <div key={claim.id} className="rag-live-evidence">
-                      <strong>Claim {claim.id} · {CLAIM_LABELS[claim.status]}</strong>
+                      <strong>
+                        Claim {claim.id} · {CLAIM_LABELS[claim.status]}
+                      </strong>
                       <p>{claim.text}</p>
                       <p className="text-hint">{claim.reason}</p>
                       <div className="tag-row">
@@ -534,7 +538,10 @@ export function LiveRagAnswersPage({ initialKnowledgeBaseId }: Props) {
                             disabled={!sources.some((source) => source.label === label)}
                             onClick={() => setSelectedLabel(label)}
                           >
-                            [{label}] {sources.some((source) => source.label === label) ? "Inspect excerpt" : "Unknown source"}
+                            [{label}]{" "}
+                            {sources.some((source) => source.label === label)
+                              ? "Inspect excerpt"
+                              : "Unknown source"}
                           </button>
                         ))}
                       </div>
@@ -549,8 +556,8 @@ export function LiveRagAnswersPage({ initialKnowledgeBaseId }: Props) {
           <div className="inline-notice">
             <Icon name="info" size={16} />
             Source labels and excerpts can be inspected. Enable optional citation support review
-            before generating to receive fallible model assessments; citation labels alone
-            never establish factual support.
+            before generating to receive fallible model assessments; citation labels alone never
+            establish factual support.
           </div>
         </>
       ) : !running && !error ? (
