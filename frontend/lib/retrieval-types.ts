@@ -1,4 +1,7 @@
-import { parseRetrievalMetadataFilters, type RetrievalMetadataFilters } from "@/lib/retrieval-filter-types";
+import {
+  parseRetrievalMetadataFilters,
+  type RetrievalMetadataFilters,
+} from "@/lib/retrieval-filter-types";
 
 export type RetrievalMode = "vector" | "keyword" | "hybrid";
 
@@ -121,9 +124,11 @@ export function isRetrievalResult(value: unknown): value is RetrievalResult {
     return false;
 
   if (
-    "filters" in value && value.filters !== null &&
+    "filters" in value &&
+    value.filters !== null &&
     parseRetrievalMetadataFilters(value.filters) === null
-  ) return false;
+  )
+    return false;
 
   return value.matches.every((item: unknown, index: number) => {
     if (!isRecord(item)) return false;

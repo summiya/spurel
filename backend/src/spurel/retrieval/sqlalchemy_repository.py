@@ -13,8 +13,8 @@ from spurel.embeddings.domain import EmbeddingVector
 from spurel.embeddings.persistence import ChunkEmbeddingRecord
 from spurel.retrieval.domain import VectorRetrievalMatch
 from spurel.retrieval.metadata_filters import RetrievalMetadataFilters
-from spurel.retrieval.sql_metadata_filters import apply_document_metadata_filters
 from spurel.retrieval.ports import VectorRetrievalRepositoryError
+from spurel.retrieval.sql_metadata_filters import apply_document_metadata_filters
 
 
 class SqlAlchemyVectorRetrievalRepository:

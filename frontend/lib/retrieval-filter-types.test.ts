@@ -30,7 +30,10 @@ describe("SP-19 metadata filter payloads", () => {
 
   it("rejects open-ended, duplicate, unrecognized and dangerous criteria", () => {
     for (const bad of [
-      null, [], {}, { document_ids: [] },
+      null,
+      [],
+      {},
+      { document_ids: [] },
       { document_ids: ["not-uuid"] },
       { document_ids: [document, document.toUpperCase()] },
       { document_ids: Array(21).fill(document) },
@@ -50,10 +53,12 @@ describe("SP-19 metadata filter payloads", () => {
 
   it("compares filters independently of field order and distinguishes changes", () => {
     const first = parseRetrievalMetadataFilters({
-      media_types: ["text/plain"], document_ids: [document, second],
+      media_types: ["text/plain"],
+      document_ids: [document, second],
     });
     const same = parseRetrievalMetadataFilters({
-      document_ids: [second, document], media_types: ["text/plain"],
+      document_ids: [second, document],
+      media_types: ["text/plain"],
     });
     expect(retrievalFiltersKey(first)).toBe(retrievalFiltersKey(same));
     expect(retrievalFiltersKey(first)).not.toBe(retrievalFiltersKey(null));
@@ -62,12 +67,14 @@ describe("SP-19 metadata filter payloads", () => {
   });
 
   it("accepts server response nulls for unspecified fields without inventing filters", () => {
-    expect(parseRetrievalMetadataFilters({
-      document_ids: [],
-      media_types: ["application/pdf"],
-      filename_contains: null,
-      created_after: null,
-      created_before: null,
-    })).toEqual({ media_types: ["application/pdf"] });
+    expect(
+      parseRetrievalMetadataFilters({
+        document_ids: [],
+        media_types: ["application/pdf"],
+        filename_contains: null,
+        created_after: null,
+        created_before: null,
+      }),
+    ).toEqual({ media_types: ["application/pdf"] });
   });
 });

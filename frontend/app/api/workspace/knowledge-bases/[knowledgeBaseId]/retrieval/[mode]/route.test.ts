@@ -49,7 +49,10 @@ describe("SP-19 retrieval metadata API proxy", () => {
     mocks.authFailure.mockReset();
     mocks.authFailure.mockReturnValue(null);
     mocks.backendRequest.mockReset();
-    mocks.backendRequest.mockResolvedValue({ status: 200, payload: { mode: "keyword", matches: [] } });
+    mocks.backendRequest.mockResolvedValue({
+      status: 200,
+      payload: { mode: "keyword", matches: [] },
+    });
   });
 
   it("retains legacy unfiltered requests and does not add filter keys", async () => {
@@ -57,10 +60,11 @@ describe("SP-19 retrieval metadata API proxy", () => {
     const response = await POST(request("keyword", JSON.stringify(body)), context());
     expect(response.status).toBe(200);
     expect(response.headers.get("Cache-Control")).toBe("no-store");
-    expect(mocks.backendRequest).toHaveBeenCalledWith(
-      `/knowledge-bases/${kb}/retrieval/keyword`,
-      { method: "POST", body: JSON.stringify(body), timeoutMs: 60000 },
-    );
+    expect(mocks.backendRequest).toHaveBeenCalledWith(`/knowledge-bases/${kb}/retrieval/keyword`, {
+      method: "POST",
+      body: JSON.stringify(body),
+      timeoutMs: 60000,
+    });
   });
 
   it("forwards identical validated filters for keyword, vector and hybrid", async () => {
@@ -72,14 +76,12 @@ describe("SP-19 retrieval metadata API proxy", () => {
     for (const mode of ["keyword", "vector", "hybrid"]) {
       mocks.backendRequest.mockClear();
       const body = {
-        query: "refund", top_k: 8,
+        query: "refund",
+        top_k: 8,
         ...(mode === "hybrid" ? { candidate_k: 50, rrf_k: 60 } : {}),
         filters,
       };
-      const response = await POST(
-        request(mode, JSON.stringify(body)),
-        context(kb, mode),
-      );
+      const response = await POST(request(mode, JSON.stringify(body)), context(kb, mode));
       expect(response.status).toBe(200);
       expect(mocks.backendRequest).toHaveBeenCalledWith(
         `/knowledge-bases/${kb}/retrieval/${mode}`,
@@ -109,10 +111,12 @@ describe("SP-19 retrieval metadata API proxy", () => {
       expect(denied.status).toBe(422);
     }
     expect((await POST(request("keyword", "{not-json"), context())).status).toBe(400);
-    expect((await POST(request("keyword", JSON.stringify(base)), context("fake-id"))).status)
-      .toBe(400);
-    expect((await POST(request("../../../rag", JSON.stringify(base)), context(kb, "../rag"))).status)
-      .toBe(400);
+    expect((await POST(request("keyword", JSON.stringify(base)), context("fake-id"))).status).toBe(
+      400,
+    );
+    expect(
+      (await POST(request("../../../rag", JSON.stringify(base)), context(kb, "../rag"))).status,
+    ).toBe(400);
     const huge = await POST(
       request("keyword", JSON.stringify(base), { "Content-Length": "25000" }),
       context(),
@@ -125,13 +129,22 @@ describe("SP-19 retrieval metadata API proxy", () => {
     mocks.authFailure.mockReturnValueOnce(
       NextResponse.json({ error: "Operator sign-in required." }, { status: 401 }),
     );
-    expect((await POST(request("keyword", '{"query":"policy","top_k":10}'), context())).status)
-      .toBe(401);
+    expect(
+      (await POST(request("keyword", '{"query":"policy","top_k":10}'), context())).status,
+    ).toBe(401);
     mocks.authFailure.mockReturnValueOnce(
       NextResponse.json({ error: "Cross-origin request rejected." }, { status: 403 }),
     );
-    expect((await POST(request("keyword", '{"query":"policy","top_k":10}',
-      { Origin: "http://untrusted.example" }), context())).status).toBe(403);
+    expect(
+      (
+        await POST(
+          request("keyword", '{"query":"policy","top_k":10}', {
+            Origin: "http://untrusted.example",
+          }),
+          context(),
+        )
+      ).status,
+    ).toBe(403);
     expect(mocks.backendRequest).not.toHaveBeenCalled();
   });
 });

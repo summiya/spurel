@@ -54,19 +54,23 @@ function fakeFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Respon
     return Promise.resolve(json({ items: [kb], limit: 50, offset: 0 }));
   }
   if (url === `/api/workspace/knowledge-bases/${kb.id}/documents?offset=0`) {
-    return Promise.resolve(json({
-      items: [{
-        id: documentId,
-        knowledge_base_id: kb.id,
-        filename: "Operations manual.pdf",
-        media_type: "application/pdf",
-        size_bytes: 2048,
-        created_at: "2026-11-03T10:00:00Z",
-        active_chunk_version: 1,
-      }],
-      limit: 50,
-      offset: 0,
-    }));
+    return Promise.resolve(
+      json({
+        items: [
+          {
+            id: documentId,
+            knowledge_base_id: kb.id,
+            filename: "Operations manual.pdf",
+            media_type: "application/pdf",
+            size_bytes: 2048,
+            created_at: "2026-11-03T10:00:00Z",
+            active_chunk_version: 1,
+          },
+        ],
+        limit: 50,
+        offset: 0,
+      }),
+    );
   }
   if (url === base + "/keyword" && init?.method === "POST") {
     const request = JSON.parse(String(init.body));
@@ -256,8 +260,9 @@ describe("live retrieval lab", () => {
     fireEvent.change(screen.getByRole("textbox", { name: "Filename contains" }), {
       target: { value: "manual" },
     });
-    expect(vi.mocked(fetch).mock.calls.filter(([, init]) => init?.method === "POST"))
-      .toHaveLength(0);
+    expect(vi.mocked(fetch).mock.calls.filter(([, init]) => init?.method === "POST")).toHaveLength(
+      0,
+    );
     fireEvent.change(screen.getByRole("textbox", { name: "Search query" }), {
       target: { value: "retention" },
     });
@@ -277,8 +282,9 @@ describe("live retrieval lab", () => {
       target: { value: "another" },
     });
     expect(screen.getByText(/results below belong to the last completed run/)).toBeInTheDocument();
-    expect(vi.mocked(fetch).mock.calls.filter(([, init]) => init?.method === "POST"))
-      .toHaveLength(1);
+    expect(vi.mocked(fetch).mock.calls.filter(([, init]) => init?.method === "POST")).toHaveLength(
+      1,
+    );
   });
 
   it("retrieves real vector results and can reopen their persisted trace", async () => {

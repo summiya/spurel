@@ -192,7 +192,8 @@ export function LiveRetrievalLabPage({ initialKnowledgeBaseId }: Props) {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const normalized = query.trim();
-    if (!knowledgeBase || !normalized || normalized.length > 8000 || running || invalidFilter) return;
+    if (!knowledgeBase || !normalized || normalized.length > 8000 || running || invalidFilter)
+      return;
     const id = ++sequence.current;
     const target = knowledgeBase.id;
     const submittedMode = mode;
@@ -221,7 +222,10 @@ export function LiveRetrievalLabPage({ initialKnowledgeBaseId }: Props) {
         throw new Error("The retrieval API returned an unexpected response.");
       }
       if (id !== sequence.current) return;
-      if (activeFilters && retrievalFiltersKey(raw.filters) !== retrievalFiltersKey(activeFilters)) {
+      if (
+        activeFilters &&
+        retrievalFiltersKey(raw.filters) !== retrievalFiltersKey(activeFilters)
+      ) {
         throw new Error("The backend did not confirm the requested document metadata filters.");
       }
       setRun({
@@ -369,26 +373,40 @@ export function LiveRetrievalLabPage({ initialKnowledgeBaseId }: Props) {
               <strong>Document metadata filters (optional)</strong>
               <p className="text-hint">
                 Restrict which indexed documents can be ranked. All selected criteria must match;
-                filename search treats % and _ as literal characters. Editing filters does not run a query.
+                filename search treats % and _ as literal characters. Editing filters does not run a
+                query.
               </p>
               <div className="retrieval-config-grid">
                 <div>
-                  <label htmlFor="filter-document" className="field-label">Document</label>
-                  <select id="filter-document" className="select-control"
+                  <label htmlFor="filter-document" className="field-label">
+                    Document
+                  </label>
+                  <select
+                    id="filter-document"
+                    className="select-control"
                     disabled={running || documents.loading}
                     value={documentFilterId}
-                    onChange={(event) => setDocumentFilterId(event.target.value)}>
+                    onChange={(event) => setDocumentFilterId(event.target.value)}
+                  >
                     <option value="">All documents</option>
                     {documents.items.map((item) => (
-                      <option key={item.id} value={item.id}>{item.filename}</option>
+                      <option key={item.id} value={item.id}>
+                        {item.filename}
+                      </option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label htmlFor="filter-type" className="field-label">File type</label>
-                  <select id="filter-type" className="select-control" disabled={running}
+                  <label htmlFor="filter-type" className="field-label">
+                    File type
+                  </label>
+                  <select
+                    id="filter-type"
+                    className="select-control"
+                    disabled={running}
                     value={mediaType}
-                    onChange={(event) => setMediaType(event.target.value as DocumentMediaType | "")}>
+                    onChange={(event) => setMediaType(event.target.value as DocumentMediaType | "")}
+                  >
                     <option value="">All file types</option>
                     <option value="application/pdf">PDF</option>
                     <option value="text/markdown">Markdown</option>
@@ -396,29 +414,59 @@ export function LiveRetrievalLabPage({ initialKnowledgeBaseId }: Props) {
                   </select>
                 </div>
                 <div>
-                  <label htmlFor="filter-filename" className="field-label">Filename contains</label>
-                  <input id="filter-filename" className="input-control" type="text"
-                    maxLength={100} value={filenameContains} disabled={running}
+                  <label htmlFor="filter-filename" className="field-label">
+                    Filename contains
+                  </label>
+                  <input
+                    id="filter-filename"
+                    className="input-control"
+                    type="text"
+                    maxLength={100}
+                    value={filenameContains}
+                    disabled={running}
                     onChange={(event) => setFilenameContains(event.target.value)}
-                    placeholder="e.g. handbook" />
+                    placeholder="e.g. handbook"
+                  />
                 </div>
                 <div>
-                  <label htmlFor="filter-after" className="field-label">Uploaded on or after (UTC)</label>
-                  <input id="filter-after" className="input-control" type="date"
-                    value={dateAfter} disabled={running}
-                    onChange={(event) => setDateAfter(event.target.value)} />
+                  <label htmlFor="filter-after" className="field-label">
+                    Uploaded on or after (UTC)
+                  </label>
+                  <input
+                    id="filter-after"
+                    className="input-control"
+                    type="date"
+                    value={dateAfter}
+                    disabled={running}
+                    onChange={(event) => setDateAfter(event.target.value)}
+                  />
                 </div>
                 <div>
-                  <label htmlFor="filter-before" className="field-label">Uploaded on or before (UTC)</label>
-                  <input id="filter-before" className="input-control" type="date"
-                    value={dateBefore} disabled={running}
-                    onChange={(event) => setDateBefore(event.target.value)} />
+                  <label htmlFor="filter-before" className="field-label">
+                    Uploaded on or before (UTC)
+                  </label>
+                  <input
+                    id="filter-before"
+                    className="input-control"
+                    type="date"
+                    value={dateBefore}
+                    disabled={running}
+                    onChange={(event) => setDateBefore(event.target.value)}
+                  />
                 </div>
               </div>
-              {documents.error ? <p role="alert" className="text-hint">{documents.error}</p> : null}
+              {documents.error ? (
+                <p role="alert" className="text-hint">
+                  {documents.error}
+                </p>
+              ) : null}
               {documents.hasMore ? (
-                <button type="button" className="button ghost compact"
-                  onClick={() => void documents.loadMore()} disabled={documents.loadingMore || running}>
+                <button
+                  type="button"
+                  className="button ghost compact"
+                  onClick={() => void documents.loadMore()}
+                  disabled={documents.loadingMore || running}
+                >
                   {documents.loadingMore ? "Loading…" : "Load more documents for selection"}
                 </button>
               ) : null}
@@ -428,8 +476,8 @@ export function LiveRetrievalLabPage({ initialKnowledgeBaseId }: Props) {
                 </p>
               ) : null}
               <p className="text-hint">
-                Scope: {describeRetrievalFilters(activeFilters)}.
-                Only the selected knowledge base is searched.
+                Scope: {describeRetrievalFilters(activeFilters)}. Only the selected knowledge base
+                is searched.
               </p>
             </div>
             <div className="retrieval-config-grid">
@@ -621,9 +669,7 @@ export function LiveRetrievalLabPage({ initialKnowledgeBaseId }: Props) {
                     : "Not applicable (keyword only)"}
                 </span>
                 <span>Original duration: {duration(trace.duration_ms)}</span>
-                <span>
-                  Saved filters: {describeRetrievalFilters(trace.filters)}
-                </span>
+                <span>Saved filters: {describeRetrievalFilters(trace.filters)}</span>
               </div>
             ) : null}
           </Panel>

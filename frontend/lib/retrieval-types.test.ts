@@ -106,8 +106,7 @@ describe("retrieval payloads and scores", () => {
       const parsed = parseRetrievalRequest(mode, request);
       expect(parsed?.filters?.document_ids).toEqual([doc]);
       expect(parsed?.filters?.media_types).toEqual(["application/pdf"]);
-      expect(parseRetrievalRequest(mode, { ...request, filters: { sql: "anything" } }))
-        .toBeNull();
+      expect(parseRetrievalRequest(mode, { ...request, filters: { sql: "anything" } })).toBeNull();
       expect(parseRetrievalRequest(mode, { ...request, filters: {} })).toBeNull();
     }
   });

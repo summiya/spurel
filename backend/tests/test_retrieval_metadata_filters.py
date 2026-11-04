@@ -20,9 +20,9 @@ from spurel.retrieval.metadata_filters import (
     RetrievalMetadataFilterError,
     RetrievalMetadataFilters,
 )
+from spurel.retrieval.schemas import RetrievalMetadataFiltersRequest
 from spurel.retrieval.sql_metadata_filters import apply_document_metadata_filters
 from spurel.retrieval.traced import TracedRetrievalResult
-from spurel.retrieval.schemas import RetrievalMetadataFiltersRequest
 from spurel.security import require_api_token
 
 

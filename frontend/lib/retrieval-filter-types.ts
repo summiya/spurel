@@ -10,11 +10,7 @@ export interface RetrievalMetadataFilters {
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const MEDIA_TYPES: DocumentMediaType[] = [
-  "application/pdf",
-  "text/plain",
-  "text/markdown",
-];
+const MEDIA_TYPES: DocumentMediaType[] = ["application/pdf", "text/plain", "text/markdown"];
 const ALLOWED = [
   "document_ids",
   "media_types",
@@ -35,7 +31,8 @@ export function parseRetrievalMetadataFilters(value: unknown): RetrievalMetadata
       !Array.isArray(source.document_ids) ||
       source.document_ids.length > 20 ||
       !source.document_ids.every((id: unknown) => typeof id === "string" && UUID.test(id)) ||
-      new Set(source.document_ids.map((id: string) => id.toLowerCase())).size !== source.document_ids.length
+      new Set(source.document_ids.map((id: string) => id.toLowerCase())).size !==
+        source.document_ids.length
     )
       return null;
     if (source.document_ids.length) {
@@ -46,7 +43,9 @@ export function parseRetrievalMetadataFilters(value: unknown): RetrievalMetadata
     if (
       !Array.isArray(source.media_types) ||
       source.media_types.length > 3 ||
-      !source.media_types.every((type: unknown) => MEDIA_TYPES.includes(type as DocumentMediaType)) ||
+      !source.media_types.every((type: unknown) =>
+        MEDIA_TYPES.includes(type as DocumentMediaType),
+      ) ||
       new Set(source.media_types).size !== source.media_types.length
     )
       return null;
@@ -69,7 +68,8 @@ export function parseRetrievalMetadataFilters(value: unknown): RetrievalMetadata
       if (
         typeof date !== "string" ||
         !/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d{1,6})?(?:Z|[+-]\d\d:\d\d)$/.test(date)
-      ) return null;
+      )
+        return null;
       const stamp = Date.parse(date);
       if (!Number.isFinite(stamp)) return null;
       result[name] = new Date(stamp).toISOString();
@@ -79,7 +79,8 @@ export function parseRetrievalMetadataFilters(value: unknown): RetrievalMetadata
     result.created_after &&
     result.created_before &&
     Date.parse(result.created_after) > Date.parse(result.created_before)
-  ) return null;
+  )
+    return null;
   return Object.keys(result).length ? result : null;
 }
 
@@ -103,6 +104,7 @@ export function describeRetrievalFilters(
   if (filters.media_types?.length) segments.push(filters.media_types.join(", "));
   if (filters.filename_contains) segments.push(`Filename contains "${filters.filename_contains}"`);
   if (filters.created_after) segments.push(`Uploaded after ${filters.created_after.slice(0, 10)}`);
-  if (filters.created_before) segments.push(`Uploaded before ${filters.created_before.slice(0, 10)}`);
+  if (filters.created_before)
+    segments.push(`Uploaded before ${filters.created_before.slice(0, 10)}`);
   return segments.join(" · ");
 }

@@ -464,44 +464,49 @@ export function LiveTraceHistoryPage({ initialKnowledgeBaseId, initialTraceId }:
                       Saved retrieval scope: {describeRetrievalFilters(detail.filters)}
                     </p>
                     <div className="trace-evidence">
-                    {detail.results.length ? (
-                      detail.results.map((item) => (
-                        <div className="trace-evidence-row live-trace-evidence" key={item.chunk_id}>
-                          <span className="result-rank">{String(item.rank).padStart(2, "0")}</span>
-                          <div>
-                            <strong>
-                              Chunk {item.chunk_index + 1} · {item.chunk_id.slice(0, 8)}
-                            </strong>
-                            <p>{item.text}</p>
-                            <small>
-                              Source offsets {item.start_offset}–{item.end_offset}
-                            </small>
-                            <small>
-                              Raw {traceScoreLabel(detail.mode)}:{" "}
-                              {otherScore(
-                                detail.mode === "vector"
-                                  ? item.cosine_similarity
-                                  : detail.mode === "keyword"
-                                    ? item.keyword_score
-                                    : item.rrf_score,
-                                detail.mode === "hybrid" ? 6 : detail.mode === "keyword" ? 5 : 4,
-                              )}
-                            </small>
-                            <Link
-                              href={`/chunks?kb=${base.id}&doc=${item.document_id}`}
-                              className="text-hint"
-                            >
-                              Inspect original document
-                            </Link>
+                      {detail.results.length ? (
+                        detail.results.map((item) => (
+                          <div
+                            className="trace-evidence-row live-trace-evidence"
+                            key={item.chunk_id}
+                          >
+                            <span className="result-rank">
+                              {String(item.rank).padStart(2, "0")}
+                            </span>
+                            <div>
+                              <strong>
+                                Chunk {item.chunk_index + 1} · {item.chunk_id.slice(0, 8)}
+                              </strong>
+                              <p>{item.text}</p>
+                              <small>
+                                Source offsets {item.start_offset}–{item.end_offset}
+                              </small>
+                              <small>
+                                Raw {traceScoreLabel(detail.mode)}:{" "}
+                                {otherScore(
+                                  detail.mode === "vector"
+                                    ? item.cosine_similarity
+                                    : detail.mode === "keyword"
+                                      ? item.keyword_score
+                                      : item.rrf_score,
+                                  detail.mode === "hybrid" ? 6 : detail.mode === "keyword" ? 5 : 4,
+                                )}
+                              </small>
+                              <Link
+                                href={`/chunks?kb=${base.id}&doc=${item.document_id}`}
+                                className="text-hint"
+                              >
+                                Inspect original document
+                              </Link>
+                            </div>
                           </div>
-                        </div>
-                      ))
-                    ) : (
-                      <EmptyState
-                        title="Zero-result saved trace"
-                        description="This completed run returned no indexed chunks; its query and timing are still persisted."
-                      />
-                    )}
+                        ))
+                      ) : (
+                        <EmptyState
+                          title="Zero-result saved trace"
+                          description="This completed run returned no indexed chunks; its query and timing are still persisted."
+                        />
+                      )}
                     </div>
                   </>
                 ) : null}
@@ -587,8 +592,8 @@ export function LiveTraceHistoryPage({ initialKnowledgeBaseId, initialTraceId }:
               retrievalFiltersKey(compared.second.filters) ? (
                 <div className="inline-notice">
                   <Icon name="info" size={16} />
-                  Different document filters: these traces searched different document subsets.
-                  Rank changes cannot be attributed to ranking quality alone.
+                  Different document filters: these traces searched different document subsets. Rank
+                  changes cannot be attributed to ranking quality alone.
                 </div>
               ) : null}
               {compared.first.mode !== compared.second.mode ? (
