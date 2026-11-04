@@ -11,6 +11,7 @@ from spurel.retrieval.domain import (
 )
 from spurel.retrieval.metadata_filters import RetrievalMetadataFilters
 from spurel.retrieval.ports import VectorRetrievalRepository
+from spurel.retrieval.timings import time_stage
 
 
 class VectorRetrievalProviderContractError(RuntimeError):
@@ -50,7 +51,8 @@ class VectorRetrievalService:
         ):
             raise VectorRetrievalQueryError("retrieval result limit is outside the supported range")
 
-        batch = await self._provider.embed((normalized_query,))
+        with time_stage("query_embedding"):
+            batch = await self._provider.embed((normalized_query,))
 
         if batch.model != self._provider.model:
             raise VectorRetrievalProviderContractError(
@@ -67,12 +69,13 @@ class VectorRetrievalService:
                 "embedding provider returned an unexpected query vector count"
             )
 
-        return await self._repository.search(
-            knowledge_base_id=knowledge_base_id,
-            query_vector=batch.vectors[0],
-            provider=self._provider.provider,
-            model=self._provider.model,
-            dimensions=self._provider.dimensions,
-            limit=limit,
-            **({"filters": filters} if filters is not None else {}),
-        )
+        with time_stage("vector_search"):
+            return await self._repository.search(
+                    knowledge_base_id=knowledge_base_id,
+                query_vector=batch.vectors[0],
+                provider=self._provider.provider,
+                model=self._provider.model,
+                dimensions=self._provider.dimensions,
+                limit=limit,
+                **({"filters": filters} if filters is not None else {}),
+            )

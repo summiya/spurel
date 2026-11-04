@@ -9,6 +9,7 @@ from uuid import UUID
 from spurel.retrieval.domain import VectorRetrievalMatch
 from spurel.retrieval.keyword_domain import KeywordRetrievalMatch
 from spurel.retrieval.metadata_filters import RetrievalMetadataFilters
+from spurel.retrieval.timings import time_stage
 
 MAX_HYBRID_RETRIEVAL_RESULTS = 100
 DEFAULT_HYBRID_CANDIDATE_LIMIT = 50
@@ -141,53 +142,54 @@ class HybridRetrievalService:
             ),
         )
 
-        candidates: dict[UUID, _HybridCandidate] = {}
+        with time_stage("rrf_fusion"):
+            candidates: dict[UUID, _HybridCandidate] = {}
 
-        for rank, match in enumerate(vector_matches, start=1):
-            candidate = _get_or_create_candidate(
-                candidates=candidates,
-                match=match,
+            for rank, match in enumerate(vector_matches, start=1):
+                candidate = _get_or_create_candidate(
+                    candidates=candidates,
+                    match=match,
+                )
+                candidate.vector_rank = rank
+                candidate.cosine_similarity = match.cosine_similarity
+                candidate.rrf_score += 1.0 / (rrf_k + rank)
+
+            for rank, match in enumerate(keyword_matches, start=1):
+                candidate = _get_or_create_candidate(
+                    candidates=candidates,
+                    match=match,
+                )
+                candidate.keyword_rank = rank
+                candidate.keyword_score = match.keyword_score
+                candidate.rrf_score += 1.0 / (rrf_k + rank)
+
+            ranked = sorted(
+                candidates.values(),
+                key=lambda candidate: (
+                    -candidate.rrf_score,
+                    candidate.chunk_id,
+                ),
             )
-            candidate.vector_rank = rank
-            candidate.cosine_similarity = match.cosine_similarity
-            candidate.rrf_score += 1.0 / (rrf_k + rank)
 
-        for rank, match in enumerate(keyword_matches, start=1):
-            candidate = _get_or_create_candidate(
-                candidates=candidates,
-                match=match,
+            return tuple(
+                HybridRetrievalMatch(
+                    chunk_id=candidate.chunk_id,
+                    document_id=candidate.document_id,
+                    chunk_index=candidate.chunk_index,
+                    text=candidate.text,
+                    start_offset=candidate.start_offset,
+                    end_offset=candidate.end_offset,
+                    rrf_score=candidate.rrf_score,
+                    vector_rank=candidate.vector_rank,
+                    keyword_rank=candidate.keyword_rank,
+                    cosine_similarity=candidate.cosine_similarity,
+                    keyword_score=candidate.keyword_score,
+                    page_start=candidate.page_start,
+                    page_end=candidate.page_end,
+                    ocr_used=candidate.ocr_used,
+                )
+                for candidate in ranked[:limit]
             )
-            candidate.keyword_rank = rank
-            candidate.keyword_score = match.keyword_score
-            candidate.rrf_score += 1.0 / (rrf_k + rank)
-
-        ranked = sorted(
-            candidates.values(),
-            key=lambda candidate: (
-                -candidate.rrf_score,
-                candidate.chunk_id,
-            ),
-        )
-
-        return tuple(
-            HybridRetrievalMatch(
-                chunk_id=candidate.chunk_id,
-                document_id=candidate.document_id,
-                chunk_index=candidate.chunk_index,
-                text=candidate.text,
-                start_offset=candidate.start_offset,
-                end_offset=candidate.end_offset,
-                rrf_score=candidate.rrf_score,
-                vector_rank=candidate.vector_rank,
-                keyword_rank=candidate.keyword_rank,
-                cosine_similarity=candidate.cosine_similarity,
-                keyword_score=candidate.keyword_score,
-                page_start=candidate.page_start,
-                page_end=candidate.page_end,
-                ocr_used=candidate.ocr_used,
-            )
-            for candidate in ranked[:limit]
-        )
 
 
 def _validate_hybrid_query(

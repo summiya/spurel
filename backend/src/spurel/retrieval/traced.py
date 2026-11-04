@@ -16,6 +16,7 @@ from spurel.retrieval.reranking import (
     rerank_hybrid_matches,
 )
 from spurel.retrieval.trace_service import RetrievalTraceService
+from spurel.retrieval.timings import capture_stage_timings, time_stage
 from spurel.retrieval.tracing import (
     RetrievalTrace,
     RetrievalTraceMode,
@@ -78,6 +79,7 @@ class TracedRetrievalResult[T]:
     duration_ms: float
     matches: tuple[T, ...]
     reranker_model: str | None = None
+    stage_timings_ms: dict[str, float] | None = None
 
 
 class TracedVectorRetrievalService:
@@ -108,15 +110,17 @@ class TracedVectorRetrievalService:
     ) -> TracedRetrievalResult[VectorRetrievalMatch]:
         """Run vector retrieval, persist its trace, then return both."""
         started = perf_counter()
-        matches = tuple(
-            await self._retriever.search(
-                knowledge_base_id=knowledge_base_id,
-                query=query,
-                limit=limit,
-                **({"filters": filters} if filters is not None else {}),
+        with capture_stage_timings() as stages:
+            matches = tuple(
+                await self._retriever.search(
+                    knowledge_base_id=knowledge_base_id,
+                    query=query,
+                    limit=limit,
+                    **({"filters": filters} if filters is not None else {}),
+                )
             )
-        )
-        duration_ms = _elapsed_ms(started)
+            duration_ms = _elapsed_ms(started)
+        stage_timings = dict(stages) or None
 
         trace = RetrievalTrace.create(
             knowledge_base_id=knowledge_base_id,
@@ -129,6 +133,7 @@ class TracedVectorRetrievalService:
             embedding_dimensions=self._embedding_dimensions,
             results=_vector_trace_results(matches),
             metadata_filters=filters,
+            stage_timings_ms=stage_timings,
         )
         await self._trace_service.record(trace)
 
@@ -136,6 +141,7 @@ class TracedVectorRetrievalService:
             trace_id=trace.id,
             duration_ms=duration_ms,
             matches=matches,
+            stage_timings_ms=stage_timings,
         )
 
 
@@ -161,15 +167,17 @@ class TracedKeywordRetrievalService:
     ) -> TracedRetrievalResult[KeywordRetrievalMatch]:
         """Run keyword retrieval, persist its trace, then return both."""
         started = perf_counter()
-        matches = tuple(
-            await self._retriever.search(
-                knowledge_base_id=knowledge_base_id,
-                query=query,
-                limit=limit,
-                **({"filters": filters} if filters is not None else {}),
+        with capture_stage_timings() as stages:
+            matches = tuple(
+                await self._retriever.search(
+                    knowledge_base_id=knowledge_base_id,
+                    query=query,
+                    limit=limit,
+                    **({"filters": filters} if filters is not None else {}),
+                )
             )
-        )
-        duration_ms = _elapsed_ms(started)
+            duration_ms = _elapsed_ms(started)
+        stage_timings = dict(stages) or None
 
         trace = RetrievalTrace.create(
             knowledge_base_id=knowledge_base_id,
@@ -179,6 +187,7 @@ class TracedKeywordRetrievalService:
             duration_ms=duration_ms,
             results=_keyword_trace_results(matches),
             metadata_filters=filters,
+            stage_timings_ms=stage_timings,
         )
         await self._trace_service.record(trace)
 
@@ -186,6 +195,7 @@ class TracedKeywordRetrievalService:
             trace_id=trace.id,
             duration_ms=duration_ms,
             matches=matches,
+            stage_timings_ms=stage_timings,
         )
 
 
@@ -224,24 +234,27 @@ class TracedHybridRetrievalService:
         # Fail before expensive vector retrieval when no scoring adapter exists.
         reranker = (self._reranker or HttpCrossEncoderReranker.from_env()) if rerank else None
         started = perf_counter()
-        matches = tuple(
-            await self._retriever.search(
-                knowledge_base_id=knowledge_base_id,
-                query=query,
-                limit=candidate_limit if rerank else limit,
-                candidate_limit=candidate_limit,
-                rrf_k=rrf_k,
-                **({"filters": filters} if filters is not None else {}),
+        with capture_stage_timings() as stages:
+            matches = tuple(
+                await self._retriever.search(
+                    knowledge_base_id=knowledge_base_id,
+                    query=query,
+                    limit=candidate_limit if rerank else limit,
+                    candidate_limit=candidate_limit,
+                    rrf_k=rrf_k,
+                    **({"filters": filters} if filters is not None else {}),
+                )
             )
-        )
-        if reranker is not None:
-            matches = await rerank_hybrid_matches(
-                reranker=reranker,
-                query=query.strip(),
-                candidates=matches,
-                top_k=limit,
-            )
-        duration_ms = _elapsed_ms(started)
+            if reranker is not None:
+                with time_stage("cross_encoder"):
+                    matches = await rerank_hybrid_matches(
+                        reranker=reranker,
+                        query=query.strip(),
+                        candidates=matches,
+                        top_k=limit,
+                    )
+            duration_ms = _elapsed_ms(started)
+        stage_timings = dict(stages) or None
 
         trace = RetrievalTrace.create(
             knowledge_base_id=knowledge_base_id,
@@ -256,7 +269,9 @@ class TracedHybridRetrievalService:
             embedding_dimensions=self._embedding_dimensions,
             results=_hybrid_trace_results(matches),
             metadata_filters=filters,
+            stage_timings_ms=stage_timings,
             reranker_model=reranker.model if reranker is not None else None,
+            stage_timings_ms=stage_timings,
         )
         await self._trace_service.record(trace)
 
@@ -265,6 +280,7 @@ class TracedHybridRetrievalService:
             duration_ms=duration_ms,
             matches=matches,
             reranker_model=reranker.model if reranker is not None else None,
+            stage_timings_ms=stage_timings,
         )
 
 
