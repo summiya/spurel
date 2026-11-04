@@ -458,6 +458,35 @@ called precise SQL-server execution timings. This is per-request debugging,
 **not** aggregated p95 telemetry, tracing a provider's internal inference,
 or a production monitoring system (reserved for SP-27).
 
+## SP-23: opt-in claim-versus-cited-excerpt checks
+
+The protected `POST /knowledge-bases/{knowledge_base_id}/rag/answer`
+accepts a strict boolean `verify_citations`, default `false`. Existing
+requests keep the previous single-generation-call behavior. When true,
+the normal hybrid retrieval and generation complete, and a **second**
+request is sent to the configured text-generation model to judge source
+support. The source excerpts are exactly those exposed to generation,
+never arbitrary browser-supplied documents. The inputs are provided as
+untrusted JSON data with explicit instructions to ignore embedded commands.
+
+The backend identifies missing/unknown citation labels deterministically,
+then validates a strict JSON verdict for each submitted well-cited claim.
+Valid model verdicts are supported/unsupported/uncertain, displayed as
+clearly attributed `model_*` outcomes rather than mathematical proofs.
+Invalid/failed second-pass results return an `unavailable` report and
+retain the original answer without reporting success. At most 16
+sentence/line spans and 12,000 answer characters are reviewed, with
+1,800 characters per claim; any omitted content is disclosed.
+Compound claims may remain combined. A model judgment is **fallible**,
+especially since the same generation model produces the answer and
+assesses it. This requires deliberate, paid opt-in; no actions run on
+page load or edits.
+
+No migration or persistence change occurs. Reviews are returned with
+the ephemeral answer and are not saved as trace judgments. Historical
+retrieval traces, original source offsets, PDFs, evaluation data,
+backend auth and the Overview quality graph remain unchanged.
+
 ## Environment and secrets
 
 `make init` copies `.env.example` to the ignored `.env` on first use, generates a strong random `SPUREL_API_TOKEN`, and restricts its permissions to the file owner on POSIX systems. It **does not replace** an existing valid token or provider key. Do not print, commit, or share your `.env`.

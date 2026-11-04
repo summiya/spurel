@@ -1,9 +1,11 @@
+from dataclasses import replace
 from uuid import UUID, uuid4
 
 from fastapi.testclient import TestClient
 
 from spurel.generation.ports import TextGenerationProviderError
 from spurel.main import create_app
+from spurel.rag.citation_verification import CitationVerification, ClaimAssessment
 from spurel.rag.dependencies import get_rag_answer_service
 from spurel.rag.service import RAGAnswer, RAGSource
 from spurel.security import require_api_token
@@ -43,6 +45,7 @@ class FakeRAGAnswerService:
         top_k: int,
         candidate_k: int,
         rrf_k: int,
+        verify_citations: bool = False,
     ) -> RAGAnswer:
         self.last_call = {
             "knowledge_base_id": knowledge_base_id,
@@ -51,6 +54,8 @@ class FakeRAGAnswerService:
             "candidate_k": candidate_k,
             "rrf_k": rrf_k,
         }
+        if verify_citations:
+            self.last_call["verify_citations"] = True
         if self.error is not None:
             raise self.error
         return self.result
@@ -85,6 +90,7 @@ def test_rag_answer_returns_grounded_result_with_source_manifest() -> None:
         "retrieved_chunk_count": 1,
         "generation_provider": "fake",
         "generation_model": "fake-model",
+        "verification": None,
         "sources": [
             {
                 "label": "S1",
@@ -152,3 +158,45 @@ def test_rag_answer_hides_generation_provider_errors() -> None:
     assert response.status_code == 503
     assert response.json() == {"detail": "RAG service temporarily unavailable"}
     assert "provider secret detail" not in response.text
+
+
+def test_rag_opt_in_review_returns_per_claim_support_without_claiming_proof() -> None:
+    knowledge_base_id = uuid4()
+    service = FakeRAGAnswerService()
+    service.result = replace(
+        service.result,
+        verification=CitationVerification(
+            status="completed",
+            verifier_model="second-pass-model",
+            claims=(
+                ClaimAssessment(
+                    id=1,
+                    text="Grounded answer .",
+                    cited_labels=("S1",),
+                    status="model_uncertain",
+                    reason="More detail is needed.",
+                ),
+            ),
+        ),
+    )
+    response = _client(service).post(
+        f"/knowledge-bases/{knowledge_base_id}/rag/answer",
+        json={"query": "policy", "verify_citations": True},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["verification"]["status"] == "completed"
+    assert body["verification"]["verifier_model"] == "second-pass-model"
+    assert body["verification"]["claims"][0]["status"] == "model_uncertain"
+    assert body["verification"]["claims"][0]["cited_labels"] == ["S1"]
+    assert service.last_call["verify_citations"] is True
+
+
+def test_rag_support_review_flag_rejects_strings_not_booleans() -> None:
+    service = FakeRAGAnswerService()
+    response = _client(service).post(
+        f"/knowledge-bases/{uuid4()}/rag/answer",
+        json={"query": "policy", "verify_citations": "yes"},
+    )
+    assert response.status_code == 422
+    assert service.last_call is None

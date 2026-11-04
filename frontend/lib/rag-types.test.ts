@@ -66,8 +66,19 @@ describe("SP-15 RAG API contracts", () => {
       { ...validRequest, rrf_k: 0 },
       { ...validRequest, rrf_k: 1001 },
       { ...validRequest, target_url: "http://external.example" },
+      { ...validRequest, verify_citations: "yes" },
+      { ...validRequest, verify_citations: 1 },
     ];
     for (const value of invalid) expect(parseRagAnswerRequest(value)).toBeNull();
+  });
+
+  it("only accepts a strict, opt-in citation review flag", () => {
+    const request = { query: "policy", top_k: 8, candidate_k: 50, rrf_k: 60 };
+    expect(parseRagAnswerRequest({ ...request, verify_citations: true })).toEqual({
+      ...request,
+      verify_citations: true,
+    });
+    expect(parseRagAnswerRequest({ ...request, verify_citations: false })).toEqual(request);
   });
 
   it("accepts actual grounded answer sources and strict no-context fallback", () => {
@@ -99,6 +110,49 @@ describe("SP-15 RAG API contracts", () => {
       { ...valid, generation_model: 123 },
     ];
     for (const value of wrong) expect(isRagAnswerResponse(value)).toBe(false);
+  });
+
+  it("accepts bounded model judgment and rejects invented review outcomes", () => {
+    const review = {
+      status: "completed",
+      verifier_model: "review-model",
+      omitted_claim_count: 0,
+      claims: [
+        {
+          id: 1,
+          text: "Employees receive 30 days of leave .",
+          cited_labels: ["S1"],
+          status: "model_supported",
+          reason: "The excerpt states this directly.",
+        },
+        {
+          id: 2,
+          text: "This claim has no known source.",
+          cited_labels: ["S99"],
+          status: "invalid_citation",
+          reason: "Unknown label.",
+        },
+      ],
+    };
+    expect(isRagAnswerResponse({ ...valid, verification: review })).toBe(true);
+    expect(
+      isRagAnswerResponse({
+        ...valid,
+        verification: { ...review, claims: [{ ...review.claims[0], status: "proved_true" }] },
+      }),
+    ).toBe(false);
+    expect(
+      isRagAnswerResponse({
+        ...valid,
+        verification: { ...review, claims: [{ ...review.claims[0], cited_labels: ["S99"] }] },
+      }),
+    ).toBe(false);
+    expect(
+      isRagAnswerResponse({
+        ...valid,
+        verification: { ...review, claims: [{ ...review.claims[0], reason: 404 }] },
+      }),
+    ).toBe(false);
   });
 
   it("makes only backend-provided source labels navigable", () => {

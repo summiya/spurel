@@ -67,6 +67,17 @@ describe("SP-15 exact RAG frontend API route", () => {
     });
   });
 
+  it("forwards opt-in model citation checking only when explicitly enabled", async () => {
+    const checked = { ...payload, verify_citations: true };
+    const response = await POST(request(JSON.stringify(checked)), context());
+    expect(response.status).toBe(200);
+    expect(mocks.backendRequest).toHaveBeenCalledWith(`/knowledge-bases/${kb}/rag/answer`, {
+      method: "POST",
+      body: JSON.stringify(checked),
+      timeoutMs: 180_000,
+    });
+  });
+
   it("rejects unauthenticated and cross-origin sessions before making any upstream call", async () => {
     mocks.authFailure.mockReturnValueOnce(
       NextResponse.json({ error: "Operator sign-in required." }, { status: 401 }),

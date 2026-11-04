@@ -1,8 +1,9 @@
 """HTTP schemas for retrieval-augmented answer generation."""
 
+from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, StrictBool, model_validator
 
 
 class RAGAnswerRequest(BaseModel):
@@ -12,6 +13,7 @@ class RAGAnswerRequest(BaseModel):
     top_k: int = Field(default=8, ge=1, le=20)
     candidate_k: int = Field(default=50, ge=1, le=100)
     rrf_k: int = Field(default=60, ge=1, le=1_000)
+    verify_citations: StrictBool = False
 
     @model_validator(mode="after")
     def validate_candidate_pool(self) -> "RAGAnswerRequest":
@@ -37,6 +39,32 @@ class RAGSourceResponse(BaseModel):
     ocr_used: bool = False
 
 
+class ClaimAssessmentResponse(BaseModel):
+    """Deterministic citation integrity or optional model-assessed support."""
+
+    id: int = Field(ge=1, le=16)
+    text: str = Field(min_length=1, max_length=1800)
+    cited_labels: list[str] = Field(max_length=20)
+    status: Literal[
+        "model_supported",
+        "model_unsupported",
+        "model_uncertain",
+        "missing_citation",
+        "invalid_citation",
+        "not_checked",
+    ]
+    reason: str = Field(min_length=1, max_length=240)
+
+
+class CitationVerificationResponse(BaseModel):
+    """Model judgments are fallible and should be manually checked."""
+
+    status: Literal["completed", "partial", "unavailable", "not_applicable"]
+    verifier_model: str | None
+    omitted_claim_count: int = Field(ge=0)
+    claims: list[ClaimAssessmentResponse]
+
+
 class RAGAnswerResponse(BaseModel):
     """Public grounded-answer response."""
 
@@ -46,3 +74,4 @@ class RAGAnswerResponse(BaseModel):
     generation_provider: str | None
     generation_model: str | None
     sources: list[RAGSourceResponse]
+    verification: CitationVerificationResponse | None = None

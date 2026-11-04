@@ -55,7 +55,7 @@ replaces illustrative Overview values with bounded, real data.
 | SP-19 | High | ✅ Merged | Opt-in pre-ranking metadata filters for Keyword/Vector/Hybrid, persisted trace scope and Retrieval Lab controls. [PR #83](https://github.com/summiya/spurel/pull/83) (the original [PR #81](https://github.com/summiya/spurel/pull/81) merged into the SP-18 feature branch). |
 | SP-20 | High | ✅ Merged | Explicit dimension-specific HNSW index builder and real exact-vs-ANN recall/latency benchmarks; live exact retrieval unchanged. [PR #84](https://github.com/summiya/spurel/pull/84) |
 | SP-21 | High | ✅ Merged | Opt-in cross-encoder reranking, original/final rank and raw score provenance, additive trace migration and Retrieval Lab controls. [PR #85](https://github.com/summiya/spurel/pull/85) |
-| SP-22 | Medium | ◐ In review | Request-scoped measured stage durations for embedding, vector/keyword search, RRF fusion and opt-in cross-encoder; additive trace history and frontend comparison. Branch `feat/sp22-retrieval-stage-observability` for review. |
+| SP-22 | Medium | ✅ Merged | Measured request-scoped retrieval stage durations for embedding, vector/keyword search, RRF and opt-in cross-encoder, persisted and shown in trace workbench. [PR #86](https://github.com/summiya/spurel/pull/86) |
 
 **Current `main` baseline:** opt-in chunking, PDF page provenance/optional OCR, metadata-filtered retrieval, exact pgvector cosine ranking, optional operator-managed HNSW benchmarking, PostgreSQL **full-text `ts_rank_cd`** keyword ranking, and RRF. There is **no BM25 implementation** even though PostgreSQL keyword search already exists.
 
@@ -63,7 +63,7 @@ replaces illustrative Overview values with bounded, real data.
 
 | Task | Priority | Status | Scope / acceptance target |
 | --- | --- | --- | --- |
-| SP-23 | High | ☐ Planned | Check whether generated source labels actually support answer claims |
+| SP-23 | High | ◐ In review | Opt-in model-assisted answer claim support review against exact cited source excerpts, deterministic missing/unknown labels, honest unavailable states and frontend evidence inspection. Branch `feat/sp23-rag-claim-citation-verification`. |
 | SP-24 | Medium | ☐ Planned | Additional evaluation methods/metrics and calibrated quality reporting |
 | SP-25 | High | ☐ Planned | Additional hosted and local embedding/generation adapters, tested at provider boundaries |
 | SP-26 | Medium | ☐ Planned | Export experiment configurations, traces, runs and metrics in machine-readable formats |

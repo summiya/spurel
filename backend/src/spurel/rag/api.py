@@ -10,6 +10,8 @@ from spurel.generation.domain import TextGenerationResultError
 from spurel.generation.ports import TextGenerationProviderError
 from spurel.rag.dependencies import get_rag_answer_service
 from spurel.rag.schemas import (
+    CitationVerificationResponse,
+    ClaimAssessmentResponse,
     RAGAnswerRequest,
     RAGAnswerResponse,
     RAGSourceResponse,
@@ -50,6 +52,7 @@ async def answer_with_rag(
             top_k=payload.top_k,
             candidate_k=payload.candidate_k,
             rrf_k=payload.rrf_k,
+            **({"verify_citations": True} if payload.verify_citations else {}),
         )
     except (RAGContextError, HybridRetrievalQueryError) as exc:
         raise HTTPException(
@@ -78,6 +81,25 @@ async def answer_with_rag(
         retrieved_chunk_count=result.retrieved_chunk_count,
         generation_provider=result.generation_provider,
         generation_model=result.generation_model,
+        verification=(
+            CitationVerificationResponse(
+                status=result.verification.status,
+                verifier_model=result.verification.verifier_model,
+                omitted_claim_count=result.verification.omitted_claim_count,
+                claims=[
+                    ClaimAssessmentResponse(
+                        id=claim.id,
+                        text=claim.text,
+                        cited_labels=list(claim.cited_labels),
+                        status=claim.status,
+                        reason=claim.reason,
+                    )
+                    for claim in result.verification.claims
+                ],
+            )
+            if result.verification
+            else None
+        ),
         sources=[
             RAGSourceResponse(
                 label=source.label,

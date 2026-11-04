@@ -1,4 +1,5 @@
 import asyncio
+import json
 from dataclasses import replace
 from uuid import UUID, uuid4
 
@@ -52,6 +53,22 @@ class FakeGenerator:
         request: TextGenerationRequest,
     ) -> TextGenerationResult:
         self.requests.append(request)
+        if "conservative claim-to-evidence reviewer" in request.system_prompt:
+            return TextGenerationResult(
+                provider=self.provider,
+                model=self.model,
+                text=json.dumps(
+                    {
+                        "assessments": [
+                            {
+                                "id": 1,
+                                "verdict": "uncertain",
+                                "reason": "Insufficient cited evidence.",
+                            }
+                        ]
+                    }
+                ),
+            )
         return TextGenerationResult(
             provider=self.provider,
             model=self.model,
@@ -228,3 +245,40 @@ def test_rag_sources_keep_pdf_page_and_ocr_provenance() -> None:
     assert result.sources[0].ocr_used is True
     assert "pdf_pages=4-5" in generator.requests[0].user_prompt
     assert "ocr_used=true" in generator.requests[0].user_prompt
+
+
+def test_opt_in_support_review_uses_same_exact_sources_with_second_model_pass() -> None:
+    retriever = FakeHybridRetriever()
+    retriever.matches = (_match("Actual indexed evidence."),)
+    generator = FakeGenerator()
+    service = RAGAnswerService(retriever=retriever, generator=generator)
+
+    result = asyncio.run(
+        service.answer(
+            knowledge_base_id=uuid4(),
+            query="Does this source support a claim?",
+            verify_citations=True,
+        )
+    )
+
+    assert len(generator.requests) == 2
+    assert result.answer == "Grounded answer [S1]."
+    assert result.verification is not None
+    assert result.verification.status == "completed"
+    assert result.verification.claims[0].status == "model_uncertain"
+    assert result.verification.claims[0].cited_labels == ("S1",)
+    reviewed_payload = json.loads(generator.requests[1].user_prompt)
+    assert reviewed_payload["sources"] == [{"label": "S1", "excerpt": "Actual indexed evidence."}]
+    assert reviewed_payload["claims"][0]["text"] == "Grounded answer ."
+
+
+def test_opt_in_check_with_no_context_makes_no_generation_or_review_call() -> None:
+    retriever = FakeHybridRetriever()
+    generator = FakeGenerator()
+    result = asyncio.run(
+        RAGAnswerService(retriever=retriever, generator=generator).answer(
+            knowledge_base_id=uuid4(), query="unknown", verify_citations=True
+        )
+    )
+    assert result.verification is None
+    assert generator.requests == []

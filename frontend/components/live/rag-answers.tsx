@@ -13,9 +13,19 @@ import {
   parseRagAnswerRequest,
   type RagAnswerRequest,
   type RagAnswerResponse,
+  type RagClaimStatus,
   type RagSource,
 } from "@/lib/rag-types";
 import { useWorkspacePages } from "@/lib/use-workspace-pages";
+
+const CLAIM_LABELS: Record<RagClaimStatus, string> = {
+  model_supported: "Model suggests supported",
+  model_unsupported: "Model flags unsupported",
+  model_uncertain: "Model uncertain · review manually",
+  missing_citation: "Missing source citation",
+  invalid_citation: "Invalid source citation",
+  not_checked: "Not checked",
+};
 
 interface CompletedAnswer {
   knowledgeBaseId: string;
@@ -65,6 +75,7 @@ export function LiveRagAnswersPage({ initialKnowledgeBaseId }: Props) {
   const [topK, setTopK] = useState(8);
   const [candidateK, setCandidateK] = useState(50);
   const [rrfK, setRrfK] = useState(60);
+  const [verifyCitations, setVerifyCitations] = useState(false);
   const [running, setRunning] = useState(false);
   const [error, setError] = useState("");
   const [completed, setCompleted] = useState<CompletedAnswer | null>(null);
@@ -81,13 +92,15 @@ export function LiveRagAnswersPage({ initialKnowledgeBaseId }: Props) {
     (question.trim() !== current.request.query ||
       topK !== current.request.top_k ||
       candidateK !== current.request.candidate_k ||
-      rrfK !== current.request.rrf_k),
+      rrfK !== current.request.rrf_k ||
+      verifyCitations !== Boolean(current.request.verify_citations)),
   );
   const request = parseRagAnswerRequest({
     query: question,
     top_k: topK,
     candidate_k: candidateK,
     rrf_k: rrfK,
+    ...(verifyCitations ? { verify_citations: true } : {}),
   });
 
   function changeBase(value: string) {
@@ -111,7 +124,9 @@ export function LiveRagAnswersPage({ initialKnowledgeBaseId }: Props) {
 
     if (
       !window.confirm(
-        "This request runs hybrid retrieval and may call OpenAI for query embeddings and answer generation. Provider charges may apply. Generate this live answer?",
+        request.verify_citations
+          ? "This request calls OpenAI for retrieval and answer generation, plus an EXTRA model review of cited claims against source excerpts. The review may be wrong, incurs additional charges, and is not proof of factual truth. Continue?"
+          : "This request runs hybrid retrieval and may call OpenAI for query embeddings and answer generation. Provider charges may apply. Generate this live answer?",
       )
     )
       return;
@@ -132,7 +147,10 @@ export function LiveRagAnswersPage({ initialKnowledgeBaseId }: Props) {
           body: JSON.stringify(request),
         },
       );
-      if (!isRagAnswerResponse(data)) {
+      if (
+        !isRagAnswerResponse(data) ||
+        (request.verify_citations && data.retrieved_chunk_count > 0 && !data.verification)
+      ) {
         throw new Error("The RAG backend returned an invalid evidence response.");
       }
       if (requestSequence.current !== sequence) return;
@@ -176,8 +194,8 @@ export function LiveRagAnswersPage({ initialKnowledgeBaseId }: Props) {
       <div className="inline-notice">
         <Icon name="shield" size={16} />
         Generation is explicit and may use paid OpenAI embedding and text-generation calls. No model
-        is called when loading the page or editing the form. Source labels are model attribution,
-        not independently verified claim citations.
+        is called when loading the page or editing the form. Source labels are not independently
+        verified claim citations by default. Optional model review is fallible and not proof.
       </div>
 
       <Panel
@@ -293,6 +311,24 @@ export function LiveRagAnswersPage({ initialKnowledgeBaseId }: Props) {
               </div>
             </div>
 
+            <div className="retrieval-filter-panel">
+              <label className="field-label" htmlFor="rag-verify-citations">
+                <input
+                  id="rag-verify-citations"
+                  type="checkbox"
+                  checked={verifyCitations}
+                  disabled={running}
+                  onChange={(event) => setVerifyCitations(event.target.checked)}
+                />{" "}
+                Check citation support with an additional model pass (optional)
+              </label>
+              <p className="text-hint">
+                Flags uncited or unknown source labels, then asks the configured generation model to
+                assess each cited claim against the exact source excerpt. An extra paid call occurs
+                only after you confirm generation. Model judgments can be wrong and need manual
+                review; no checks run while editing or browsing.
+              </p>
+            </div>
             <div className="rag-actions">
               <span className="text-hint">
                 Requires configured OpenAI embeddings and generation. Only previously indexed
@@ -471,10 +507,57 @@ export function LiveRagAnswersPage({ initialKnowledgeBaseId }: Props) {
               )}
             </Panel>
           </div>
+          {answer.verification ? (
+            <Panel
+              title="Citation support review"
+              hint="Optional, model-assisted checks against cited source excerpts"
+            >
+              <p className="text-hint">
+                Review status: {answer.verification.status}. Reviewer model:{" "}
+                {answer.verification.verifier_model ?? "Not called"}.
+                {answer.verification.omitted_claim_count > 0
+                  ? ` ${answer.verification.omitted_claim_count} additional claim(s) were not checked.`
+                  : ""}{" "}
+                This is a model&apos;s assessment, not independent proof or a factual guarantee.
+              </p>
+              {answer.verification.claims.length ? (
+                <div className="source-list">
+                  {answer.verification.claims.map((claim) => (
+                    <div key={claim.id} className="rag-live-evidence">
+                      <strong>
+                        Claim {claim.id} · {CLAIM_LABELS[claim.status]}
+                      </strong>
+                      <p>{claim.text}</p>
+                      <p className="text-hint">{claim.reason}</p>
+                      <div className="tag-row">
+                        {claim.cited_labels.map((label) => (
+                          <button
+                            key={label}
+                            type="button"
+                            className="tag"
+                            disabled={!sources.some((source) => source.label === label)}
+                            onClick={() => setSelectedLabel(label)}
+                          >
+                            [{label}]{" "}
+                            {sources.some((source) => source.label === label)
+                              ? "Inspect excerpt"
+                              : "Unknown source"}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-hint">No answer claims were available to review.</p>
+              )}
+            </Panel>
+          ) : null}
           <div className="inline-notice">
             <Icon name="info" size={16} />
-            Source labels and excerpt inspection are available. Automated verification of answer
-            claims against source evidence remains a separate future milestone (SP-23).
+            Source labels and excerpts can be inspected. Enable optional citation support review
+            before generating to receive fallible model assessments; citation labels alone never
+            establish factual support.
           </div>
         </>
       ) : !running && !error ? (

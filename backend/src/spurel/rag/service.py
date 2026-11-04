@@ -7,6 +7,7 @@ from uuid import UUID
 
 from spurel.generation.domain import TextGenerationRequest
 from spurel.generation.ports import TextGenerationProvider
+from spurel.rag.citation_verification import CitationVerification, review_answer_citations
 from spurel.retrieval.hybrid import HybridRetrievalMatch
 from spurel.retrieval.traced import TracedRetrievalResult
 
@@ -82,6 +83,7 @@ class RAGAnswer:
     generation_provider: str | None
     generation_model: str | None
     sources: tuple[RAGSource, ...] = ()
+    verification: CitationVerification | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -112,6 +114,7 @@ class RAGAnswerService:
         top_k: int = DEFAULT_RAG_TOP_K,
         candidate_k: int = DEFAULT_RAG_CANDIDATE_K,
         rrf_k: int = DEFAULT_RAG_RRF_K,
+        verify_citations: bool = False,
     ) -> RAGAnswer:
         """Generate one answer grounded only in retrieved knowledge-base chunks."""
         normalized_query = query.strip()
@@ -151,6 +154,16 @@ class RAGAnswerService:
             )
         )
 
+        verification = (
+            await review_answer_citations(
+                answer=generated.text,
+                sources=context.sources,
+                provider=self._generator,
+            )
+            if verify_citations
+            else None
+        )
+
         return RAGAnswer(
             trace_id=retrieval.trace_id,
             answer=generated.text,
@@ -158,6 +171,7 @@ class RAGAnswerService:
             generation_provider=generated.provider,
             generation_model=generated.model,
             sources=context.sources,
+            verification=verification,
         )
 
 
