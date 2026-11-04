@@ -10,11 +10,11 @@ from spurel.generation.domain import TextGenerationResultError
 from spurel.generation.ports import TextGenerationProviderError
 from spurel.rag.dependencies import get_rag_answer_service
 from spurel.rag.schemas import (
+    CitationVerificationResponse,
+    ClaimAssessmentResponse,
     RAGAnswerRequest,
     RAGAnswerResponse,
     RAGSourceResponse,
-    CitationVerificationResponse,
-    ClaimAssessmentResponse,
 )
 from spurel.rag.service import RAGAnswerService, RAGContextError
 from spurel.retrieval.hybrid import (

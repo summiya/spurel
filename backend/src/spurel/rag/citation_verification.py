@@ -92,7 +92,10 @@ def _claims(answer: str, sources: Sequence[CitedSource]) -> tuple[list[ClaimAsse
         elif not labels:
             status, reason = "missing_citation", "No source label is attached to this claim."
         elif not set(labels).issubset(known):
-            status, reason = "invalid_citation", "Claim cites a label absent from the source manifest."
+            status, reason = (
+                "invalid_citation",
+                "Claim cites a label absent from the source manifest.",
+            )
         else:
             status, reason = "not_checked", "Awaiting source-support assessment."
         findings.append(

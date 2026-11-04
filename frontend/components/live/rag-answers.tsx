@@ -516,7 +516,7 @@ export function LiveRagAnswersPage({ initialKnowledgeBaseId }: Props) {
                 {answer.verification.omitted_claim_count > 0
                   ? ` ${answer.verification.omitted_claim_count} additional claim(s) were not checked.`
                   : ""}
-                {" "}This is a model's assessment, not independent proof or a factual guarantee.
+                {" "}This is a model&apos;s assessment, not independent proof or a factual guarantee.
               </p>
               {answer.verification.claims.length ? (
                 <div className="source-list">

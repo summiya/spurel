@@ -8,9 +8,9 @@ import pytest
 
 from spurel.generation.domain import TextGenerationResult
 from spurel.rag.citation_verification import (
+    CitationReviewError,
     _claims,
     _require_model_verdicts,
-    CitationReviewError,
     review_answer_citations,
 )
 

@@ -5,7 +5,7 @@ from fastapi.testclient import TestClient
 
 from spurel.generation.ports import TextGenerationProviderError
 from spurel.main import create_app
-from spurel.rag.citation_verification import ClaimAssessment, CitationVerification
+from spurel.rag.citation_verification import CitationVerification, ClaimAssessment
 from spurel.rag.dependencies import get_rag_answer_service
 from spurel.rag.service import RAGAnswer, RAGSource
 from spurel.security import require_api_token

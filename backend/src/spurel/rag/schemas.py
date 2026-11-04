@@ -1,5 +1,6 @@
 """HTTP schemas for retrieval-augmented answer generation."""
 
+from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, Field, StrictBool, model_validator
@@ -42,16 +43,23 @@ class ClaimAssessmentResponse(BaseModel):
     """Deterministic citation integrity or optional model-assessed support."""
 
     id: int = Field(ge=1, le=16)
-    text: str
-    cited_labels: list[str]
-    status: str
-    reason: str
+    text: str = Field(min_length=1, max_length=1800)
+    cited_labels: list[str] = Field(max_length=20)
+    status: Literal[
+        "model_supported",
+        "model_unsupported",
+        "model_uncertain",
+        "missing_citation",
+        "invalid_citation",
+        "not_checked",
+    ]
+    reason: str = Field(min_length=1, max_length=240)
 
 
 class CitationVerificationResponse(BaseModel):
     """Model judgments are fallible and should be manually checked."""
 
-    status: str
+    status: Literal["completed", "partial", "unavailable", "not_applicable"]
     verifier_model: str | None
     omitted_claim_count: int = Field(ge=0)
     claims: list[ClaimAssessmentResponse]
