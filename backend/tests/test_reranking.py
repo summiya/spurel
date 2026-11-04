@@ -53,9 +53,7 @@ def test_rerank_can_promote_last_candidate_without_changing_original_scores() ->
     candidates = [_match(1), _match(2), _match(3)]
     adapter = FakeReranker([0.1, 0.6, 0.9])
     ranked = asyncio.run(
-        rerank_hybrid_matches(
-            reranker=adapter, query="question", candidates=candidates, top_k=2
-        )
+        rerank_hybrid_matches(reranker=adapter, query="question", candidates=candidates, top_k=2)
     )
     assert adapter.calls == [("question", [item.text for item in candidates])]
     assert [item.chunk_id for item in ranked] == [candidates[2].chunk_id, candidates[1].chunk_id]
@@ -131,8 +129,12 @@ def test_explicit_rerank_fetches_candidate_pool_and_persists_provenance() -> Non
     )
     run = asyncio.run(
         service.search(
-            knowledge_base_id=uuid4(), query="question", limit=2, candidate_limit=3,
-            rrf_k=60, rerank=True
+            knowledge_base_id=uuid4(),
+            query="question",
+            limit=2,
+            candidate_limit=3,
+            rrf_k=60,
+            rerank=True,
         )
     )
     assert retriever.limits == [3]
@@ -147,8 +149,7 @@ def test_explicit_rerank_fetches_candidate_pool_and_persists_provenance() -> Non
 
     plain = asyncio.run(
         service.search(
-            knowledge_base_id=uuid4(), query="question", limit=2, candidate_limit=3,
-            rrf_k=60
+            knowledge_base_id=uuid4(), query="question", limit=2, candidate_limit=3, rrf_k=60
         )
     )
     assert retriever.limits == [3, 2]
@@ -159,9 +160,15 @@ def test_explicit_rerank_fetches_candidate_pool_and_persists_provenance() -> Non
 def test_trace_rejects_rerank_without_model_and_invalid_ranks() -> None:
     match = _match(1)
     kwargs = dict(
-        knowledge_base_id=uuid4(), mode=RetrievalTraceMode.HYBRID, query="q",
-        top_k=2, candidate_k=3, rrf_k=60, duration_ms=1.2,
-        embedding_provider="openai", embedding_model="embedding-model",
+        knowledge_base_id=uuid4(),
+        mode=RetrievalTraceMode.HYBRID,
+        query="q",
+        top_k=2,
+        candidate_k=3,
+        rrf_k=60,
+        duration_ms=1.2,
+        embedding_provider="openai",
+        embedding_model="embedding-model",
         embedding_dimensions=1536,
     )
     from spurel.retrieval.traced import _hybrid_trace_results

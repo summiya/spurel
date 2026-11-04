@@ -205,12 +205,8 @@ def _compare_result(
         second_keyword_score=(second_result.keyword_score if second_result is not None else None),
         first_rrf_score=(first_result.rrf_score if first_result is not None else None),
         second_rrf_score=(second_result.rrf_score if second_result is not None else None),
-        first_candidate_rank=(
-            first_result.candidate_rank if first_result is not None else None
-        ),
-        second_candidate_rank=(
-            second_result.candidate_rank if second_result is not None else None
-        ),
+        first_candidate_rank=(first_result.candidate_rank if first_result is not None else None),
+        second_candidate_rank=(second_result.candidate_rank if second_result is not None else None),
         first_rerank_score=(first_result.rerank_score if first_result is not None else None),
         second_rerank_score=(second_result.rerank_score if second_result is not None else None),
     )

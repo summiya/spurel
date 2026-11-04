@@ -126,9 +126,7 @@ async def rerank_hybrid_matches(
     except Exception as exc:
         raise RerankerUnavailableError("cross-encoder scoring failed") from exc
     if len(scores) != len(candidates) or any(
-        isinstance(score, bool)
-        or not isinstance(score, (int, float))
-        or not math.isfinite(score)
+        isinstance(score, bool) or not isinstance(score, (int, float)) or not math.isfinite(score)
         for score in scores
     ):
         raise RerankerUnavailableError("cross-encoder returned invalid or incomplete scores")
