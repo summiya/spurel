@@ -31,9 +31,7 @@ def apply_document_metadata_filters(
             .replace("%", "\\%")
             .replace("_", "\\_")
         )
-        statement = statement.where(
-            DocumentRecord.filename.ilike(f"%{escaped}%", escape="\\")
-        )
+        statement = statement.where(DocumentRecord.filename.ilike(f"%{escaped}%", escape="\\"))
     if filters.created_after is not None:
         statement = statement.where(DocumentRecord.created_at >= filters.created_after)
     if filters.created_before is not None:
