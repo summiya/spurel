@@ -429,6 +429,35 @@ automatic requests are introduced. Real calls may incur embedding and
 cross-encoder service charges. The adapter requires a separately deployed
 compatible model service; Spurel does not launch one.
 
+## SP-22: measured, request-local retrieval stages
+
+All existing retrieval modes and ranking algorithms remain unchanged.
+A context-local collector is activated only inside a successfully executed
+traced retrieval. The embedding service instruments the provider call
+(`query_embedding`) and vector adapter (`vector_search`); keyword retrieval
+instruments its SQL adapter (`keyword_search`). The hybrid service measures
+the in-process RRF fusion (`rrf_fusion`), while an explicitly requested
+reranker measures its scoring call (`cross_encoder`).
+
+The collector's context is propagated into the two concurrently awaited
+hybrid search tasks. It stores only a bounded map of stage names and
+finite, observed, nonnegative elapsed **milliseconds**—never raw queries,
+source excerpts, credentials, or database plans. The trace is saved as
+nullable `retrieval_traces.stage_timings_ms` by migration 0016 after
+migration 0015. Existing records remain NULL, and unfinished/failing
+retrievals are not written as successful traces.
+
+New read-only API fields `stage_timings_ms` are returned on retrieval
+POST, trace list, trace detail and comparison sides. The web workbench
+displays real values and clear missing-data states. Hybrid source-stage
+times **overlap** because they execute concurrently. Summing them is not
+a valid measure of total elapsed time. Existing `duration_ms` includes
+retrieval/reranking but excludes saving the trace; individual adapter
+measurements include connection and transfer overhead and should not be
+called precise SQL-server execution timings. This is per-request debugging,
+**not** aggregated p95 telemetry, tracing a provider's internal inference,
+or a production monitoring system (reserved for SP-27).
+
 ## Environment and secrets
 
 `make init` copies `.env.example` to the ignored `.env` on first use, generates a strong random `SPUREL_API_TOKEN`, and restricts its permissions to the file owner on POSIX systems. It **does not replace** an existing valid token or provider key. Do not print, commit, or share your `.env`.

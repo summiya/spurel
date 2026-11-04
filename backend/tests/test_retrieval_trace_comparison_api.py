@@ -67,6 +67,7 @@ def test_trace_comparison_returns_descriptive_side_by_side_metrics() -> None:
             candidate_k=None,
             rrf_k=None,
             duration_ms=12.0,
+            stage_timings_ms={"query_embedding": 2.0, "vector_search": 5.0},
             embedding_provider="openai",
             embedding_model="model-a",
             embedding_dimensions=1536,
@@ -80,6 +81,7 @@ def test_trace_comparison_returns_descriptive_side_by_side_metrics() -> None:
             candidate_k=50,
             rrf_k=60,
             duration_ms=8.0,
+            stage_timings_ms={"rrf_fusion": 0.5},
             embedding_provider="openai",
             embedding_model="model-a",
             embedding_dimensions=1536,
@@ -130,6 +132,8 @@ def test_trace_comparison_returns_descriptive_side_by_side_metrics() -> None:
     assert body["overlap_count"] == 7
     assert body["union_count"] == 13
     assert body["duration_delta_ms"] == -4.0
+    assert body["first"]["stage_timings_ms"]["vector_search"] == 5.0
+    assert body["second"]["stage_timings_ms"]["rrf_fusion"] == 0.5
     assert body["results"][0]["first_rank"] == 4
     assert body["results"][0]["second_rank"] == 2
     assert body["results"][0]["rank_delta"] == -2

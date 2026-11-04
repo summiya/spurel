@@ -21,6 +21,7 @@ const summary1 = {
   candidate_k: null,
   rrf_k: null,
   duration_ms: 12.4,
+  stage_timings_ms: { keyword_search: 7.4 },
   embedding_provider: null,
   embedding_model: null,
   embedding_dimensions: null,
@@ -35,6 +36,7 @@ const summary2 = {
   candidate_k: null,
   rrf_k: null,
   duration_ms: 8.2,
+  stage_timings_ms: null,
   embedding_provider: null,
   embedding_model: null,
   embedding_dimensions: null,
@@ -65,6 +67,7 @@ const comparison = {
     candidate_k: null,
     rrf_k: null,
     duration_ms: 12.4,
+    stage_timings_ms: { keyword_search: 7.4 },
     embedding_provider: null,
     embedding_model: null,
     embedding_dimensions: null,
@@ -78,6 +81,7 @@ const comparison = {
     candidate_k: null,
     rrf_k: null,
     duration_ms: 8.2,
+    stage_timings_ms: null,
     embedding_provider: null,
     embedding_model: null,
     embedding_dimensions: null,
@@ -190,6 +194,8 @@ describe("live persisted trace history", () => {
     fireEvent.click(screen.getByRole("button", { name: /View saved evidence/i }));
     expect(await screen.findByText("The real record is immutable.")).toBeInTheDocument();
     expect(screen.getByText(/Raw Postgres FTS: 0.07234/)).toBeInTheDocument();
+    expect(screen.getByText("Keyword search")).toBeInTheDocument();
+    expect(screen.getByText("7.4 ms")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Inspect original document" })).toHaveAttribute(
       "href",
       `/chunks?kb=${kb}&doc=${doc}`,
@@ -208,6 +214,8 @@ describe("live persisted trace history", () => {
     expect(screen.getByText(/Down 1/)).toBeInTheDocument();
     expect(screen.getByText(/Only in B/)).toBeInTheDocument();
     expect(screen.getByText(/-4.2 ms/)).toBeInTheDocument();
+    expect(screen.getByText(/A 7.4 ms \/ B Not recorded/)).toBeInTheDocument();
+    expect(screen.getByText(/Δ not available/)).toBeInTheDocument();
     const call = vi
       .mocked(fetch)
       .mock.calls.find(([path]) => String(path) === prefix + "/trace-comparisons");

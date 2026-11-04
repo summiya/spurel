@@ -177,10 +177,11 @@ def _create(stage_timings_ms, *, mode=RetrievalTraceMode.KEYWORD, reranker_model
 
 def test_trace_allows_old_null_timing_and_valid_bounded_measurements() -> None:
     assert _create(None).stage_timings_ms is None
-    saved = _create({"keyword_search": 4.25})
+    original = {"keyword_search": 4.25}
+    saved = _create(original)
     assert saved.stage_timings_ms == {"keyword_search": 4.25}
-    saved.stage_timings_ms["keyword_search"] = 6.0
-    assert saved.stage_timings_ms["keyword_search"] == 6.0
+    original["keyword_search"] = 7.0
+    assert saved.stage_timings_ms == {"keyword_search": 4.25}
 
 
 @pytest.mark.parametrize(

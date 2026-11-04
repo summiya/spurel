@@ -82,6 +82,7 @@ function fakeFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Respon
         trace_id: traceId,
         filters: request.filters ?? null,
         duration_ms: 13.33,
+        stage_timings_ms: { keyword_search: 8.25 },
         matches:
           request.query === "nothing here"
             ? []
@@ -102,6 +103,7 @@ function fakeFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Respon
         trace_id: traceId,
         filters: request.filters ?? null,
         duration_ms: 91.5,
+        stage_timings_ms: { query_embedding: 68.0, vector_search: 19.2 },
         matches: [
           { ...first, cosine_similarity: 0.9321 },
           { ...second, cosine_similarity: 0.8104 },
@@ -121,6 +123,7 @@ function fakeFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Respon
         trace_id: traceId,
         filters: request.filters ?? null,
         duration_ms: 112.45,
+        stage_timings_ms: { query_embedding: 52.0, vector_search: 20.1, keyword_search: 9.0, rrf_fusion: 0.2, ...(request.rerank ? { cross_encoder: 22.4 } : {}) },
         rerank: request.rerank ?? false,
         reranker_model: request.rerank ? "local-test-cross-encoder" : null,
         matches: [
@@ -148,6 +151,7 @@ function fakeFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Respon
         candidate_k: null,
         rrf_k: null,
         duration_ms: 91.5,
+        stage_timings_ms: { query_embedding: 68.0, vector_search: 19.2 },
         embedding_provider: "openai",
         embedding_model: "text-embedding-3-small",
         embedding_dimensions: 1536,
@@ -198,6 +202,8 @@ describe("live retrieval lab", () => {
     expect(container.querySelectorAll(".evidence-result")).toHaveLength(2);
     expect(screen.getByText(/PostgreSQL FTS: 0.08394/)).toBeInTheDocument();
     expect(screen.getByText(/13.3 ms/)).toBeInTheDocument();
+    expect(screen.getByText("Keyword search")).toBeInTheDocument();
+    expect(screen.getByText("8.3 ms")).toBeInTheDocument();
     expect(screen.getByText(/Trace ID ·/)).toHaveTextContent(traceId);
     expect(screen.getByText(/Scores are raw backend values, not percentages/)).toBeInTheDocument();
 

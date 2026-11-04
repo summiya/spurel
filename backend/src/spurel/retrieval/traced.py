@@ -245,7 +245,7 @@ class TracedHybridRetrievalService:
                     **({"filters": filters} if filters is not None else {}),
                 )
             )
-            if reranker is not None:
+            if reranker is not None and matches:
                 with time_stage("cross_encoder"):
                     matches = await rerank_hybrid_matches(
                         reranker=reranker,

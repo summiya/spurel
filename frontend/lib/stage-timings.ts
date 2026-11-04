@@ -28,5 +28,5 @@ export function isStageTimings(value: unknown): value is StageTimings {
 
 export function displayStageTime(elapsed: number | null | undefined): string {
   if (elapsed == null) return "Not recorded";
-  return `${elapsed < 1 ? elapsed.toFixed(3) : elapsed.toFixed(1)} ms`;
+  return `${Math.abs(elapsed) < 1 ? elapsed.toFixed(3) : elapsed.toFixed(1)} ms`;
 }

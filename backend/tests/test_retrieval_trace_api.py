@@ -67,6 +67,7 @@ def test_trace_history_returns_bounded_summaries() -> None:
             candidate_k=50,
             rrf_k=60,
             duration_ms=12.5,
+            stage_timings_ms={"query_embedding": 3.3, "vector_search": 4.1},
             embedding_provider="openai",
             embedding_model="text-embedding-example",
             embedding_dimensions=1536,
@@ -88,6 +89,10 @@ def test_trace_history_returns_bounded_summaries() -> None:
     assert len(body["items"]) == 1
     assert body["items"][0]["mode"] == "hybrid"
     assert body["items"][0]["result_count"] == 10
+    assert body["items"][0]["stage_timings_ms"] == {
+        "query_embedding": 3.3,
+        "vector_search": 4.1,
+    }
     assert "results" not in body["items"][0]
 
 
@@ -115,6 +120,7 @@ def test_trace_detail_returns_complete_ranked_snapshot() -> None:
         candidate_k=None,
         rrf_k=None,
         duration_ms=9.75,
+        stage_timings_ms={"query_embedding": 2.4, "vector_search": 5.1},
         embedding_provider="openai",
         embedding_model="text-embedding-example",
         embedding_dimensions=1536,
@@ -144,6 +150,7 @@ def test_trace_detail_returns_complete_ranked_snapshot() -> None:
     assert body["knowledge_base_id"] == str(knowledge_base_id)
     assert body["mode"] == "vector"
     assert body["duration_ms"] == 9.75
+    assert body["stage_timings_ms"] == {"query_embedding": 2.4, "vector_search": 5.1}
     assert body["results"][0]["rank"] == 1
     assert body["results"][0]["text"] == "snapshot text"
     assert body["results"][0]["cosine_similarity"] == 0.93
