@@ -63,8 +63,8 @@ replaces illustrative Overview values with bounded, real data.
 
 | Task | Priority | Status | Scope / acceptance target |
 | --- | --- | --- | --- |
-| SP-23 | High | ◐ In review | Opt-in model-assisted answer claim support review against exact cited source excerpts, deterministic missing/unknown labels, honest unavailable states and frontend evidence inspection. Branch `feat/sp23-rag-claim-citation-verification`. |
-| SP-24 | Medium | ☐ Planned | Additional evaluation methods/metrics and calibrated quality reporting |
+| SP-23 | High | ✅ Merged | Opt-in, model-assisted RAG claim and citation review with exact source excerpts, honest unsupported/uncertain outcomes and frontend controls. [PR #87](https://github.com/summiya/spurel/pull/87) |
+| SP-24 | Medium | ◐ In review | Measured Hit@K, AP/MAP@K, sample-aware 95% Wilson interval for hit rate, honest coverage and small-sample caveats; additive persisted runs and Evaluations UI. Branch `feat/sp24-quality-metrics-uncertainty`. |
 | SP-25 | High | ☐ Planned | Additional hosted and local embedding/generation adapters, tested at provider boundaries |
 | SP-26 | Medium | ☐ Planned | Export experiment configurations, traces, runs and metrics in machine-readable formats |
 | SP-27 | High | ☐ Planned | Operational logging, monitoring and trace/error correlation in production-like environments |

@@ -4,6 +4,7 @@ from datetime import datetime
 from uuid import UUID, uuid4
 
 from sqlalchemy import (
+    Boolean,
     CheckConstraint,
     DateTime,
     Float,
@@ -45,8 +46,7 @@ class EvaluationRunRecord(Base):
             name="ck_evaluation_runs_case_count",
         ),
         CheckConstraint(
-            "judgment_coverage_case_count >= 0 "
-            "AND judgment_coverage_case_count <= case_count",
+            "judgment_coverage_case_count >= 0 AND judgment_coverage_case_count <= case_count",
             name="ck_evaluation_runs_coverage_case_count",
         ),
         CheckConstraint(
@@ -65,6 +65,19 @@ class EvaluationRunRecord(Base):
             "AND mrr_at_k >= 0 AND mrr_at_k <= 1 "
             "AND mean_ndcg_at_k >= 0 AND mean_ndcg_at_k <= 1",
             name="ck_evaluation_runs_metrics",
+        ),
+        CheckConstraint(
+            "(hit_rate_at_k IS NULL OR hit_rate_at_k BETWEEN 0 AND 1) "
+            "AND (mean_average_precision_at_k IS NULL "
+            "OR mean_average_precision_at_k BETWEEN 0 AND 1) "
+            "AND (hit_rate_wilson_95_lower IS NULL OR "
+            "hit_rate_wilson_95_lower BETWEEN 0 AND 1) "
+            "AND (hit_rate_wilson_95_upper IS NULL OR "
+            "hit_rate_wilson_95_upper BETWEEN 0 AND 1) "
+            "AND ((hit_rate_wilson_95_lower IS NULL AND "
+            "hit_rate_wilson_95_upper IS NULL) OR "
+            "(hit_rate_wilson_95_lower <= hit_rate_wilson_95_upper))",
+            name="ck_evaluation_runs_extended_metrics",
         ),
         CheckConstraint(
             """
@@ -159,6 +172,10 @@ class EvaluationRunRecord(Base):
     mean_recall_at_k: Mapped[float] = mapped_column(Float, nullable=False)
     mrr_at_k: Mapped[float] = mapped_column(Float, nullable=False)
     mean_ndcg_at_k: Mapped[float] = mapped_column(Float, nullable=False)
+    hit_rate_at_k: Mapped[float | None] = mapped_column(Float, nullable=True)
+    mean_average_precision_at_k: Mapped[float | None] = mapped_column(Float, nullable=True)
+    hit_rate_wilson_95_lower: Mapped[float | None] = mapped_column(Float, nullable=True)
+    hit_rate_wilson_95_upper: Mapped[float | None] = mapped_column(Float, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
     @classmethod
@@ -183,6 +200,10 @@ class EvaluationRunRecord(Base):
             mean_recall_at_k=run.mean_recall_at_k,
             mrr_at_k=run.mrr_at_k,
             mean_ndcg_at_k=run.mean_ndcg_at_k,
+            hit_rate_at_k=run.hit_rate_at_k,
+            mean_average_precision_at_k=run.mean_average_precision_at_k,
+            hit_rate_wilson_95_lower=run.hit_rate_wilson_95_lower,
+            hit_rate_wilson_95_upper=run.hit_rate_wilson_95_upper,
             created_at=run.created_at,
         )
 
@@ -211,6 +232,10 @@ class EvaluationRunRecord(Base):
             mean_recall_at_k=self.mean_recall_at_k,
             mrr_at_k=self.mrr_at_k,
             mean_ndcg_at_k=self.mean_ndcg_at_k,
+            hit_rate_at_k=self.hit_rate_at_k,
+            mean_average_precision_at_k=self.mean_average_precision_at_k,
+            hit_rate_wilson_95_lower=self.hit_rate_wilson_95_lower,
+            hit_rate_wilson_95_upper=self.hit_rate_wilson_95_upper,
             cases=cases,
             created_at=self.created_at,
         )
@@ -236,6 +261,10 @@ class EvaluationRunRecord(Base):
             mean_recall_at_k=self.mean_recall_at_k,
             mrr_at_k=self.mrr_at_k,
             mean_ndcg_at_k=self.mean_ndcg_at_k,
+            hit_rate_at_k=self.hit_rate_at_k,
+            mean_average_precision_at_k=self.mean_average_precision_at_k,
+            hit_rate_wilson_95_lower=self.hit_rate_wilson_95_lower,
+            hit_rate_wilson_95_upper=self.hit_rate_wilson_95_upper,
             created_at=self.created_at,
         )
 
@@ -258,8 +287,7 @@ class EvaluationRunCaseRecord(Base):
             name="ck_evaluation_run_cases_duration",
         ),
         CheckConstraint(
-            "judged_count >= 1 AND relevant_count >= 1 "
-            "AND relevant_count <= judged_count",
+            "judged_count >= 1 AND relevant_count >= 1 AND relevant_count <= judged_count",
             name="ck_evaluation_run_cases_judgments",
         ),
         CheckConstraint(
@@ -281,6 +309,10 @@ class EvaluationRunCaseRecord(Base):
             "AND reciprocal_rank_at_k >= 0 AND reciprocal_rank_at_k <= 1 "
             "AND ndcg_at_k >= 0 AND ndcg_at_k <= 1",
             name="ck_evaluation_run_cases_metrics",
+        ),
+        CheckConstraint(
+            "average_precision_at_k IS NULL OR average_precision_at_k BETWEEN 0 AND 1",
+            name="ck_evaluation_run_cases_average_precision",
         ),
         UniqueConstraint(
             "run_id",
@@ -325,6 +357,8 @@ class EvaluationRunCaseRecord(Base):
     recall_at_k: Mapped[float] = mapped_column(Float, nullable=False)
     reciprocal_rank_at_k: Mapped[float] = mapped_column(Float, nullable=False)
     ndcg_at_k: Mapped[float] = mapped_column(Float, nullable=False)
+    hit_at_k: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    average_precision_at_k: Mapped[float | None] = mapped_column(Float, nullable=True)
 
     @classmethod
     def from_domain(
@@ -351,6 +385,8 @@ class EvaluationRunCaseRecord(Base):
             recall_at_k=metrics.recall_at_k,
             reciprocal_rank_at_k=metrics.reciprocal_rank_at_k,
             ndcg_at_k=metrics.ndcg_at_k,
+            hit_at_k=metrics.hit_at_k,
+            average_precision_at_k=metrics.average_precision_at_k,
         )
 
     def to_domain(self, *, cutoff: int) -> EvaluationRunCase:
@@ -371,5 +407,7 @@ class EvaluationRunCaseRecord(Base):
                 recall_at_k=self.recall_at_k,
                 reciprocal_rank_at_k=self.reciprocal_rank_at_k,
                 ndcg_at_k=self.ndcg_at_k,
+                hit_at_k=self.hit_at_k,
+                average_precision_at_k=self.average_precision_at_k,
             ),
         )

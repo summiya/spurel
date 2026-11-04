@@ -563,4 +563,6 @@ async def evaluate_retrieval_trace(
         recall_at_k=evaluation.recall_at_k,
         reciprocal_rank_at_k=evaluation.reciprocal_rank_at_k,
         ndcg_at_k=evaluation.ndcg_at_k,
+        hit_at_k=evaluation.hit_at_k,
+        average_precision_at_k=evaluation.average_precision_at_k,
     )

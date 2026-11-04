@@ -621,6 +621,10 @@ def _dataset_evaluation_response(
         mean_recall_at_k=run.mean_recall_at_k,
         mrr_at_k=run.mrr_at_k,
         mean_ndcg_at_k=run.mean_ndcg_at_k,
+        hit_rate_at_k=run.hit_rate_at_k,
+        mean_average_precision_at_k=run.mean_average_precision_at_k,
+        hit_rate_wilson_95_lower=run.hit_rate_wilson_95_lower,
+        hit_rate_wilson_95_upper=run.hit_rate_wilson_95_upper,
         created_at=run.created_at,
         cases=[
             DatasetEvaluationCaseResponse(
@@ -638,6 +642,8 @@ def _dataset_evaluation_response(
                 recall_at_k=case.metrics.recall_at_k,
                 reciprocal_rank_at_k=case.metrics.reciprocal_rank_at_k,
                 ndcg_at_k=case.metrics.ndcg_at_k,
+                hit_at_k=case.metrics.hit_at_k,
+                average_precision_at_k=case.metrics.average_precision_at_k,
             )
             for case in run.cases
         ],
@@ -729,6 +735,10 @@ def _run_summary_response(
         mean_recall_at_k=run.mean_recall_at_k,
         mrr_at_k=run.mrr_at_k,
         mean_ndcg_at_k=run.mean_ndcg_at_k,
+        hit_rate_at_k=run.hit_rate_at_k,
+        mean_average_precision_at_k=run.mean_average_precision_at_k,
+        hit_rate_wilson_95_lower=run.hit_rate_wilson_95_lower,
+        hit_rate_wilson_95_upper=run.hit_rate_wilson_95_upper,
         created_at=run.created_at,
     )
 
@@ -792,6 +802,8 @@ def _run_comparison_response(
         mean_recall_delta=comparison.mean_recall_delta,
         mrr_delta=comparison.mrr_delta,
         mean_ndcg_delta=comparison.mean_ndcg_delta,
+        hit_rate_delta=comparison.hit_rate_delta,
+        mean_average_precision_delta=comparison.mean_average_precision_delta,
         cases=[
             EvaluationRunCaseComparisonResponse(
                 case_id=case.case_id,
@@ -817,6 +829,11 @@ def _run_comparison_response(
                 first_ndcg_at_k=case.first_ndcg_at_k,
                 second_ndcg_at_k=case.second_ndcg_at_k,
                 ndcg_delta=case.ndcg_delta,
+                first_hit_at_k=case.first_hit_at_k,
+                second_hit_at_k=case.second_hit_at_k,
+                first_average_precision_at_k=case.first_average_precision_at_k,
+                second_average_precision_at_k=case.second_average_precision_at_k,
+                average_precision_delta=case.average_precision_delta,
             )
             for case in comparison.cases
         ],
@@ -844,6 +861,10 @@ def _run_comparison_side_response(
         mean_recall_at_k=side.mean_recall_at_k,
         mrr_at_k=side.mrr_at_k,
         mean_ndcg_at_k=side.mean_ndcg_at_k,
+        hit_rate_at_k=side.hit_rate_at_k,
+        mean_average_precision_at_k=side.mean_average_precision_at_k,
+        hit_rate_wilson_95_lower=side.hit_rate_wilson_95_lower,
+        hit_rate_wilson_95_upper=side.hit_rate_wilson_95_upper,
         created_at=side.created_at,
     )
 

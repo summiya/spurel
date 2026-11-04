@@ -62,6 +62,11 @@ export interface EvaluationMetrics {
   mean_recall_at_k: number;
   mrr_at_k: number;
   mean_ndcg_at_k: number;
+  // New measurement fields are nullable: legacy saved runs were not backfilled.
+  hit_rate_at_k?: number | null;
+  mean_average_precision_at_k?: number | null;
+  hit_rate_wilson_95_lower?: number | null;
+  hit_rate_wilson_95_upper?: number | null;
   created_at: string;
 }
 export interface EvaluationRunSummary extends EvaluationMetrics {
@@ -83,6 +88,8 @@ export interface EvaluationCaseMetric {
   recall_at_k: number;
   reciprocal_rank_at_k: number;
   ndcg_at_k: number;
+  hit_at_k?: boolean | null;
+  average_precision_at_k?: number | null;
 }
 export interface EvaluationRun extends EvaluationRunSummary {
   knowledge_base_id: string;
@@ -107,6 +114,8 @@ export interface EvaluationComparison {
   mean_recall_delta: number | null;
   mrr_delta: number | null;
   mean_ndcg_delta: number | null;
+  hit_rate_delta?: number | null;
+  mean_average_precision_delta?: number | null;
   cases: Array<{
     case_id: string;
     presence: string;
@@ -118,6 +127,11 @@ export interface EvaluationComparison {
     recall_delta: number | null;
     reciprocal_rank_delta: number | null;
     ndcg_delta: number | null;
+    first_hit_at_k?: boolean | null;
+    second_hit_at_k?: boolean | null;
+    first_average_precision_at_k?: number | null;
+    second_average_precision_at_k?: number | null;
+    average_precision_delta?: number | null;
     duration_delta_ms: number | null;
   }>;
 }

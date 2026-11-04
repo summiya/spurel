@@ -264,6 +264,20 @@ model assessment, **not independent fact verification**. No extra work
 occurs without opt-in, no new database columns or persisted full answers
 are added, and legacy retrieval/reranking semantics remain unchanged.
 
+### SP-24 evaluation quality measurement (in review)
+
+Dataset benchmark execution also computes binary Hit@K and AP@K
+from the existing 0–3 relevance judgments. Its saved macro metrics
+are Hit Rate@K and MAP@K. The nonparametric ranking measures are
+distinct from the graded nDCG metric already in use.
+A 95% Wilson score interval measures *sample uncertainty* in
+the observed Hit Rate@K under a binomial approximation; it does
+not calibrate or certify raw retrieval scores or population quality.
+Judgment coverage and small-sample cautions are shown alongside it.
+New fields on run and per-case snapshots are nullable (migration
+0017) to keep prior immutable benchmark records intact. Existing
+trace history, graph, quality gates and authentication remain unchanged.
+
 ## What is planned, not implemented
 
 The frontend has live source, chunk, retrieval, trace-comparison, evaluation and provider-backed RAG answer inspection. A frontend follow-up summarizes real Overview data, including a 7/30-day retrieval-quality chart plotting persisted evaluation runs without inferred measurements or new backend APIs. The following are **not built on main**: opt-in scanned-PDF OCR (SP-18 in review), semantic/LLM-based chunking, BM25, pgvector ANN/HNSW, metadata filters, rerankers, independent citation/claim verification, non-OpenAI providers, data-source connectors, Redis-backed background jobs, experiment export and production auth/monitoring.

@@ -48,6 +48,10 @@ class EvaluationRun:
     mean_ndcg_at_k: float
     cases: tuple[EvaluationRunCase, ...]
     created_at: datetime
+    hit_rate_at_k: float | None = None
+    mean_average_precision_at_k: float | None = None
+    hit_rate_wilson_95_lower: float | None = None
+    hit_rate_wilson_95_upper: float | None = None
 
     @classmethod
     def from_execution(
@@ -77,6 +81,10 @@ class EvaluationRun:
             mean_recall_at_k=result.mean_recall_at_k,
             mrr_at_k=result.mrr_at_k,
             mean_ndcg_at_k=result.mean_ndcg_at_k,
+            hit_rate_at_k=result.hit_rate_at_k,
+            mean_average_precision_at_k=result.mean_average_precision_at_k,
+            hit_rate_wilson_95_lower=result.hit_rate_wilson_95_lower,
+            hit_rate_wilson_95_upper=result.hit_rate_wilson_95_upper,
             cases=tuple(
                 _snapshot_case(position=position, result=case)
                 for position, case in enumerate(result.cases, start=1)
@@ -109,6 +117,10 @@ class EvaluationRunSummary:
     mrr_at_k: float
     mean_ndcg_at_k: float
     created_at: datetime
+    hit_rate_at_k: float | None = None
+    mean_average_precision_at_k: float | None = None
+    hit_rate_wilson_95_lower: float | None = None
+    hit_rate_wilson_95_upper: float | None = None
 
 
 def _snapshot_case(
