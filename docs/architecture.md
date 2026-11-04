@@ -223,6 +223,23 @@ development workflow**, not scalable user identity or tenant authorization.
 
 **Important:** Filtering repository operations by knowledge-base ID is not permission-aware tenant isolation. The current bearer token permits access to all knowledge-base routes. Do not deploy this as a public multi-tenant product without real user/session authentication and authorization.
 
+### SP-20 dimension-specific pgvector HNSW experiment (in review)
+
+Existing full-precision embeddings are stored in a dimensionless pgvector
+column with a separate validated \`dimensions\` field. An operator-only
+\`spurel-hnsw\` tool builds a partial expression HNSW cosine index for a
+specific dimension using \`CREATE INDEX CONCURRENTLY IF NOT EXISTS\`,
+and compares actual PostgreSQL HNSW plans with exact, scoped cosine queries.
+The CLI reads persisted active chunk embeddings and never calls a provider.
+An index is *not* created by database migrations or merely starting the app.
+
+The regular SQLAlchemy retrieval adapter stays exact after HNSW indexing,
+rather than silently changing result ranking or Recall@K. A later production
+opt-in to approximate live retrieval must explicitly record algorithm
+provenance and pass representative recall/latency gates. HNSW adds build,
+memory/disk and write costs, has a 2,000-dimension limit for full vector
+indexing, and can undersample post-filtered KB matches.
+
 ## What is planned, not implemented
 
 The frontend has live source, chunk, retrieval, trace-comparison, evaluation and provider-backed RAG answer inspection. A frontend follow-up summarizes real Overview data, including a 7/30-day retrieval-quality chart plotting persisted evaluation runs without inferred measurements or new backend APIs. The following are **not built on main**: opt-in scanned-PDF OCR (SP-18 in review), semantic/LLM-based chunking, BM25, pgvector ANN/HNSW, metadata filters, rerankers, independent citation/claim verification, non-OpenAI providers, data-source connectors, Redis-backed background jobs, experiment export and production auth/monitoring.

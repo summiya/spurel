@@ -362,6 +362,47 @@ filter capability, but explicitly running vector/hybrid retrieval can still
 incur query embedding API charges. The existing RAG and benchmark APIs
 remain unchanged and use unfiltered retrieval by default.
 
+## SP-20: HNSW operator index, exact baseline and recall/latency benchmark
+
+A separate backend CLI, \`spurel-hnsw\`, performs explicit HNSW administration
+and read-only comparison queries against stored active embeddings. The
+existing FastAPI and frontend search paths still use **exact cosine ranking**;
+no request implicitly switches to approximate search when an index exists.
+The exact repository's distance sort has an additive zero term to prevent
+pgvector HNSW from replacing the exact search plan.
+
+There is **no migration** creating a potentially expensive HNSW index.
+Operators must issue \`spurel-hnsw build --dimensions 1536 --confirm-build\`
+on a trusted backend process. The DDL is a **concurrent**, idempotent,
+dimension-specific expression/partial index on
+\`embedding::vector(dimensions)\` with cosine ops. The tool validates
+dimensions (1–2000), \`m\`, and \`ef_construction\`, detects invalid existing
+indexes, and never automatically drops or reindexes data.
+
+Use \`spurel-hnsw status --dimensions N\` to inspect an index and
+\`spurel-hnsw --json benchmark --dimensions N --knowledge-base-id UUID
+--provider NAME --model NAME --top-k 10 --samples 20 --ef-search 100\`
+for a measured comparison. The CLI uses the backend's \`DATABASE_URL\`
+and does **not** require an OpenAI API key.
+
+Each sampled query vector comes from the same knowledge-base-scoped,
+active-version embedding space. Exact and indexed searches apply the same
+KB/provider/model/dimensions criteria; exact disables index scans in a
+transaction, while the HNSW query uses bounded \`ef_search\` and
+\`hnsw.iterative_scan=strict_order\`. A JSON EXPLAIN plan must show use of the
+expected HNSW index; otherwise the command fails rather than report
+fabricated ANN performance. It measures observed recall and wall times
+only; sample bias, database transfer and cache effects mean the medians
+are not representative workload guarantees. Larger indexes require more
+build memory/disk and add write overhead; tune on representative data.
+
+The optional \`--min-recall\` gate returns exit code 2 when measured mean
+recall is below the threshold. Unsafe/invalid configuration or database
+failure returns 3; success is 0. The tool has no index deletion command.
+SP-20 does **not** introduce ANN to normal Retrieval Lab, RAG or stored
+evaluation traces; an eventual live opt-in requires independent quality
+approval and explicit algorithm provenance.
+
 ## Environment and secrets
 
 `make init` copies `.env.example` to the ignored `.env` on first use, generates a strong random `SPUREL_API_TOKEN`, and restricts its permissions to the file owner on POSIX systems. It **does not replace** an existing valid token or provider key. Do not print, commit, or share your `.env`.

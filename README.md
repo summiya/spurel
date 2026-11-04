@@ -230,6 +230,54 @@ Alembic migration **0014**. The PR is **based on SP-18 PR #80**, which adds
 migration 0013; merge SP-18 first, then merge SP-19. Existing trace snapshots
 remain untouched with `filters: null`.
 
+## SP-20: explicitly built HNSW index and real recall/latency benchmark (in review)
+
+The existing **exact** vector/hybrid retrieval and live dashboard remain unchanged.
+SP-20 adds a separate operator-only index/benchmark utility for exploring
+pgvector HNSW safely without changing the default answer/ranking path or
+incurring OpenAI charges.
+
+Spurel's \`chunk_embeddings.embedding\` column stores **mixed vector dimensions**,
+so one global index is not suitable. The tool creates a **dimension-specific,
+partial cosine HNSW index**. It builds **concurrently** and only after you
+explicitly confirm. No Alembic migration, automatic index creation, data deletion,
+document reprocessing, or RAG/retrieval behavior change occurs on deployment.
+
+From the local repository with the Compose stack running:
+
+\`\`\`bash
+# Check whether the 1536-dimensional HNSW index is present:
+docker compose exec backend spurel-hnsw status --dimensions 1536
+
+# Explicitly build (may take time, memory and disk space):
+docker compose exec backend spurel-hnsw build --dimensions 1536 --confirm-build
+
+# Compare the actual HNSW index to exact search using existing stored vectors,
+# scoped to one real KB and embedding provider/model/dimension combination:
+docker compose exec backend spurel-hnsw --json benchmark \
+  --dimensions 1536 \
+  --knowledge-base-id YOUR_KNOWLEDGE_BASE_UUID \
+  --provider openai --model text-embedding-3-small \
+  --top-k 10 --samples 20 --ef-search 100 --min-recall 0.9
+\`\`\`
+
+The benchmark reports measured **Recall@K**, min recall, median/p95 query
+times, number of real sampled queries, index size and whether PostgreSQL's
+EXPLAIN plan used the intended HNSW index. It fails closed if it cannot
+prove an indexed plan or no persisted active embeddings match. The query
+vectors are sampled from persisted embeddings (self-query bias); use
+representative datasets before interpreting these numbers as production
+quality. Benchmarks do **not** call embedding/generation APIs.
+
+Index builds affect insert cost, memory/disk, and migration/operations time;
+higher \`ef_search\` can improve recall but may increase latency. Filtering
+to a knowledge base can also reduce approximate recall. The basic pgvector
+\`vector\` HNSW operator class supports **up to 2,000 dimensions**. This tool
+refuses larger dimensions rather than silently truncate or re-embed.
+Indexes are never dropped by the tool. A production-like rollout should
+first confirm sufficient representative recall/latency before any future
+opt-in change to live search.
+
 ## Inspect real chunks (SP-11)
 
 Once signed in, open [Chunk Inspector](http://localhost:3000/chunks) or select

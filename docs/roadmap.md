@@ -51,13 +51,13 @@ replaces illustrative Overview values with bounded, real data.
 | --- | --- | --- | --- |
 | SP-16 | High | ✅ Merged | Opt-in model-token chunk sizing and overlap, preserved legacy character mode and versions, token counts in Chunk Inspector and frontend controls. [PR #78](https://github.com/summiya/spurel/pull/78) |
 | SP-17 | High | ✅ Merged | Optional recursive, Markdown-heading and sentence-aware strategies with safe boundaries and UI controls. [PR #79](https://github.com/summiya/spurel/pull/79) |
-| SP-18 | High | ◐ In review | PDF page provenance in immutable chunks, Retrieval Lab and RAG sources; opt-in pypdf layout extraction; bounded local Tesseract/Poppler OCR for textless pages, default disabled. Feature branch `feat/sp18-pdf-page-provenance-ocr`; PR review required. |
-| SP-19 | High | ◐ In review | Opt-in pre-ranking PostgreSQL filters over existing document metadata (ID, media type, filename substring, upload date), consistent across Keyword/Vector/Hybrid, persisted trace filter snapshots and Retrieval Lab UI. Feature branch `feat/sp19-retrieval-metadata-filters`, dependent on unmerged SP-18 PR #80. |
-| SP-20 | High | ☐ Planned | pgvector HNSW indexing, recall/latency benchmarks, indexing trade-offs |
+| SP-18 | High | ✅ Merged | PDF page provenance and opt-in local OCR/layout extraction, existing indexing and views preserved. [PR #80](https://github.com/summiya/spurel/pull/80) |
+| SP-19 | High | ✅ Merged | Opt-in pre-ranking metadata filters for Keyword/Vector/Hybrid, persisted trace scope and Retrieval Lab controls. [PR #83](https://github.com/summiya/spurel/pull/83) (the original [PR #81](https://github.com/summiya/spurel/pull/81) merged into the SP-18 feature branch). |
+| SP-20 | High | ◐ In review | Explicit dimension-specific concurrent HNSW index builder and real measured recall/latency CLI against exact scoped retrieval; preserves existing live exact retrieval by default. Branch `feat/sp20-hnsw-benchmark` awaiting review/CI. |
 | SP-21 | High | ☐ Planned | Pluggable cross-encoder reranking with candidate/rerank/final ranks |
 | SP-22 | Medium | ☐ Planned | Per-stage timing and retrieval observability in API traces and workbench |
 
-**Current `main` baseline:** optional character, model-token, recursive, Markdown and sentence-aware chunking, unencrypted text-extractable PDFs, exact pgvector cosine ranking, PostgreSQL **full-text `ts_rank_cd`** keyword ranking, and RRF. There is **no BM25 implementation** even though PostgreSQL keyword search already exists.
+**Current `main` baseline:** opt-in chunking strategies, PDF page provenance and optional local OCR, metadata-filtered retrieval, exact pgvector cosine ranking, PostgreSQL **full-text `ts_rank_cd`** keyword ranking, and RRF. There is **no BM25 implementation** even though PostgreSQL keyword search already exists.
 
 ## Phase 4 — Quality, extensibility and release
 
