@@ -1,5 +1,6 @@
 import type { RetrievalMode, RetrievalTraceDetail } from "@/lib/retrieval-types";
 import type { RetrievalMetadataFilters } from "@/lib/retrieval-filter-types";
+import type { StageTimings } from "@/lib/stage-timings";
 
 export interface RetrievalTraceSummary {
   id: string;
@@ -9,6 +10,7 @@ export interface RetrievalTraceSummary {
   candidate_k: number | null;
   rrf_k: number | null;
   duration_ms: number;
+  stage_timings_ms?: StageTimings | null;
   embedding_provider: string | null;
   embedding_model: string | null;
   embedding_dimensions: number | null;
