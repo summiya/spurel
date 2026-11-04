@@ -13,6 +13,7 @@ export interface RetrievalTraceSummary {
   embedding_model: string | null;
   embedding_dimensions: number | null;
   result_count: number;
+  reranker_model?: string | null;
   created_at: string;
   filters?: RetrievalMetadataFilters | null;
 }
@@ -38,6 +39,10 @@ export interface TraceComparisonResult {
   second_keyword_score: number | null;
   first_rrf_score: number | null;
   second_rrf_score: number | null;
+  first_candidate_rank?: number | null;
+  second_candidate_rank?: number | null;
+  first_rerank_score?: number | null;
+  second_rerank_score?: number | null;
 }
 
 export interface TraceComparison {

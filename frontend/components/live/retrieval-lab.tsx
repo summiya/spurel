@@ -106,6 +106,9 @@ function EvidenceItem({
                 ? "Not in keyword pool"
                 : `Keyword rank #${item.keyword_rank}`}
             </span>
+            {item.candidate_rank != null ? (
+              <span className="tag">RRF candidate #{item.candidate_rank} → reranked #{item.rerank_rank}</span>
+            ) : null}
           </>
         ) : null}
       </div>
@@ -124,6 +127,7 @@ export function LiveRetrievalLabPage({ initialKnowledgeBaseId }: Props) {
   const [topK, setTopK] = useState(10);
   const [candidateK, setCandidateK] = useState(50);
   const [rrfK, setRrfK] = useState(60);
+  const [rerank, setRerank] = useState(false);
   const [documentFilterId, setDocumentFilterId] = useState("");
   const [mediaType, setMediaType] = useState<DocumentMediaType | "">("");
   const [filenameContains, setFilenameContains] = useState("");
@@ -162,7 +166,7 @@ export function LiveRetrievalLabPage({ initialKnowledgeBaseId }: Props) {
     (query.trim() !== result.query ||
       mode !== result.mode ||
       topK !== result.top_k ||
-      (result.mode === "hybrid" && (candidateK !== result.candidate_k || rrfK !== result.rrf_k)) ||
+      (result.mode === "hybrid" && (candidateK !== result.candidate_k || rrfK !== result.rrf_k || rerank !== Boolean(result.rerank))) ||
       retrievalFiltersKey(activeFilters) !== retrievalFiltersKey(currentRun?.filters)),
   );
 
@@ -194,13 +198,16 @@ export function LiveRetrievalLabPage({ initialKnowledgeBaseId }: Props) {
     const normalized = query.trim();
     if (!knowledgeBase || !normalized || normalized.length > 8000 || running || invalidFilter)
       return;
+    if (mode === "hybrid" && rerank && !window.confirm(
+      "Run explicit cross-encoder reranking? This sends selected document excerpts to your configured reranker service, which may incur charges."
+    )) return;
     const id = ++sequence.current;
     const target = knowledgeBase.id;
     const submittedMode = mode;
     const payload = {
       query: normalized,
       top_k: topK,
-      ...(mode === "hybrid" ? { candidate_k: candidateK, rrf_k: rrfK } : {}),
+      ...(mode === "hybrid" ? { candidate_k: candidateK, rrf_k: rrfK, ...(rerank ? { rerank: true } : {}) } : {}),
       ...(activeFilters ? { filters: activeFilters } : {}),
     };
     setRunning(true);
@@ -218,7 +225,8 @@ export function LiveRetrievalLabPage({ initialKnowledgeBaseId }: Props) {
           body: JSON.stringify(payload),
         },
       );
-      if (!isRetrievalResult(raw) || raw.mode !== submittedMode) {
+      if (!isRetrievalResult(raw) || raw.mode !== submittedMode ||
+        (Boolean(raw.rerank) !== (submittedMode === "hybrid" && rerank))) {
         throw new Error("The retrieval API returned an unexpected response.");
       }
       if (id !== sequence.current) return;
@@ -559,6 +567,24 @@ export function LiveRetrievalLabPage({ initialKnowledgeBaseId }: Props) {
                 </>
               ) : null}
             </div>
+            {mode === "hybrid" ? (
+              <div className="retrieval-filter-panel">
+                <label className="field-label" htmlFor="retrieval-rerank">
+                  <input
+                    id="retrieval-rerank"
+                    type="checkbox"
+                    checked={rerank}
+                    disabled={running}
+                    onChange={(event) => setRerank(event.target.checked)}
+                  />{" "}Cross-encoder reranking (opt-in)
+                </label>
+                <p className="text-hint">
+                  Re-score the fused candidate pool before selecting Top K. A configured server-side
+                  reranker is required. Only clicking Run will send excerpt text to that service;
+                  it may incur charges. Default retrieval remains exact RRF.
+                </p>
+              </div>
+            ) : null}
             <div className="retrieval-submit-row">
               <div className="text-hint">
                 {mode === "keyword"
@@ -601,7 +627,7 @@ export function LiveRetrievalLabPage({ initialKnowledgeBaseId }: Props) {
             <div className="live-retrieval-metrics">
               <span>
                 <small>Mode</small>
-                <strong>{modeTitle(result.mode)}</strong>
+                <strong>{modeTitle(result.mode)}{result.rerank ? " · Cross-encoder" : ""}</strong>
               </span>
               <span>
                 <small>Matches returned</small>
@@ -648,7 +674,7 @@ export function LiveRetrievalLabPage({ initialKnowledgeBaseId }: Props) {
             <p className="text-hint">
               Executed: “{result.query}”
               {result.mode === "hybrid"
-                ? ` · Top K ${result.top_k} · Candidate K ${result.candidate_k} · RRF K ${result.rrf_k}`
+                ? ` · Top K ${result.top_k} · Candidate K ${result.candidate_k} · RRF K ${result.rrf_k}${result.rerank ? ` · Reranked with ${result.reranker_model}` : ""}`
                 : ` · Top K ${result.top_k}`}
             </p>
             {traceError ? (
@@ -670,6 +696,7 @@ export function LiveRetrievalLabPage({ initialKnowledgeBaseId }: Props) {
                 </span>
                 <span>Original duration: {duration(trace.duration_ms)}</span>
                 <span>Saved filters: {describeRetrievalFilters(trace.filters)}</span>
+                <span>Cross-encoder: {trace.reranker_model ?? "Not used"}</span>
               </div>
             ) : null}
           </Panel>
@@ -721,6 +748,26 @@ export function LiveRetrievalLabPage({ initialKnowledgeBaseId }: Props) {
                     </div>
                     {result.mode === "hybrid" ? (
                       <>
+                        {chosen.candidate_rank != null ? (
+                          <>
+                            <div>
+                              <small>Original RRF candidate rank</small>
+                              <strong>{chosen.candidate_rank}</strong>
+                            </div>
+                            <div>
+                              <small>Reranked final rank</small>
+                              <strong>{chosen.rerank_rank}</strong>
+                            </div>
+                            <div>
+                              <small>Cross-encoder score (raw)</small>
+                              <strong>{otherScore(chosen.rerank_score, 5)}</strong>
+                            </div>
+                            <div>
+                              <small>Original RRF score</small>
+                              <strong>{otherScore(chosen.rrf_score, 6)}</strong>
+                            </div>
+                          </>
+                        ) : null}
                         <div>
                           <small>Vector pool rank</small>
                           <strong>{chosen.vector_rank ?? "Not present"}</strong>
