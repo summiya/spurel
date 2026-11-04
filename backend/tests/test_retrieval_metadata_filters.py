@@ -41,16 +41,21 @@ def test_filter_snapshot_is_roundtrippable_and_UTC_normalized() -> None:
     assert RetrievalMetadataFilters.from_snapshot(snapshot) == f
 
 
-@pytest.mark.parametrize("options", [
-    {},
-    {"filename_contains": "  "},
-    {"filename_contains": "x" * 101},
-    {"document_ids": (uuid4(),) * 2},
-    {"media_types": (DocumentMediaType.PDF,) * 2},
-    {"created_after": datetime(2026, 1, 1)},
-    {"created_after": datetime(2026, 2, 1, tzinfo=UTC),
-     "created_before": datetime(2026, 1, 1, tzinfo=UTC)},
-])
+@pytest.mark.parametrize(
+    "options",
+    [
+        {},
+        {"filename_contains": "  "},
+        {"filename_contains": "x" * 101},
+        {"document_ids": (uuid4(),) * 2},
+        {"media_types": (DocumentMediaType.PDF,) * 2},
+        {"created_after": datetime(2026, 1, 1)},
+        {
+            "created_after": datetime(2026, 2, 1, tzinfo=UTC),
+            "created_before": datetime(2026, 1, 1, tzinfo=UTC),
+        },
+    ],
+)
 def test_filter_rejects_invalid_criteria(options) -> None:
     with pytest.raises(RetrievalMetadataFilterError):
         RetrievalMetadataFilters(**options)
@@ -65,8 +70,7 @@ def test_metadata_filter_request_rejects_unknown_keys_and_invalid_values() -> No
         {"document_ids": ["../../../etc/passwd"]},
         {"media_types": ["text/html"]},
         {"created_after": "2026-01-01T00:00:00"},
-        {"created_before": "2026-02-01T00:00:00Z",
-         "created_after": "2026-03-01T00:00:00Z"},
+        {"created_before": "2026-02-01T00:00:00Z", "created_after": "2026-03-01T00:00:00Z"},
     ]
     for candidate in inputs:
         with pytest.raises(ValueError):
@@ -104,11 +108,16 @@ class _FakeTracedRetriever:
         self.trace_id = uuid4()
 
     async def search(self, *, knowledge_base_id, query, limit, **kwargs):
-        self.calls.append({
-            "kb": knowledge_base_id, "query": query, "limit": limit,
-            "filters": kwargs.get("filters"), "candidate_limit": kwargs.get("candidate_limit"),
-            "rrf_k": kwargs.get("rrf_k"),
-        })
+        self.calls.append(
+            {
+                "kb": knowledge_base_id,
+                "query": query,
+                "limit": limit,
+                "filters": kwargs.get("filters"),
+                "candidate_limit": kwargs.get("candidate_limit"),
+                "rrf_k": kwargs.get("rrf_k"),
+            }
+        )
         return TracedRetrievalResult(trace_id=self.trace_id, duration_ms=1.0, matches=())
 
 
@@ -128,7 +137,8 @@ def test_all_retrieval_routes_accept_identical_filters_without_changing_defaults
     kb = uuid4()
     document_id = uuid4()
     explicit = {
-        "query": "refund policy", "top_k": 5,
+        "query": "refund policy",
+        "top_k": 5,
         "filters": {"document_ids": [str(document_id)], "media_types": ["text/plain"]},
     }
     if mode == "hybrid":
