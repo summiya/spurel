@@ -4,6 +4,7 @@ export interface RagAnswerRequest {
   top_k: number;
   candidate_k: number;
   rrf_k: number;
+  verify_citations?: boolean;
 }
 
 export interface RagSource {
@@ -20,6 +21,29 @@ export interface RagSource {
   ocr_used?: boolean;
 }
 
+export type RagClaimStatus =
+  | "model_supported"
+  | "model_unsupported"
+  | "model_uncertain"
+  | "missing_citation"
+  | "invalid_citation"
+  | "not_checked";
+
+export interface RagClaimAssessment {
+  id: number;
+  text: string;
+  cited_labels: string[];
+  status: RagClaimStatus;
+  reason: string;
+}
+
+export interface RagCitationVerification {
+  status: "completed" | "partial" | "unavailable" | "not_applicable";
+  verifier_model: string | null;
+  omitted_claim_count: number;
+  claims: RagClaimAssessment[];
+}
+
 export interface RagAnswerResponse {
   trace_id: string;
   answer: string;
@@ -27,6 +51,7 @@ export interface RagAnswerResponse {
   generation_provider: string | null;
   generation_model: string | null;
   sources: RagSource[];
+  verification?: RagCitationVerification | null;
 }
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -49,11 +74,14 @@ function uuid(value: unknown): value is string {
 export function parseRagAnswerRequest(value: unknown): RagAnswerRequest | null {
   if (!record(value)) return null;
   if (
-    Object.keys(value).some((key) => !["query", "top_k", "candidate_k", "rrf_k"].includes(key)) ||
+    Object.keys(value).some((key) =>
+      !["query", "top_k", "candidate_k", "rrf_k", "verify_citations"].includes(key),
+    ) ||
     typeof value.query !== "string"
   )
     return null;
 
+  if ("verify_citations" in value && typeof value.verify_citations !== "boolean") return null;
   const query = value.query.trim();
   if (
     query.length < 1 ||
@@ -69,6 +97,7 @@ export function parseRagAnswerRequest(value: unknown): RagAnswerRequest | null {
     top_k: value.top_k,
     candidate_k: value.candidate_k,
     rrf_k: value.rrf_k,
+    ...(value.verify_citations ? { verify_citations: true } : {}),
   };
 }
 
@@ -119,6 +148,11 @@ export function isRagAnswerResponse(value: unknown): value is RagAnswerResponse 
     chunkIds.add(item.chunk_id.toLowerCase());
   }
 
+  if (value.verification !== undefined && value.verification !== null) {
+    if (value.retrieved_chunk_count === 0 || !isRagCitationVerification(value.verification, labels))
+      return false;
+  }
+
   if (value.retrieved_chunk_count === 0) {
     return (
       value.sources.length === 0 &&
@@ -135,4 +169,48 @@ export function knownAnswerCitationLabels(answer: string, sources: RagSource[]):
   return (answer.match(/\[S\d+\]/g) ?? [])
     .map((token) => token.slice(1, -1))
     .filter((label) => known.has(label));
+}
+
+const CLAIM_STATUSES: ReadonlyArray<RagClaimStatus> = [
+  "model_supported",
+  "model_unsupported",
+  "model_uncertain",
+  "missing_citation",
+  "invalid_citation",
+  "not_checked",
+];
+
+function isRagCitationVerification(value: unknown, sourceLabels: ReadonlySet<string>): value is RagCitationVerification {
+  if (!record(value)) return false;
+  if (
+    !["completed", "partial", "unavailable", "not_applicable"].includes(String(value.status)) ||
+    !(value.verifier_model === null || (typeof value.verifier_model === "string" && value.verifier_model.length > 0)) ||
+    !integer(value.omitted_claim_count, 0, 100_000) ||
+    !Array.isArray(value.claims) ||
+    value.claims.length > 16
+  ) return false;
+
+  const ids = new Set<number>();
+  return value.claims.every((claim: unknown) => {
+    if (!record(claim)) return false;
+    if (
+      !integer(claim.id, 1, 16) ||
+      ids.has(claim.id) ||
+      typeof claim.text !== "string" ||
+      claim.text.length < 1 ||
+      claim.text.length > 1800 ||
+      !Array.isArray(claim.cited_labels) ||
+      claim.cited_labels.length > 20 ||
+      typeof claim.reason !== "string" ||
+      claim.reason.length < 1 ||
+      claim.reason.length > 240 ||
+      !CLAIM_STATUSES.includes(claim.status as RagClaimStatus)
+    ) return false;
+    if (!claim.cited_labels.every((label: unknown) => typeof label === "string" && /^S\d{1,8}$/.test(label))) return false;
+    if (claim.status === "model_supported" || claim.status === "model_unsupported" || claim.status === "model_uncertain") {
+      if (!value.verifier_model || !claim.cited_labels.length || !claim.cited_labels.every((label: string) => sourceLabels.has(label))) return false;
+    }
+    ids.add(claim.id);
+    return true;
+  });
 }
