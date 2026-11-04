@@ -38,8 +38,6 @@ describe("SP-24 sample-aware report", () => {
         hit_rate_wilson_95_upper: 0.1,
       }).interval,
     ).toBe("Not measured (older run)");
-    expect(qualityInterpretation({ ...run, case_count: 40 }).sample).toContain(
-      "40 labeled cases",
-    );
+    expect(qualityInterpretation({ ...run, case_count: 40 }).sample).toContain("40 labeled cases");
   });
 });

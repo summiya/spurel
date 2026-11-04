@@ -8,11 +8,11 @@ from typing import Protocol
 from uuid import UUID
 
 from spurel.evaluation_datasets.domain import EvaluationCase
-from spurel.evaluation_datasets.quality_reporting import wilson_hit_rate_95
 from spurel.evaluation_datasets.ports import (
     EvaluationDatasetLoadLimitError,
     EvaluationJudgmentStaleError,
 )
+from spurel.evaluation_datasets.quality_reporting import wilson_hit_rate_95
 from spurel.evaluation_datasets.service import EvaluationDatasetNotFoundError
 from spurel.retrieval.domain import VectorRetrievalMatch
 from spurel.retrieval.evaluation import (
