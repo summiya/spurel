@@ -176,10 +176,7 @@ def compare_evaluation_runs(
     second: EvaluationRun,
 ) -> EvaluationRunComparison:
     """Compare two already-loaded runs from the same dataset identity."""
-    if (
-        first.knowledge_base_id != second.knowledge_base_id
-        or first.dataset_id != second.dataset_id
-    ):
+    if first.knowledge_base_id != second.knowledge_base_id or first.dataset_id != second.dataset_id:
         raise EvaluationRunComparisonQueryError(
             "evaluation runs must belong to the same scoped dataset"
         )
@@ -224,14 +221,10 @@ def compare_evaluation_runs(
         comparable_case_count=comparable_case_count,
         query_changed_case_count=query_changed_case_count,
         total_duration_delta_ms=(
-            second.total_duration_ms - first.total_duration_ms
-            if aggregate_comparable
-            else None
+            second.total_duration_ms - first.total_duration_ms if aggregate_comparable else None
         ),
         mean_duration_delta_ms=(
-            second.mean_duration_ms - first.mean_duration_ms
-            if aggregate_comparable
-            else None
+            second.mean_duration_ms - first.mean_duration_ms if aggregate_comparable else None
         ),
         mean_judgment_coverage_delta=(
             _optional_delta(
@@ -242,32 +235,24 @@ def compare_evaluation_runs(
             else None
         ),
         mean_precision_delta=(
-            second.mean_precision_at_k - first.mean_precision_at_k
-            if aggregate_comparable
-            else None
+            second.mean_precision_at_k - first.mean_precision_at_k if aggregate_comparable else None
         ),
         mean_recall_delta=(
-            second.mean_recall_at_k - first.mean_recall_at_k
-            if aggregate_comparable
-            else None
+            second.mean_recall_at_k - first.mean_recall_at_k if aggregate_comparable else None
         ),
-        mrr_delta=(
-            second.mrr_at_k - first.mrr_at_k
-            if aggregate_comparable
-            else None
-        ),
+        mrr_delta=(second.mrr_at_k - first.mrr_at_k if aggregate_comparable else None),
         mean_ndcg_delta=(
-            second.mean_ndcg_at_k - first.mean_ndcg_at_k
-            if aggregate_comparable else None
+            second.mean_ndcg_at_k - first.mean_ndcg_at_k if aggregate_comparable else None
         ),
         hit_rate_delta=(
             _optional_delta(first.hit_rate_at_k, second.hit_rate_at_k)
-            if aggregate_comparable else None
+            if aggregate_comparable
+            else None
         ),
         mean_average_precision_delta=(
-            _optional_delta(
-                first.mean_average_precision_at_k, second.mean_average_precision_at_k
-            ) if aggregate_comparable else None
+            _optional_delta(first.mean_average_precision_at_k, second.mean_average_precision_at_k)
+            if aggregate_comparable
+            else None
         ),
         cases=cases,
     )
@@ -288,11 +273,7 @@ def _compare_case(
     else:
         presence = EvaluationRunCasePresence.BOTH
 
-    query_changed = (
-        first is not None
-        and second is not None
-        and first.query != second.query
-    )
+    query_changed = first is not None and second is not None and first.query != second.query
     comparable = presence is EvaluationRunCasePresence.BOTH and not query_changed
 
     return EvaluationRunCaseComparison(
@@ -311,32 +292,18 @@ def _compare_case(
             second_value=(second.duration_ms if second is not None else None),
             comparable=comparable,
         ),
-        first_precision_at_k=(
-            first.metrics.precision_at_k if first is not None else None
-        ),
-        second_precision_at_k=(
-            second.metrics.precision_at_k if second is not None else None
-        ),
+        first_precision_at_k=(first.metrics.precision_at_k if first is not None else None),
+        second_precision_at_k=(second.metrics.precision_at_k if second is not None else None),
         precision_delta=_case_delta(
-            first_value=(
-                first.metrics.precision_at_k if first is not None else None
-            ),
-            second_value=(
-                second.metrics.precision_at_k if second is not None else None
-            ),
+            first_value=(first.metrics.precision_at_k if first is not None else None),
+            second_value=(second.metrics.precision_at_k if second is not None else None),
             comparable=comparable,
         ),
-        first_recall_at_k=(
-            first.metrics.recall_at_k if first is not None else None
-        ),
-        second_recall_at_k=(
-            second.metrics.recall_at_k if second is not None else None
-        ),
+        first_recall_at_k=(first.metrics.recall_at_k if first is not None else None),
+        second_recall_at_k=(second.metrics.recall_at_k if second is not None else None),
         recall_delta=_case_delta(
             first_value=first.metrics.recall_at_k if first is not None else None,
-            second_value=(
-                second.metrics.recall_at_k if second is not None else None
-            ),
+            second_value=(second.metrics.recall_at_k if second is not None else None),
             comparable=comparable,
         ),
         first_reciprocal_rank_at_k=(
@@ -346,37 +313,21 @@ def _compare_case(
             second.metrics.reciprocal_rank_at_k if second is not None else None
         ),
         reciprocal_rank_delta=_case_delta(
-            first_value=(
-                first.metrics.reciprocal_rank_at_k
-                if first is not None
-                else None
-            ),
-            second_value=(
-                second.metrics.reciprocal_rank_at_k
-                if second is not None
-                else None
-            ),
+            first_value=(first.metrics.reciprocal_rank_at_k if first is not None else None),
+            second_value=(second.metrics.reciprocal_rank_at_k if second is not None else None),
             comparable=comparable,
         ),
         first_ndcg_at_k=first.metrics.ndcg_at_k if first is not None else None,
-        second_ndcg_at_k=(
-            second.metrics.ndcg_at_k if second is not None else None
-        ),
+        second_ndcg_at_k=(second.metrics.ndcg_at_k if second is not None else None),
         ndcg_delta=_case_delta(
             first_value=first.metrics.ndcg_at_k if first is not None else None,
-            second_value=(
-                second.metrics.ndcg_at_k if second is not None else None
-            ),
+            second_value=(second.metrics.ndcg_at_k if second is not None else None),
             comparable=comparable,
         ),
         first_hit_at_k=first.metrics.hit_at_k if first else None,
         second_hit_at_k=second.metrics.hit_at_k if second else None,
-        first_average_precision_at_k=(
-            first.metrics.average_precision_at_k if first else None
-        ),
-        second_average_precision_at_k=(
-            second.metrics.average_precision_at_k if second else None
-        ),
+        first_average_precision_at_k=(first.metrics.average_precision_at_k if first else None),
+        second_average_precision_at_k=(second.metrics.average_precision_at_k if second else None),
         average_precision_delta=_case_delta(
             first_value=first.metrics.average_precision_at_k if first else None,
             second_value=second.metrics.average_precision_at_k if second else None,

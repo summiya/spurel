@@ -43,9 +43,7 @@ class FakeRetrievalEvaluationService:
 def _client(service: FakeRetrievalEvaluationService) -> TestClient:
     application = create_app()
     application.dependency_overrides[require_api_token] = lambda: None
-    application.dependency_overrides[
-        get_retrieval_evaluation_service
-    ] = lambda: service
+    application.dependency_overrides[get_retrieval_evaluation_service] = lambda: service
     return TestClient(application)
 
 
@@ -134,9 +132,7 @@ def test_retrieval_evaluation_rejects_invalid_relevance_grade() -> None:
 
 def test_retrieval_evaluation_hides_duplicate_judgment_details() -> None:
     service = FakeRetrievalEvaluationService()
-    service.error = RetrievalEvaluationQueryError(
-        "duplicate historical chunk labels"
-    )
+    service.error = RetrievalEvaluationQueryError("duplicate historical chunk labels")
     client = _client(service)
 
     response = client.post(
@@ -153,9 +149,7 @@ def test_retrieval_evaluation_hides_duplicate_judgment_details() -> None:
     )
 
     assert response.status_code == 422
-    assert response.json() == {
-        "detail": "retrieval evaluation request is invalid"
-    }
+    assert response.json() == {"detail": "retrieval evaluation request is invalid"}
     assert "duplicate historical chunk labels" not in response.text
 
 
@@ -201,7 +195,5 @@ def test_retrieval_evaluation_hides_trace_storage_errors() -> None:
     )
 
     assert response.status_code == 503
-    assert response.json() == {
-        "detail": "retrieval evaluation temporarily unavailable"
-    }
+    assert response.json() == {"detail": "retrieval evaluation temporarily unavailable"}
     assert "database secret detail" not in response.text

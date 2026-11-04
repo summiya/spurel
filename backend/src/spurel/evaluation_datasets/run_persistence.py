@@ -46,8 +46,7 @@ class EvaluationRunRecord(Base):
             name="ck_evaluation_runs_case_count",
         ),
         CheckConstraint(
-            "judgment_coverage_case_count >= 0 "
-            "AND judgment_coverage_case_count <= case_count",
+            "judgment_coverage_case_count >= 0 AND judgment_coverage_case_count <= case_count",
             name="ck_evaluation_runs_coverage_case_count",
         ),
         CheckConstraint(
@@ -288,8 +287,7 @@ class EvaluationRunCaseRecord(Base):
             name="ck_evaluation_run_cases_duration",
         ),
         CheckConstraint(
-            "judged_count >= 1 AND relevant_count >= 1 "
-            "AND relevant_count <= judged_count",
+            "judged_count >= 1 AND relevant_count >= 1 AND relevant_count <= judged_count",
             name="ck_evaluation_run_cases_judgments",
         ),
         CheckConstraint(

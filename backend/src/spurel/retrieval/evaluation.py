@@ -112,9 +112,7 @@ def evaluate_trace(
 
     metrics = calculate_retrieval_metrics(
         cutoff=cutoff,
-        ranked_chunk_ids=tuple(
-            result.chunk_id for result in trace.results[:cutoff]
-        ),
+        ranked_chunk_ids=tuple(result.chunk_id for result in trace.results[:cutoff]),
         judgments=judgments,
     )
 
@@ -149,43 +147,25 @@ def calculate_retrieval_metrics(
     _validate_judgments(judgments)
 
     if len(set(ranked_chunk_ids)) != len(ranked_chunk_ids):
-        raise RetrievalEvaluationQueryError(
-            "ranked retrieval results contain duplicate chunk IDs"
-        )
+        raise RetrievalEvaluationQueryError("ranked retrieval results contain duplicate chunk IDs")
 
     top_chunk_ids = ranked_chunk_ids[:cutoff]
-    relevance_by_chunk = {
-        judgment.chunk_id: judgment.relevance for judgment in judgments
-    }
-    relevant_count = sum(
-        1 for relevance in relevance_by_chunk.values() if relevance > 0
-    )
+    relevance_by_chunk = {judgment.chunk_id: judgment.relevance for judgment in judgments}
+    relevant_count = sum(1 for relevance in relevance_by_chunk.values() if relevance > 0)
 
     retrieved_count = len(top_chunk_ids)
-    retrieved_relevances = tuple(
-        relevance_by_chunk.get(chunk_id, 0) for chunk_id in top_chunk_ids
-    )
+    retrieved_relevances = tuple(relevance_by_chunk.get(chunk_id, 0) for chunk_id in top_chunk_ids)
 
-    judged_retrieved = sum(
-        1 for chunk_id in top_chunk_ids if chunk_id in relevance_by_chunk
-    )
-    relevant_retrieved = sum(
-        1 for relevance in retrieved_relevances if relevance > 0
-    )
+    judged_retrieved = sum(1 for chunk_id in top_chunk_ids if chunk_id in relevance_by_chunk)
+    relevant_retrieved = sum(1 for relevance in retrieved_relevances if relevance > 0)
 
     first_relevant_rank = next(
-        (
-            rank
-            for rank, relevance in enumerate(retrieved_relevances, start=1)
-            if relevance > 0
-        ),
+        (rank for rank, relevance in enumerate(retrieved_relevances, start=1) if relevance > 0),
         None,
     )
 
     dcg = _dcg(retrieved_relevances)
-    ideal_relevances = tuple(
-        sorted(relevance_by_chunk.values(), reverse=True)[:cutoff]
-    )
+    ideal_relevances = tuple(sorted(relevance_by_chunk.values(), reverse=True)[:cutoff])
     ideal_dcg = _dcg(ideal_relevances)
     # Binary relevance is grade > 0. Unjudged retrieved chunks are treated
     # as nonrelevant, as in the existing precision/recall calculations.
@@ -206,9 +186,7 @@ def calculate_retrieval_metrics(
         retrieved_count_at_k=retrieved_count,
         judged_retrieved_at_k=judged_retrieved,
         relevant_retrieved_at_k=relevant_retrieved,
-        judgment_coverage_at_k=(
-            judged_retrieved / retrieved_count if retrieved_count else None
-        ),
+        judgment_coverage_at_k=(judged_retrieved / retrieved_count if retrieved_count else None),
         precision_at_k=relevant_retrieved / cutoff,
         recall_at_k=relevant_retrieved / relevant_count,
         reciprocal_rank_at_k=(
@@ -243,18 +221,14 @@ def _validate_judgments(
     judgments: tuple[RelevanceJudgment, ...],
 ) -> None:
     if not judgments or len(judgments) > MAX_EVALUATION_JUDGMENTS:
-        raise RetrievalEvaluationQueryError(
-            "evaluation judgments are outside the supported range"
-        )
+        raise RetrievalEvaluationQueryError("evaluation judgments are outside the supported range")
 
     seen_chunk_ids: set[UUID] = set()
     relevant_count = 0
 
     for judgment in judgments:
         if judgment.chunk_id in seen_chunk_ids:
-            raise RetrievalEvaluationQueryError(
-                "evaluation judgments contain duplicate chunk IDs"
-            )
+            raise RetrievalEvaluationQueryError("evaluation judgments contain duplicate chunk IDs")
         seen_chunk_ids.add(judgment.chunk_id)
 
         if (
@@ -263,21 +237,16 @@ def _validate_judgments(
             or judgment.relevance < 0
             or judgment.relevance > MAX_RELEVANCE_GRADE
         ):
-            raise RetrievalEvaluationQueryError(
-                "evaluation relevance grade is invalid"
-            )
+            raise RetrievalEvaluationQueryError("evaluation relevance grade is invalid")
 
         if judgment.relevance > 0:
             relevant_count += 1
 
     if relevant_count == 0:
-        raise RetrievalEvaluationQueryError(
-            "evaluation requires at least one relevant judgment"
-        )
+        raise RetrievalEvaluationQueryError("evaluation requires at least one relevant judgment")
 
 
 def _dcg(relevances: tuple[int, ...]) -> float:
     return sum(
-        ((2**relevance) - 1) / log2(rank + 1)
-        for rank, relevance in enumerate(relevances, start=1)
+        ((2**relevance) - 1) / log2(rank + 1) for rank, relevance in enumerate(relevances, start=1)
     )

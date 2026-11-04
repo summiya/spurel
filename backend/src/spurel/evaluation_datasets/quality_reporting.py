@@ -27,8 +27,6 @@ def wilson_hit_rate_95(*, successes: int, trials: int) -> tuple[float, float]:
     denominator = 1 + z2 / trials
     center = (p + z2 / (2 * trials)) / denominator
     half_width = (
-        _WILSON_Z_95
-        * sqrt(p * (1 - p) / trials + z2 / (4 * trials * trials))
-        / denominator
+        _WILSON_Z_95 * sqrt(p * (1 - p) / trials + z2 / (4 * trials * trials)) / denominator
     )
     return max(0.0, center - half_width), min(1.0, center + half_width)

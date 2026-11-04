@@ -28,19 +28,21 @@ def _metrics(*, hit: bool) -> object:
         RelevanceJudgment(chunk_id=ids[3], relevance=2),
     )
     ranked = (ids[1], ids[2], ids[0]) if hit else (ids[1],)
-    return calculate_retrieval_metrics(
-        cutoff=3, ranked_chunk_ids=ranked, judgments=judgments
-    )
+    return calculate_retrieval_metrics(cutoff=3, ranked_chunk_ids=ranked, judgments=judgments)
 
 
 def _aggregate_two_cases():
     cases = (
         DatasetEvaluationCaseResult(
-            case_id=uuid4(), query="first", duration_ms=12.0,
+            case_id=uuid4(),
+            query="first",
+            duration_ms=12.0,
             metrics=_metrics(hit=True),
         ),
         DatasetEvaluationCaseResult(
-            case_id=uuid4(), query="second", duration_ms=18.0,
+            case_id=uuid4(),
+            query="second",
+            duration_ms=18.0,
             metrics=_metrics(hit=False),
         ),
     )
@@ -75,9 +77,7 @@ def test_macros_and_wilson_score_interval_are_measured_from_labeled_cases() -> N
     result = _aggregate_two_cases()
     assert result.case_count == 2
     assert result.hit_rate_at_k == 0.5
-    assert result.mean_average_precision_at_k == pytest.approx(
-        ((0.5 + 2 / 3) / 3) / 2
-    )
+    assert result.mean_average_precision_at_k == pytest.approx(((0.5 + 2 / 3) / 3) / 2)
     interval = wilson_hit_rate_95(successes=1, trials=2)
     assert result.hit_rate_wilson_95_lower == pytest.approx(interval[0])
     assert result.hit_rate_wilson_95_upper == pytest.approx(interval[1])

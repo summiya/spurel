@@ -459,8 +459,7 @@ def _aggregate(
     has_ap_measurements = all(value is not None for value in measured_ap)
     hit_count = sum(value is True for value in measured_hits)
     interval = (
-        wilson_hit_rate_95(successes=hit_count, trials=case_count)
-        if has_hit_measurements else None
+        wilson_hit_rate_95(successes=hit_count, trials=case_count) if has_hit_measurements else None
     )
 
     return DatasetEvaluationResult(
@@ -486,7 +485,8 @@ def _aggregate(
         hit_rate_at_k=hit_count / case_count if has_hit_measurements else None,
         mean_average_precision_at_k=(
             sum(value for value in measured_ap if value is not None) / case_count
-            if has_ap_measurements else None
+            if has_ap_measurements
+            else None
         ),
         hit_rate_wilson_95_lower=interval[0] if interval else None,
         hit_rate_wilson_95_upper=interval[1] if interval else None,
