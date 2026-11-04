@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, model_validator
 
 from spurel.documents.domain import DocumentMediaType
 from spurel.retrieval.evaluation import (
@@ -121,6 +121,7 @@ class HybridRetrievalRequest(BaseModel):
     filters: RetrievalMetadataFiltersRequest | None = None
     candidate_k: int = Field(default=50, ge=1, le=100)
     rrf_k: int = Field(default=60, ge=1, le=1_000)
+    rerank: StrictBool = False
 
     @model_validator(mode="after")
     def validate_candidate_pool(self) -> "HybridRetrievalRequest":
@@ -148,6 +149,9 @@ class HybridRetrievalMatchResponse(BaseModel):
     page_start: int | None = Field(default=None, ge=1)
     page_end: int | None = Field(default=None, ge=1)
     ocr_used: bool = False
+    candidate_rank: int | None = Field(default=None, ge=1)
+    rerank_rank: int | None = Field(default=None, ge=1)
+    rerank_score: float | None = None
 
 
 class HybridRetrievalResponse(BaseModel):
@@ -162,6 +166,8 @@ class HybridRetrievalResponse(BaseModel):
     rrf_k: int
     matches: list[HybridRetrievalMatchResponse]
     filters: RetrievalMetadataFiltersRequest | None = None
+    rerank: bool = False
+    reranker_model: str | None = None
 
 
 class RetrievalTraceSummaryResponse(BaseModel):
@@ -178,6 +184,7 @@ class RetrievalTraceSummaryResponse(BaseModel):
     embedding_model: str | None
     embedding_dimensions: int | None
     result_count: int = Field(ge=0, le=100)
+    reranker_model: str | None = None
     filters: RetrievalMetadataFiltersRequest | None = None
     created_at: datetime
 
@@ -205,6 +212,9 @@ class RetrievalTraceResultResponse(BaseModel):
     rrf_score: float | None
     vector_rank: int | None
     keyword_rank: int | None
+    candidate_rank: int | None = None
+    rerank_rank: int | None = None
+    rerank_score: float | None = None
 
 
 class RetrievalTraceDetailResponse(BaseModel):
@@ -223,6 +233,7 @@ class RetrievalTraceDetailResponse(BaseModel):
     embedding_dimensions: int | None
     created_at: datetime
     filters: RetrievalMetadataFiltersRequest | None = None
+    reranker_model: str | None = None
     results: list[RetrievalTraceResultResponse]
 
 
@@ -255,6 +266,7 @@ class RetrievalTraceComparisonSideResponse(BaseModel):
     embedding_dimensions: int | None
     result_count: int = Field(ge=0, le=100)
     filters: RetrievalMetadataFiltersRequest | None = None
+    reranker_model: str | None = None
 
 
 class RetrievalTraceComparisonResultResponse(BaseModel):
@@ -275,6 +287,10 @@ class RetrievalTraceComparisonResultResponse(BaseModel):
     second_keyword_score: float | None
     first_rrf_score: float | None
     second_rrf_score: float | None
+    first_candidate_rank: int | None = None
+    second_candidate_rank: int | None = None
+    first_rerank_score: float | None = None
+    second_rerank_score: float | None = None
 
 
 class RetrievalTraceComparisonResponse(BaseModel):
