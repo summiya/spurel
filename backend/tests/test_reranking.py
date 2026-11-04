@@ -14,7 +14,11 @@ from spurel.retrieval.reranking import (
 )
 from spurel.retrieval.trace_service import RetrievalTraceService
 from spurel.retrieval.traced import TracedHybridRetrievalService
-from spurel.retrieval.tracing import RetrievalTrace, RetrievalTraceMode, RetrievalTraceValidationError
+from spurel.retrieval.tracing import (
+    RetrievalTrace,
+    RetrievalTraceMode,
+    RetrievalTraceValidationError,
+)
 
 
 def _match(rank: int) -> HybridRetrievalMatch:

@@ -84,7 +84,12 @@ export function parseRetrievalRequest(
   if (!isRecord(value)) return null;
   const required =
     mode === "hybrid" ? ["query", "top_k", "candidate_k", "rrf_k"] : ["query", "top_k"];
-  if (Object.keys(value).some((key) => ![...required, "filters", ...(mode === "hybrid" ? ["rerank"] : [])].includes(key))) return null;
+  if (
+    Object.keys(value).some(
+      (key) => ![...required, "filters", ...(mode === "hybrid" ? ["rerank"] : [])].includes(key),
+    )
+  )
+    return null;
   const filters = "filters" in value ? parseRetrievalMetadataFilters(value.filters) : null;
   if ("filters" in value && filters === null) return null;
   if (typeof value.query !== "string") return null;
@@ -131,13 +136,14 @@ export function isRetrievalResult(value: unknown): value is RetrievalResult {
   )
     return false;
 
-  if (
-    "rerank" in value && typeof value.rerank !== "boolean"
-  ) return false;
+  if ("rerank" in value && typeof value.rerank !== "boolean") return false;
   if (
     value.rerank === true &&
-    (value.mode !== "hybrid" || typeof value.reranker_model !== "string" || !value.reranker_model.trim())
-  ) return false;
+    (value.mode !== "hybrid" ||
+      typeof value.reranker_model !== "string" ||
+      !value.reranker_model.trim())
+  )
+    return false;
   if (
     "filters" in value &&
     value.filters !== null &&
@@ -167,15 +173,19 @@ export function isRetrievalResult(value: unknown): value is RetrievalResult {
     ))
       return false;
 
-    if (value.rerank === true && (
-      !boundedInteger(item.candidate_rank, 1, value.candidate_k as number) ||
-      item.rerank_rank !== item.rank ||
-      typeof item.rerank_score !== "number" ||
-      !Number.isFinite(item.rerank_score)
-    )) return false;
-    if (value.rerank !== true && (
-      item.candidate_rank != null || item.rerank_rank != null || item.rerank_score != null
-    )) return false;
+    if (
+      value.rerank === true &&
+      (!boundedInteger(item.candidate_rank, 1, value.candidate_k as number) ||
+        item.rerank_rank !== item.rank ||
+        typeof item.rerank_score !== "number" ||
+        !Number.isFinite(item.rerank_score))
+    )
+      return false;
+    if (
+      value.rerank !== true &&
+      (item.candidate_rank != null || item.rerank_rank != null || item.rerank_score != null)
+    )
+      return false;
     const primary =
       value.mode === "vector"
         ? item.cosine_similarity

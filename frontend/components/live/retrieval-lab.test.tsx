@@ -259,10 +259,14 @@ describe("live retrieval lab", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Hybrid" }));
     fireEvent.click(screen.getByRole("checkbox", { name: /Cross-encoder reranking/ }));
-    expect(vi.mocked(fetch).mock.calls.filter(([, init]) => init?.method === "POST")).toHaveLength(0);
+    expect(vi.mocked(fetch).mock.calls.filter(([, init]) => init?.method === "POST")).toHaveLength(
+      0,
+    );
     fireEvent.click(screen.getByRole("button", { name: "Run live retrieval" }));
     expect(confirm).toHaveBeenCalledTimes(1);
-    expect(vi.mocked(fetch).mock.calls.filter(([, init]) => init?.method === "POST")).toHaveLength(0);
+    expect(vi.mocked(fetch).mock.calls.filter(([, init]) => init?.method === "POST")).toHaveLength(
+      0,
+    );
 
     confirm.mockReturnValue(true);
     fireEvent.click(screen.getByRole("button", { name: "Run live retrieval" }));

@@ -130,8 +130,12 @@ describe("retrieval payloads and scores", () => {
       value: "0.71000",
     });
     expect(isRetrievalResult({ ...result, reranker_model: null })).toBe(false);
-    expect(isRetrievalResult({ ...result, matches: [{ ...result.matches[0], rerank_score: NaN }] })).toBe(false);
-    expect(isRetrievalResult({ ...result, matches: [{ ...result.matches[0], candidate_rank: 0 }] })).toBe(false);
+    expect(
+      isRetrievalResult({ ...result, matches: [{ ...result.matches[0], rerank_score: NaN }] }),
+    ).toBe(false);
+    expect(
+      isRetrievalResult({ ...result, matches: [{ ...result.matches[0], candidate_rank: 0 }] }),
+    ).toBe(false);
   });
 
   it("rejects inconsistent or invented PDF page provenance", () => {

@@ -19,7 +19,10 @@ depends_on: str | Sequence[str] | None = None
 
 def upgrade() -> None:
     op.add_column("retrieval_traces", sa.Column("reranker_model", sa.String(255), nullable=True))
-    op.add_column("retrieval_trace_results", sa.Column("candidate_rank", sa.Integer(), nullable=True))
+    op.add_column(
+        "retrieval_trace_results",
+        sa.Column("candidate_rank", sa.Integer(), nullable=True),
+    )
     op.add_column("retrieval_trace_results", sa.Column("rerank_rank", sa.Integer(), nullable=True))
     op.add_column("retrieval_trace_results", sa.Column("rerank_score", sa.Float(), nullable=True))
     op.create_check_constraint(
@@ -32,7 +35,9 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.drop_constraint("ck_retrieval_trace_results_rerank", "retrieval_trace_results", type_="check")
+    op.drop_constraint(
+        "ck_retrieval_trace_results_rerank", "retrieval_trace_results", type_="check"
+    )
     op.drop_column("retrieval_trace_results", "rerank_score")
     op.drop_column("retrieval_trace_results", "rerank_rank")
     op.drop_column("retrieval_trace_results", "candidate_rank")

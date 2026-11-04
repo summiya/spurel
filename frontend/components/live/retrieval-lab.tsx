@@ -107,7 +107,9 @@ function EvidenceItem({
                 : `Keyword rank #${item.keyword_rank}`}
             </span>
             {item.candidate_rank != null ? (
-              <span className="tag">RRF candidate #{item.candidate_rank} → reranked #{item.rerank_rank}</span>
+              <span className="tag">
+                RRF candidate #{item.candidate_rank} → reranked #{item.rerank_rank}
+              </span>
             ) : null}
           </>
         ) : null}
@@ -166,7 +168,10 @@ export function LiveRetrievalLabPage({ initialKnowledgeBaseId }: Props) {
     (query.trim() !== result.query ||
       mode !== result.mode ||
       topK !== result.top_k ||
-      (result.mode === "hybrid" && (candidateK !== result.candidate_k || rrfK !== result.rrf_k || rerank !== Boolean(result.rerank))) ||
+      (result.mode === "hybrid" &&
+        (candidateK !== result.candidate_k ||
+          rrfK !== result.rrf_k ||
+          rerank !== Boolean(result.rerank))) ||
       retrievalFiltersKey(activeFilters) !== retrievalFiltersKey(currentRun?.filters)),
   );
 
@@ -198,16 +203,23 @@ export function LiveRetrievalLabPage({ initialKnowledgeBaseId }: Props) {
     const normalized = query.trim();
     if (!knowledgeBase || !normalized || normalized.length > 8000 || running || invalidFilter)
       return;
-    if (mode === "hybrid" && rerank && !window.confirm(
-      "Run explicit cross-encoder reranking? This sends selected document excerpts to your configured reranker service, which may incur charges."
-    )) return;
+    if (
+      mode === "hybrid" &&
+      rerank &&
+      !window.confirm(
+        "Run explicit cross-encoder reranking? This sends selected document excerpts to your configured reranker service, which may incur charges.",
+      )
+    )
+      return;
     const id = ++sequence.current;
     const target = knowledgeBase.id;
     const submittedMode = mode;
     const payload = {
       query: normalized,
       top_k: topK,
-      ...(mode === "hybrid" ? { candidate_k: candidateK, rrf_k: rrfK, ...(rerank ? { rerank: true } : {}) } : {}),
+      ...(mode === "hybrid"
+        ? { candidate_k: candidateK, rrf_k: rrfK, ...(rerank ? { rerank: true } : {}) }
+        : {}),
       ...(activeFilters ? { filters: activeFilters } : {}),
     };
     setRunning(true);
@@ -225,8 +237,11 @@ export function LiveRetrievalLabPage({ initialKnowledgeBaseId }: Props) {
           body: JSON.stringify(payload),
         },
       );
-      if (!isRetrievalResult(raw) || raw.mode !== submittedMode ||
-        (Boolean(raw.rerank) !== (submittedMode === "hybrid" && rerank))) {
+      if (
+        !isRetrievalResult(raw) ||
+        raw.mode !== submittedMode ||
+        Boolean(raw.rerank) !== (submittedMode === "hybrid" && rerank)
+      ) {
         throw new Error("The retrieval API returned an unexpected response.");
       }
       if (id !== sequence.current) return;
@@ -576,12 +591,13 @@ export function LiveRetrievalLabPage({ initialKnowledgeBaseId }: Props) {
                     checked={rerank}
                     disabled={running}
                     onChange={(event) => setRerank(event.target.checked)}
-                  />{" "}Cross-encoder reranking (opt-in)
+                  />{" "}
+                  Cross-encoder reranking (opt-in)
                 </label>
                 <p className="text-hint">
                   Re-score the fused candidate pool before selecting Top K. A configured server-side
-                  reranker is required. Only clicking Run will send excerpt text to that service;
-                  it may incur charges. Default retrieval remains exact RRF.
+                  reranker is required. Only clicking Run will send excerpt text to that service; it
+                  may incur charges. Default retrieval remains exact RRF.
                 </p>
               </div>
             ) : null}
@@ -627,7 +643,10 @@ export function LiveRetrievalLabPage({ initialKnowledgeBaseId }: Props) {
             <div className="live-retrieval-metrics">
               <span>
                 <small>Mode</small>
-                <strong>{modeTitle(result.mode)}{result.rerank ? " · Cross-encoder" : ""}</strong>
+                <strong>
+                  {modeTitle(result.mode)}
+                  {result.rerank ? " · Cross-encoder" : ""}
+                </strong>
               </span>
               <span>
                 <small>Matches returned</small>

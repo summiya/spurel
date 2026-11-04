@@ -139,7 +139,9 @@ class RetrievalTrace:
 
             rerank_values = (result.candidate_rank, result.rerank_rank, result.rerank_score)
             if reranker_model is None and any(value is not None for value in rerank_values):
-                raise RetrievalTraceValidationError("unreranked traces cannot include rerank scores")
+                raise RetrievalTraceValidationError(
+                    "unreranked traces cannot include rerank scores"
+                )
             if reranker_model is not None and (
                 result.candidate_rank is None
                 or isinstance(result.candidate_rank, bool)

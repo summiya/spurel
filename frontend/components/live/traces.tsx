@@ -429,7 +429,9 @@ export function LiveTraceHistoryPage({ initialKnowledgeBaseId, initialTraceId }:
                     </span>
                   ) : null}
                   {first.reranker_model ? (
-                    <span>Reranker <strong>{first.reranker_model}</strong></span>
+                    <span>
+                      Reranker <strong>{first.reranker_model}</strong>
+                    </span>
                   ) : null}
                   <span>
                     Embedding{" "}
@@ -501,7 +503,9 @@ export function LiveTraceHistoryPage({ initialKnowledgeBaseId, initialTraceId }:
                               </small>
                               {item.candidate_rank != null ? (
                                 <small>
-                                  RRF candidate #{item.candidate_rank} → reranked #{item.rerank_rank} · cross-encoder score {otherScore(item.rerank_score, 5)}
+                                  RRF candidate #{item.candidate_rank} → reranked #
+                                  {item.rerank_rank} · cross-encoder score{" "}
+                                  {otherScore(item.rerank_score, 5)}
                                 </small>
                               ) : null}
                               <Link
