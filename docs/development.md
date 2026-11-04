@@ -487,6 +487,39 @@ the ephemeral answer and are not saved as trace judgments. Historical
 retrieval traces, original source offsets, PDFs, evaluation data,
 backend auth and the Overview quality graph remain unchanged.
 
+## SP-24: Hit@K, MAP@K and bounded uncertainty reporting
+
+Retrieval metrics are computed from the same explicit graded labels
+used by existing Precision, Recall, MRR and nDCG. The new Hit@K flag
+is true if any returned chunk has a positive relevance judgment.
+AP@K sums precision at every positive judgment's retrieved rank
+and divides by `min(number_of_known_relevant_chunks, K)`. This is
+**binary** relevance; existing nDCG continues to use grades 0–3.
+MAP@K is the unweighted macro average over saved cases, and Hit
+Rate@K is the fraction of cases with Hit@K=true. If a new
+benchmark is missing a metric, the corresponding summary remains
+unavailable rather than inventing missing cases.
+
+The **95% Wilson score interval** is computed on the observed Hit@K
+count for the actual evaluated sample size. It is a binomial,
+independence-based interval, **not** model confidence calibration or a
+guarantee of deployment performance: manually curated questions and
+incomplete relevance judgments may not represent production. The
+frontend emphasizes sample size (less than 20 is labeled small)
+and the original judgment coverage. Existing pre-execution
+judgment integrity audits remain mandatory.
+
+The additive migration `0017_advanced_evaluation_metrics` follows
+`0016_retrieval_stage_timings`. New nullable run columns store hit
+rate, MAP and interval bounds; new nullable case columns store
+Hit@K and AP@K. Historical saved evaluation data is left untouched.
+New fields are returned from the existing operator-authenticated
+benchmark history/detail/comparison endpoints. Both comparison
+sides must use the same case/query set to compare aggregates;
+missing historical fields yield NULL deltas, not zeros.
+The existing quality gate, Overview Recall/Precision chart, document
+indexing and provider adapters are unchanged.
+
 ## Environment and secrets
 
 `make init` copies `.env.example` to the ignored `.env` on first use, generates a strong random `SPUREL_API_TOKEN`, and restricts its permissions to the file owner on POSIX systems. It **does not replace** an existing valid token or provider key. Do not print, commit, or share your `.env`.

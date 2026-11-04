@@ -45,6 +45,10 @@ function run(id: string, recall: number) {
     mean_recall_at_k: recall,
     mrr_at_k: 1,
     mean_ndcg_at_k: 1,
+    hit_rate_at_k: 1,
+    mean_average_precision_at_k: recall,
+    hit_rate_wilson_95_lower: 0.2065,
+    hit_rate_wilson_95_upper: 1,
     created_at: "2026-11-03T19:00:00Z",
     cases: [
       {
@@ -62,6 +66,8 @@ function run(id: string, recall: number) {
         recall_at_k: recall,
         reciprocal_rank_at_k: 1,
         ndcg_at_k: 1,
+        hit_at_k: true,
+        average_precision_at_k: recall,
       },
     ],
   };
@@ -266,6 +272,21 @@ describe("SP-14 live evaluation workbench", () => {
       cache: "no-store",
     });
     expect(JSON.parse(String(benchmarkCall?.[1]?.body))).toEqual({ top_k: 10 });
+  });
+
+  it("shows saved Hit@K/MAP@K with an explicitly qualified interval", async () => {
+    casesPresent = true;
+    priorRuns = true;
+    render(<LiveEvaluationsPage />);
+    expect(await screen.findByText("Sample-aware quality interpretation")).toBeInTheDocument();
+    expect(screen.getByText(/Hit@K · 95% Wilson interval: 20.6%–100.0%/)).toBeInTheDocument();
+    expect(screen.getByText(/Small labeled sample \(1 cases\)/)).toBeInTheDocument();
+    expect(screen.getByText(/not model confidence or probability calibration/)).toBeInTheDocument();
+    expect(screen.getByText("Hit @ K")).toBeInTheDocument();
+    expect(screen.getByText("MAP @ K")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Inspect selected run" }));
+    expect(await screen.findByText(/Saved run ·/)).toBeInTheDocument();
+    expect(screen.getByText("AP@K")).toBeInTheDocument();
   });
 
   it("compares persisted runs, checks gates explicitly and never invokes an embedding model", async () => {

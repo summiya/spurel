@@ -127,6 +127,43 @@ traces remain retrieval-only. No new database migrations, additional
 services or automatic provider calls are introduced. With empty retrieval
 there is no generation or verification call.
 
+## SP-24: advanced retrieval metrics and sample-aware quality reports (in review)
+
+SP-24 extends saved **labeled retrieval benchmarks**—not RAG language-model
+output—to include **Hit@K** (did at least one relevant chunk appear?)
+and **Average Precision@K (AP@K)** per case, plus macro-averaged **Hit
+Rate@K** and **MAP@K** per completed benchmark. AP@K uses binary relevance
+(grade greater than zero) at each relevant rank, normalizing by the
+smaller of K and the number of known relevant judgments. This deliberately
+preserves existing graded nDCG, Precision, Recall and MRR.
+
+Completed new runs also persist a **95% Wilson score interval** for the
+observed Hit Rate@K across the exact saved labeled cases. It uses only
+the measured count of cases with at least one hit and the number of
+cases evaluated—**not a fabricated model confidence score or a
+learned probability calibration**. The interval is a binomial sampling
+approximation under an independence/sampling assumption. Because an
+operator selects datasets (often with only a few cases), it cannot
+establish population accuracy or calibrated prediction probabilities.
+The Evaluations panel explicitly warns about sample sizes under 20 and
+shows judgment coverage from the existing benchmark. Unjudged retrieved
+chunks still count as nonrelevant, so incomplete labels can bias these
+results.
+
+The new values are available in authenticated run detail, history and
+read-only comparison API responses, with frontend metric cards, history
+and case tables, and a sample-aware quality-interpretation panel.
+New comparison deltas appear only when the case/query sets match and
+both measurements exist. Existing quality gates and the **Overview
+retrieval quality chart** are not altered.
+
+Alembic migration **0017** adds only nullable summary and per-case
+metric columns. Older immutable runs retain `null` for these newly
+introduced metrics: **no backfill, re-embedding, inferred Wilson bounds
+or rewriting of historical judgments**. Viewing existing runs never
+executes retrieval or calls a model. Only explicitly running a normal
+benchmark records the new metrics. No new providers are used.
+
 ## Live Overview dashboard (frontend follow-up)
 
 Open [Overview](http://localhost:3000/) and sign in as the local operator to load
