@@ -200,6 +200,36 @@ provider and may incur charges; failed attempts never activate partial indexes.
 The new nullable page columns are added through a **non-destructive Alembic
 migration**, preserving existing document/chunk versions. Never reset volumes.
 
+## SP-19: source metadata filters (in review)
+
+SP-19 adds an **optional Document metadata filters** panel to the existing
+[Retrieval Lab](http://localhost:3000/retrieval), without removing search modes,
+results, traces or the dashboard graph. Filter by the **actual persisted**
+document UUID, PDF/Markdown/plain-text type, a literal case-insensitive
+filename substring, and an inclusive UTC upload date range. The conditions
+are combined with AND; several document IDs or file types in an API request
+are OR within their own field. Existing empty/unfiltered queries work as before.
+
+Filters are validated on the client and backend, then applied **inside SQL
+before ranking**, including both vector and keyword candidate pools used by
+hybrid RRF. A result filtered only after ranking could miss relevant matches
+within the requested source scope; this implementation avoids that. Saved
+retrieval traces record the exact normalized filter configuration and Trace
+History flags comparisons with different scopes.
+
+The filter panel lists **loaded** documents from the selected knowledge base;
+the backend always enforces the requested knowledge-base scope regardless
+of document ID, so IDs from another collection never reveal its content.
+No document metadata is edited, and filters do not perform access control
+or establish per-user permissions. Existing RAG answers and evaluation flows
+remain unfiltered by default; SP-19 adds filters to the three Retrieval Lab
+search modes only. No search/embedding call occurs just by editing filters.
+
+SP-19 uses an additive nullable JSONB trace-filter snapshot column in
+Alembic migration **0014**. The PR is **based on SP-18 PR #80**, which adds
+migration 0013; merge SP-18 first, then merge SP-19. Existing trace snapshots
+remain untouched with `filters: null`.
+
 ## Inspect real chunks (SP-11)
 
 Once signed in, open [Chunk Inspector](http://localhost:3000/chunks) or select

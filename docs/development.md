@@ -321,6 +321,47 @@ Page ranges and OCR flags are also available in read-only retrieval and
 RAG source summaries. They identify where the excerpt came from, not an
 independent proof that a model-generated claim is supported (SP-23).
 
+## SP-19: source metadata retrieval filters (in review)
+
+The Retrieval Lab exposes an optional group of safe filters derived from
+document records, not arbitrary metadata JSON: `document_ids` (up to 20
+unique UUIDs), `media_types` (PDF, Markdown, text), `filename_contains`
+(literal case-insensitive substring of at most 100 characters), and
+timezone-aware `created_after` / `created_before` dates. Criteria use
+AND across fields and OR within arrays. Empty objects, duplicate IDs,
+unsupported file types, naive timestamps, reversed ranges and unexpected
+keys are rejected as HTTP 422 before any provider call.
+
+Example request to `/knowledge-bases/{kb}/retrieval/hybrid`:
+
+```json
+{
+  "query": "refund policy",
+  "top_k": 10,
+  "candidate_k": 50,
+  "rrf_k": 60,
+  "filters": {
+    "media_types": ["application/pdf"],
+    "filename_contains": "handbook"
+  }
+}
+```
+
+Keyword, vector and hybrid paths apply the same filters to the existing
+`documents` table inside SQL before ranking/limiting results. Hybrid
+passes the same filter to both source candidate pools before RRF fusion.
+All requests remain scoped to the authenticated knowledge-base ID;
+filters are **not** authorization and per-user RBAC remains unimplemented.
+
+The optional `retrieval_traces.metadata_filters` JSONB column stores a
+normalized snapshot of the filters used in a completed search. Legacy traces
+remain null. This additive migration is **0014** and depends on SP-18's
+migration 0013. Merge PR #80 first; this branch is based on SP-18 pending
+review. No data reset, reprocessing or embedding call is required to add
+filter capability, but explicitly running vector/hybrid retrieval can still
+incur query embedding API charges. The existing RAG and benchmark APIs
+remain unchanged and use unfiltered retrieval by default.
+
 ## Environment and secrets
 
 `make init` copies `.env.example` to the ignored `.env` on first use, generates a strong random `SPUREL_API_TOKEN`, and restricts its permissions to the file owner on POSIX systems. It **does not replace** an existing valid token or provider key. Do not print, commit, or share your `.env`.

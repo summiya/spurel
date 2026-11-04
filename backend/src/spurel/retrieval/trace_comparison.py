@@ -4,6 +4,7 @@ import asyncio
 from dataclasses import dataclass
 from uuid import UUID
 
+from spurel.retrieval.metadata_filters import RetrievalMetadataFilters
 from spurel.retrieval.trace_service import RetrievalTraceService
 from spurel.retrieval.tracing import (
     RetrievalTrace,
@@ -35,6 +36,7 @@ class RetrievalTraceComparisonSide:
     embedding_model: str | None
     embedding_dimensions: int | None
     result_count: int
+    metadata_filters: RetrievalMetadataFilters | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -89,9 +91,7 @@ class RetrievalTraceComparisonService:
     ) -> RetrievalTraceComparison:
         """Load two traces and describe ranking/result differences."""
         if first_trace_id == second_trace_id:
-            raise RetrievalTraceComparisonQueryError(
-                "comparison requires two distinct trace IDs"
-            )
+            raise RetrievalTraceComparisonQueryError("comparison requires two distinct trace IDs")
 
         first, second = await asyncio.gather(
             self._trace_service.get_by_id(
@@ -123,12 +123,8 @@ def _compare_traces(
     aligned = sorted(
         union_ids,
         key=lambda chunk_id: (
-            first_by_chunk[chunk_id].rank
-            if chunk_id in first_by_chunk
-            else 101,
-            second_by_chunk[chunk_id].rank
-            if chunk_id in second_by_chunk
-            else 101,
+            first_by_chunk[chunk_id].rank if chunk_id in first_by_chunk else 101,
+            second_by_chunk[chunk_id].rank if chunk_id in second_by_chunk else 101,
             chunk_id,
         ),
     )
@@ -181,9 +177,7 @@ def _compare_result(
     first_rank = first_result.rank if first_result is not None else None
     second_rank = second_result.rank if second_result is not None else None
     rank_delta = (
-        second_rank - first_rank
-        if first_rank is not None and second_rank is not None
-        else None
+        second_rank - first_rank if first_rank is not None and second_rank is not None else None
     )
 
     return RetrievalTraceComparisonResult(
@@ -202,18 +196,10 @@ def _compare_result(
         second_cosine_similarity=(
             second_result.cosine_similarity if second_result is not None else None
         ),
-        first_keyword_score=(
-            first_result.keyword_score if first_result is not None else None
-        ),
-        second_keyword_score=(
-            second_result.keyword_score if second_result is not None else None
-        ),
-        first_rrf_score=(
-            first_result.rrf_score if first_result is not None else None
-        ),
-        second_rrf_score=(
-            second_result.rrf_score if second_result is not None else None
-        ),
+        first_keyword_score=(first_result.keyword_score if first_result is not None else None),
+        second_keyword_score=(second_result.keyword_score if second_result is not None else None),
+        first_rrf_score=(first_result.rrf_score if first_result is not None else None),
+        second_rrf_score=(second_result.rrf_score if second_result is not None else None),
     )
 
 
@@ -230,4 +216,5 @@ def _side(trace: RetrievalTrace) -> RetrievalTraceComparisonSide:
         embedding_model=trace.embedding_model,
         embedding_dimensions=trace.embedding_dimensions,
         result_count=len(trace.results),
+        metadata_filters=trace.metadata_filters,
     )

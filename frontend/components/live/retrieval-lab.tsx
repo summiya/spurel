@@ -7,7 +7,14 @@ import { Icon } from "@/components/icons";
 import { EmptyState, ErrorState, LoadingState, PageHeading, Panel } from "@/components/ui";
 import { useDemoToast } from "@/components/workbench-shell";
 import { liveError, workspaceFetch } from "@/lib/live-client";
-import type { LiveKnowledgeBase } from "@/lib/live-types";
+import type { LiveDocument, LiveKnowledgeBase } from "@/lib/live-types";
+import {
+  describeRetrievalFilters,
+  parseRetrievalMetadataFilters,
+  retrievalFiltersKey,
+  type DocumentMediaType,
+  type RetrievalMetadataFilters,
+} from "@/lib/retrieval-filter-types";
 import {
   isRetrievalResult,
   mainScore,
@@ -27,6 +34,7 @@ interface CompletedRun {
   knowledgeBaseId: string;
   knowledgeBaseName: string;
   result: RetrievalResult;
+  filters: RetrievalMetadataFilters | null;
 }
 
 function duration(value: number): string {
@@ -116,6 +124,26 @@ export function LiveRetrievalLabPage({ initialKnowledgeBaseId }: Props) {
   const [topK, setTopK] = useState(10);
   const [candidateK, setCandidateK] = useState(50);
   const [rrfK, setRrfK] = useState(60);
+  const [documentFilterId, setDocumentFilterId] = useState("");
+  const [mediaType, setMediaType] = useState<DocumentMediaType | "">("");
+  const [filenameContains, setFilenameContains] = useState("");
+  const [dateAfter, setDateAfter] = useState("");
+  const [dateBefore, setDateBefore] = useState("");
+  const documents = useWorkspacePages<LiveDocument>(
+    knowledgeBase ? `/api/workspace/knowledge-bases/${knowledgeBase.id}/documents` : null,
+  );
+  const rawMetadata = {
+    ...(documentFilterId ? { document_ids: [documentFilterId] } : {}),
+    ...(mediaType ? { media_types: [mediaType] } : {}),
+    ...(filenameContains.trim() ? { filename_contains: filenameContains.trim() } : {}),
+    ...(dateAfter ? { created_after: new Date(dateAfter + "T00:00:00.000Z").toISOString() } : {}),
+    ...(dateBefore
+      ? { created_before: new Date(dateBefore + "T23:59:59.999Z").toISOString() }
+      : {}),
+  };
+  const hasMetadata = Object.keys(rawMetadata).length > 0;
+  const activeFilters = hasMetadata ? parseRetrievalMetadataFilters(rawMetadata) : null;
+  const invalidFilter = hasMetadata && !activeFilters;
   const [running, setRunning] = useState(false);
   const [error, setError] = useState("");
   const [run, setRun] = useState<CompletedRun | null>(null);
@@ -134,12 +162,18 @@ export function LiveRetrievalLabPage({ initialKnowledgeBaseId }: Props) {
     (query.trim() !== result.query ||
       mode !== result.mode ||
       topK !== result.top_k ||
-      (result.mode === "hybrid" && (candidateK !== result.candidate_k || rrfK !== result.rrf_k))),
+      (result.mode === "hybrid" && (candidateK !== result.candidate_k || rrfK !== result.rrf_k)) ||
+      retrievalFiltersKey(activeFilters) !== retrievalFiltersKey(currentRun?.filters)),
   );
 
   function changeBase(id: string) {
     sequence.current += 1;
     setPreferredBaseId(id);
+    setDocumentFilterId("");
+    setMediaType("");
+    setFilenameContains("");
+    setDateAfter("");
+    setDateBefore("");
     setRun(null);
     setError("");
     setRunning(false);
@@ -158,7 +192,8 @@ export function LiveRetrievalLabPage({ initialKnowledgeBaseId }: Props) {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const normalized = query.trim();
-    if (!knowledgeBase || !normalized || normalized.length > 8000 || running) return;
+    if (!knowledgeBase || !normalized || normalized.length > 8000 || running || invalidFilter)
+      return;
     const id = ++sequence.current;
     const target = knowledgeBase.id;
     const submittedMode = mode;
@@ -166,6 +201,7 @@ export function LiveRetrievalLabPage({ initialKnowledgeBaseId }: Props) {
       query: normalized,
       top_k: topK,
       ...(mode === "hybrid" ? { candidate_k: candidateK, rrf_k: rrfK } : {}),
+      ...(activeFilters ? { filters: activeFilters } : {}),
     };
     setRunning(true);
     setError("");
@@ -186,10 +222,17 @@ export function LiveRetrievalLabPage({ initialKnowledgeBaseId }: Props) {
         throw new Error("The retrieval API returned an unexpected response.");
       }
       if (id !== sequence.current) return;
+      if (
+        activeFilters &&
+        retrievalFiltersKey(raw.filters) !== retrievalFiltersKey(activeFilters)
+      ) {
+        throw new Error("The backend did not confirm the requested document metadata filters.");
+      }
       setRun({
         knowledgeBaseId: target,
         knowledgeBaseName: knowledgeBase.name,
         result: raw,
+        filters: activeFilters,
       });
       notify(
         `Saved retrieval trace ${raw.trace_id.slice(0, 8)} · ${raw.matches.length} result(s).`,
@@ -326,6 +369,117 @@ export function LiveRetrievalLabPage({ initialKnowledgeBaseId }: Props) {
               disabled={running}
               placeholder="Enter a question or search phrase from your indexed documents..."
             />
+            <div className="retrieval-filter-panel">
+              <strong>Document metadata filters (optional)</strong>
+              <p className="text-hint">
+                Restrict which indexed documents can be ranked. All selected criteria must match;
+                filename search treats % and _ as literal characters. Editing filters does not run a
+                query.
+              </p>
+              <div className="retrieval-config-grid">
+                <div>
+                  <label htmlFor="filter-document" className="field-label">
+                    Document
+                  </label>
+                  <select
+                    id="filter-document"
+                    className="select-control"
+                    disabled={running || documents.loading}
+                    value={documentFilterId}
+                    onChange={(event) => setDocumentFilterId(event.target.value)}
+                  >
+                    <option value="">All documents</option>
+                    {documents.items.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.filename}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="filter-type" className="field-label">
+                    File type
+                  </label>
+                  <select
+                    id="filter-type"
+                    className="select-control"
+                    disabled={running}
+                    value={mediaType}
+                    onChange={(event) => setMediaType(event.target.value as DocumentMediaType | "")}
+                  >
+                    <option value="">All file types</option>
+                    <option value="application/pdf">PDF</option>
+                    <option value="text/markdown">Markdown</option>
+                    <option value="text/plain">Text</option>
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="filter-filename" className="field-label">
+                    Filename contains
+                  </label>
+                  <input
+                    id="filter-filename"
+                    className="input-control"
+                    type="text"
+                    maxLength={100}
+                    value={filenameContains}
+                    disabled={running}
+                    onChange={(event) => setFilenameContains(event.target.value)}
+                    placeholder="e.g. handbook"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="filter-after" className="field-label">
+                    Uploaded on or after (UTC)
+                  </label>
+                  <input
+                    id="filter-after"
+                    className="input-control"
+                    type="date"
+                    value={dateAfter}
+                    disabled={running}
+                    onChange={(event) => setDateAfter(event.target.value)}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="filter-before" className="field-label">
+                    Uploaded on or before (UTC)
+                  </label>
+                  <input
+                    id="filter-before"
+                    className="input-control"
+                    type="date"
+                    value={dateBefore}
+                    disabled={running}
+                    onChange={(event) => setDateBefore(event.target.value)}
+                  />
+                </div>
+              </div>
+              {documents.error ? (
+                <p role="alert" className="text-hint">
+                  {documents.error}
+                </p>
+              ) : null}
+              {documents.hasMore ? (
+                <button
+                  type="button"
+                  className="button ghost compact"
+                  onClick={() => void documents.loadMore()}
+                  disabled={documents.loadingMore || running}
+                >
+                  {documents.loadingMore ? "Loading…" : "Load more documents for selection"}
+                </button>
+              ) : null}
+              {invalidFilter ? (
+                <p role="alert" className="text-hint">
+                  Invalid metadata filter: check the filename and date range.
+                </p>
+              ) : null}
+              <p className="text-hint">
+                Scope: {describeRetrievalFilters(activeFilters)}. Only the selected knowledge base
+                is searched.
+              </p>
+            </div>
             <div className="retrieval-config-grid">
               <div>
                 <span className="field-label">Retrieval strategy</span>
@@ -414,7 +568,7 @@ export function LiveRetrievalLabPage({ initialKnowledgeBaseId }: Props) {
               <button
                 type="submit"
                 className="button primary"
-                disabled={running || !knowledgeBase || !query.trim()}
+                disabled={running || !knowledgeBase || !query.trim() || invalidFilter}
               >
                 <Icon name={running ? "refresh" : "play"} size={15} />
                 {running ? "Running…" : "Run live retrieval"}
@@ -464,6 +618,9 @@ export function LiveRetrievalLabPage({ initialKnowledgeBaseId }: Props) {
                 <strong>{currentRun?.knowledgeBaseName}</strong>
               </span>
             </div>
+            <p className="text-hint" aria-label="Applied document metadata filters">
+              Applied document scope: {describeRetrievalFilters(currentRun?.filters)}
+            </p>
             <div className="retrieval-trace-bar">
               <span className="retrieval-trace-id" title={result.trace_id}>
                 Trace ID · {result.trace_id}
@@ -512,6 +669,7 @@ export function LiveRetrievalLabPage({ initialKnowledgeBaseId }: Props) {
                     : "Not applicable (keyword only)"}
                 </span>
                 <span>Original duration: {duration(trace.duration_ms)}</span>
+                <span>Saved filters: {describeRetrievalFilters(trace.filters)}</span>
               </div>
             ) : null}
           </Panel>

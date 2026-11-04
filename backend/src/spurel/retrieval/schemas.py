@@ -4,13 +4,41 @@ from datetime import datetime
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from spurel.documents.domain import DocumentMediaType
 from spurel.retrieval.evaluation import (
     MAX_EVALUATION_JUDGMENTS,
     MAX_RELEVANCE_GRADE,
 )
+from spurel.retrieval.metadata_filters import RetrievalMetadataFilters
 from spurel.retrieval.tracing import RetrievalTraceMode
+
+
+class RetrievalMetadataFiltersRequest(BaseModel):
+    """Validated filters for fields already present on source documents."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    document_ids: list[UUID] = Field(default_factory=list, max_length=20)
+    media_types: list[DocumentMediaType] = Field(default_factory=list, max_length=3)
+    filename_contains: str | None = Field(default=None, min_length=1, max_length=100)
+    created_after: datetime | None = None
+    created_before: datetime | None = None
+
+    @model_validator(mode="after")
+    def validate_metadata(self) -> "RetrievalMetadataFiltersRequest":
+        self.to_domain()
+        return self
+
+    def to_domain(self) -> RetrievalMetadataFilters:
+        return RetrievalMetadataFilters(
+            document_ids=tuple(self.document_ids),
+            media_types=tuple(self.media_types),
+            filename_contains=self.filename_contains,
+            created_after=self.created_after,
+            created_before=self.created_before,
+        )
 
 
 class VectorRetrievalRequest(BaseModel):
@@ -18,6 +46,7 @@ class VectorRetrievalRequest(BaseModel):
 
     query: str = Field(min_length=1, max_length=8_000)
     top_k: int = Field(default=10, ge=1, le=100)
+    filters: RetrievalMetadataFiltersRequest | None = None
 
 
 class VectorRetrievalMatchResponse(BaseModel):
@@ -45,6 +74,7 @@ class VectorRetrievalResponse(BaseModel):
     query: str
     top_k: int
     matches: list[VectorRetrievalMatchResponse]
+    filters: RetrievalMetadataFiltersRequest | None = None
 
 
 class KeywordRetrievalRequest(BaseModel):
@@ -52,6 +82,7 @@ class KeywordRetrievalRequest(BaseModel):
 
     query: str = Field(min_length=1, max_length=8_000)
     top_k: int = Field(default=10, ge=1, le=100)
+    filters: RetrievalMetadataFiltersRequest | None = None
 
 
 class KeywordRetrievalMatchResponse(BaseModel):
@@ -79,6 +110,7 @@ class KeywordRetrievalResponse(BaseModel):
     query: str
     top_k: int
     matches: list[KeywordRetrievalMatchResponse]
+    filters: RetrievalMetadataFiltersRequest | None = None
 
 
 class HybridRetrievalRequest(BaseModel):
@@ -86,6 +118,7 @@ class HybridRetrievalRequest(BaseModel):
 
     query: str = Field(min_length=1, max_length=8_000)
     top_k: int = Field(default=10, ge=1, le=100)
+    filters: RetrievalMetadataFiltersRequest | None = None
     candidate_k: int = Field(default=50, ge=1, le=100)
     rrf_k: int = Field(default=60, ge=1, le=1_000)
 
@@ -128,6 +161,7 @@ class HybridRetrievalResponse(BaseModel):
     candidate_k: int
     rrf_k: int
     matches: list[HybridRetrievalMatchResponse]
+    filters: RetrievalMetadataFiltersRequest | None = None
 
 
 class RetrievalTraceSummaryResponse(BaseModel):
@@ -144,6 +178,7 @@ class RetrievalTraceSummaryResponse(BaseModel):
     embedding_model: str | None
     embedding_dimensions: int | None
     result_count: int = Field(ge=0, le=100)
+    filters: RetrievalMetadataFiltersRequest | None = None
     created_at: datetime
 
 
@@ -187,6 +222,7 @@ class RetrievalTraceDetailResponse(BaseModel):
     embedding_model: str | None
     embedding_dimensions: int | None
     created_at: datetime
+    filters: RetrievalMetadataFiltersRequest | None = None
     results: list[RetrievalTraceResultResponse]
 
 
@@ -218,6 +254,7 @@ class RetrievalTraceComparisonSideResponse(BaseModel):
     embedding_model: str | None
     embedding_dimensions: int | None
     result_count: int = Field(ge=0, le=100)
+    filters: RetrievalMetadataFiltersRequest | None = None
 
 
 class RetrievalTraceComparisonResultResponse(BaseModel):

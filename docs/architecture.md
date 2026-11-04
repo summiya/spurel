@@ -117,6 +117,25 @@ number of embedding records, **not** invented similarity/quality scores.
 Each list is paginated, and unindexed uploads return empty active chunk lists.
 The frontend sends no embedding or generation requests during inspection.
 
+### SP-19 pre-ranking document filters (in review)
+
+One typed domain filter applies safe source metadata predicates to the
+existing `documents` join in both exact-vector and PostgreSQL full-text
+repositories, **before LIMIT/ORDER ranking**. The hybrid retriever forwards
+identical filters to both retrieval branches before RRF. Only persisted
+document IDs, media types, filename substrings and upload times are used;
+no arbitrary SQL, uploaded custom JSON metadata, or cross-knowledge-base
+lookup is introduced. The secured Next.js Retrieval Lab proxy validates
+filter payloads; editing the form alone does not call providers.
+
+Successful traced retrievals persist the actual filters as optional JSONB
+provenance in `retrieval_traces.metadata_filters` (migration 0014 after
+SP-18's 0013). Historical null snapshots still decode correctly, and
+Trace History can warn when compared runs used different source scopes.
+Existing RAG/benchmark calls continue unfiltered unless explicitly extended
+in a future milestone. This is source selection, not an authorization or
+tenant isolation system.
+
 ## Retrieval and RAG
 
 **Current retrieval choices:**

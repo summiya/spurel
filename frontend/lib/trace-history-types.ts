@@ -1,4 +1,5 @@
 import type { RetrievalMode, RetrievalTraceDetail } from "@/lib/retrieval-types";
+import type { RetrievalMetadataFilters } from "@/lib/retrieval-filter-types";
 
 export interface RetrievalTraceSummary {
   id: string;
@@ -13,6 +14,7 @@ export interface RetrievalTraceSummary {
   embedding_dimensions: number | null;
   result_count: number;
   created_at: string;
+  filters?: RetrievalMetadataFilters | null;
 }
 
 export type TraceComparisonSide = Omit<
