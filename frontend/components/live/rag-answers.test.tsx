@@ -151,6 +151,71 @@ describe("SP-15 live RAG answer frontend", () => {
     expect(screen.getByText(/PDF page 2 · includes OCR text/)).toBeInTheDocument();
   });
 
+  it("checks claim support only by opt-in, flags missing labels and retains source links", async () => {
+    response = {
+      ...grounded,
+      verification: {
+        status: "completed",
+        verifier_model: "review-model",
+        omitted_claim_count: 0,
+        claims: [
+          {
+            id: 1,
+            text: "Employees receive 30 days of leave .",
+            cited_labels: ["S1"],
+            status: "model_supported",
+            reason: "The source explicitly states 30 days.",
+          },
+          {
+            id: 2,
+            text: "Unknown supporting label .",
+            cited_labels: ["S4"],
+            status: "invalid_citation",
+            reason: "Unknown source label.",
+          },
+        ],
+      },
+    };
+    render(<LiveRagAnswersPage />);
+    await screen.findByRole("option", { name: "Employee handbook" });
+    fireEvent.click(screen.getByRole("checkbox", { name: /Check citation support/ }));
+    expect(vi.mocked(fetch).mock.calls.filter(([, init]) => init?.method === "POST")).toHaveLength(0);
+    ask();
+    expect(await screen.findByText("Citation support review")).toBeInTheDocument();
+    expect(screen.getByText(/Model suggests supported/)).toBeInTheDocument();
+    expect(screen.getByText(/Invalid source citation/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /\[S1\] Inspect excerpt/ })).toBeEnabled();
+    expect(screen.getByRole("button", { name: /\[S4\] Unknown source/ })).toBeDisabled();
+    expect(window.confirm).toHaveBeenCalledWith(expect.stringContaining("EXTRA model review"));
+    const post = vi.mocked(fetch).mock.calls.find(([url]) => String(url) === endpoint);
+    expect(JSON.parse(String(post?.[1]?.body))).toMatchObject({ verify_citations: true });
+  });
+
+  it("displays unavailable verification without pretending a claim was supported", async () => {
+    response = {
+      ...grounded,
+      verification: {
+        status: "unavailable",
+        verifier_model: "review-model",
+        omitted_claim_count: 0,
+        claims: [{
+          id: 1,
+          text: "Employees receive 30 days of leave .",
+          cited_labels: ["S1"],
+          status: "not_checked",
+          reason: "Awaiting source-support assessment.",
+        }],
+      },
+    };
+    render(<LiveRagAnswersPage />);
+    await screen.findByRole("option", { name: "Employee handbook" });
+    fireEvent.click(screen.getByRole("checkbox", { name: /Check citation support/ }));
+    ask();
+    expect(await screen.findByText("Citation support review")).toBeInTheDocument();
+    expect(screen.getByText(/Not checked/)).toBeInTheDocument();
+    expect(screen.queryByText(/Model suggests supported/)).not.toBeInTheDocument();
+  });
+
   it("distinguishes no matching context from model-generated answers", async () => {
     response = noContext;
     render(<LiveRagAnswersPage />);
