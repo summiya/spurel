@@ -166,6 +166,8 @@ class DatasetEvaluationCaseResponse(BaseModel):
     recall_at_k: float = Field(ge=0, le=1)
     reciprocal_rank_at_k: float = Field(ge=0, le=1)
     ndcg_at_k: float = Field(ge=0, le=1)
+    hit_at_k: bool | None = None
+    average_precision_at_k: float | None = Field(default=None, ge=0, le=1)
 
 
 class DatasetEvaluationResponse(BaseModel):
@@ -190,6 +192,10 @@ class DatasetEvaluationResponse(BaseModel):
     mean_recall_at_k: float = Field(ge=0, le=1)
     mrr_at_k: float = Field(ge=0, le=1)
     mean_ndcg_at_k: float = Field(ge=0, le=1)
+    hit_rate_at_k: float | None = Field(default=None, ge=0, le=1)
+    mean_average_precision_at_k: float | None = Field(default=None, ge=0, le=1)
+    hit_rate_wilson_95_lower: float | None = Field(default=None, ge=0, le=1)
+    hit_rate_wilson_95_upper: float | None = Field(default=None, ge=0, le=1)
     created_at: datetime
     cases: list[DatasetEvaluationCaseResponse]
 
@@ -215,6 +221,10 @@ class EvaluationRunSummaryResponse(BaseModel):
     mean_recall_at_k: float = Field(ge=0, le=1)
     mrr_at_k: float = Field(ge=0, le=1)
     mean_ndcg_at_k: float = Field(ge=0, le=1)
+    hit_rate_at_k: float | None = Field(default=None, ge=0, le=1)
+    mean_average_precision_at_k: float | None = Field(default=None, ge=0, le=1)
+    hit_rate_wilson_95_lower: float | None = Field(default=None, ge=0, le=1)
+    hit_rate_wilson_95_upper: float | None = Field(default=None, ge=0, le=1)
     created_at: datetime
 
 
@@ -260,6 +270,10 @@ class EvaluationRunComparisonSideResponse(BaseModel):
     mean_recall_at_k: float = Field(ge=0, le=1)
     mrr_at_k: float = Field(ge=0, le=1)
     mean_ndcg_at_k: float = Field(ge=0, le=1)
+    hit_rate_at_k: float | None = Field(default=None, ge=0, le=1)
+    mean_average_precision_at_k: float | None = Field(default=None, ge=0, le=1)
+    hit_rate_wilson_95_lower: float | None = Field(default=None, ge=0, le=1)
+    hit_rate_wilson_95_upper: float | None = Field(default=None, ge=0, le=1)
     created_at: datetime
 
 
@@ -294,6 +308,11 @@ class EvaluationRunCaseComparisonResponse(BaseModel):
     first_ndcg_at_k: float | None
     second_ndcg_at_k: float | None
     ndcg_delta: float | None
+    first_hit_at_k: bool | None = None
+    second_hit_at_k: bool | None = None
+    first_average_precision_at_k: float | None = Field(default=None, ge=0, le=1)
+    second_average_precision_at_k: float | None = Field(default=None, ge=0, le=1)
+    average_precision_delta: float | None = None
 
 
 class EvaluationRunComparisonResponse(BaseModel):
@@ -319,6 +338,8 @@ class EvaluationRunComparisonResponse(BaseModel):
     mean_recall_delta: float | None
     mrr_delta: float | None
     mean_ndcg_delta: float | None
+    hit_rate_delta: float | None = None
+    mean_average_precision_delta: float | None = None
 
     cases: list[EvaluationRunCaseComparisonResponse]
 

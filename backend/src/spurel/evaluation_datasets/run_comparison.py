@@ -59,6 +59,10 @@ class EvaluationRunComparisonSide:
     mrr_at_k: float
     mean_ndcg_at_k: float
     created_at: datetime
+    hit_rate_at_k: float | None = None
+    mean_average_precision_at_k: float | None = None
+    hit_rate_wilson_95_lower: float | None = None
+    hit_rate_wilson_95_upper: float | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -93,6 +97,11 @@ class EvaluationRunCaseComparison:
     first_ndcg_at_k: float | None
     second_ndcg_at_k: float | None
     ndcg_delta: float | None
+    first_hit_at_k: bool | None = None
+    second_hit_at_k: bool | None = None
+    first_average_precision_at_k: float | None = None
+    second_average_precision_at_k: float | None = None
+    average_precision_delta: float | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -121,6 +130,8 @@ class EvaluationRunComparison:
     mean_ndcg_delta: float | None
 
     cases: tuple[EvaluationRunCaseComparison, ...]
+    hit_rate_delta: float | None = None
+    mean_average_precision_delta: float | None = None
 
 
 class EvaluationRunComparisonService:
@@ -247,8 +258,16 @@ def compare_evaluation_runs(
         ),
         mean_ndcg_delta=(
             second.mean_ndcg_at_k - first.mean_ndcg_at_k
-            if aggregate_comparable
-            else None
+            if aggregate_comparable else None
+        ),
+        hit_rate_delta=(
+            _optional_delta(first.hit_rate_at_k, second.hit_rate_at_k)
+            if aggregate_comparable else None
+        ),
+        mean_average_precision_delta=(
+            _optional_delta(
+                first.mean_average_precision_at_k, second.mean_average_precision_at_k
+            ) if aggregate_comparable else None
         ),
         cases=cases,
     )
@@ -350,6 +369,19 @@ def _compare_case(
             ),
             comparable=comparable,
         ),
+        first_hit_at_k=first.metrics.hit_at_k if first else None,
+        second_hit_at_k=second.metrics.hit_at_k if second else None,
+        first_average_precision_at_k=(
+            first.metrics.average_precision_at_k if first else None
+        ),
+        second_average_precision_at_k=(
+            second.metrics.average_precision_at_k if second else None
+        ),
+        average_precision_delta=_case_delta(
+            first_value=first.metrics.average_precision_at_k if first else None,
+            second_value=second.metrics.average_precision_at_k if second else None,
+            comparable=comparable,
+        ),
     )
 
 
@@ -389,6 +421,10 @@ def _side(run: EvaluationRun) -> EvaluationRunComparisonSide:
         mean_recall_at_k=run.mean_recall_at_k,
         mrr_at_k=run.mrr_at_k,
         mean_ndcg_at_k=run.mean_ndcg_at_k,
+        hit_rate_at_k=run.hit_rate_at_k,
+        mean_average_precision_at_k=run.mean_average_precision_at_k,
+        hit_rate_wilson_95_lower=run.hit_rate_wilson_95_lower,
+        hit_rate_wilson_95_upper=run.hit_rate_wilson_95_upper,
         created_at=run.created_at,
     )
 
