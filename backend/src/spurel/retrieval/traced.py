@@ -10,6 +10,11 @@ from spurel.retrieval.domain import VectorRetrievalMatch
 from spurel.retrieval.hybrid import HybridRetrievalMatch
 from spurel.retrieval.keyword_domain import KeywordRetrievalMatch
 from spurel.retrieval.metadata_filters import RetrievalMetadataFilters
+from spurel.retrieval.reranking import (
+    CrossEncoderReranker,
+    HttpCrossEncoderReranker,
+    rerank_hybrid_matches,
+)
 from spurel.retrieval.trace_service import RetrievalTraceService
 from spurel.retrieval.tracing import (
     RetrievalTrace,
@@ -72,6 +77,7 @@ class TracedRetrievalResult[T]:
     trace_id: UUID
     duration_ms: float
     matches: tuple[T, ...]
+    reranker_model: str | None = None
 
 
 class TracedVectorRetrievalService:
@@ -184,7 +190,7 @@ class TracedKeywordRetrievalService:
 
 
 class TracedHybridRetrievalService:
-    """Record successful RRF searches without changing hybrid fusion."""
+    """Record exact RRF searches or explicitly reranked candidate pools."""
 
     def __init__(
         self,
@@ -194,12 +200,14 @@ class TracedHybridRetrievalService:
         embedding_provider: str,
         embedding_model: str,
         embedding_dimensions: int,
+        reranker: CrossEncoderReranker | None = None,
     ) -> None:
         self._retriever = retriever
         self._trace_service = trace_service
         self._embedding_provider = embedding_provider
         self._embedding_model = embedding_model
         self._embedding_dimensions = embedding_dimensions
+        self._reranker = reranker
 
     async def search(
         self,
@@ -210,19 +218,29 @@ class TracedHybridRetrievalService:
         candidate_limit: int = 50,
         rrf_k: int = 60,
         filters: RetrievalMetadataFilters | None = None,
+        rerank: bool = False,
     ) -> TracedRetrievalResult[HybridRetrievalMatch]:
-        """Run hybrid retrieval, persist its trace, then return both."""
+        """Keep ordinary RRF exact; optional reranking is explicit and traced."""
+        # Fail before expensive vector retrieval when no scoring adapter exists.
+        reranker = (self._reranker or HttpCrossEncoderReranker.from_env()) if rerank else None
         started = perf_counter()
         matches = tuple(
             await self._retriever.search(
                 knowledge_base_id=knowledge_base_id,
                 query=query,
-                limit=limit,
+                limit=candidate_limit if rerank else limit,
                 candidate_limit=candidate_limit,
                 rrf_k=rrf_k,
                 **({"filters": filters} if filters is not None else {}),
             )
         )
+        if reranker is not None:
+            matches = await rerank_hybrid_matches(
+                reranker=reranker,
+                query=query.strip(),
+                candidates=matches,
+                top_k=limit,
+            )
         duration_ms = _elapsed_ms(started)
 
         trace = RetrievalTrace.create(
@@ -238,6 +256,7 @@ class TracedHybridRetrievalService:
             embedding_dimensions=self._embedding_dimensions,
             results=_hybrid_trace_results(matches),
             metadata_filters=filters,
+            reranker_model=reranker.model if reranker is not None else None,
         )
         await self._trace_service.record(trace)
 
@@ -245,6 +264,7 @@ class TracedHybridRetrievalService:
             trace_id=trace.id,
             duration_ms=duration_ms,
             matches=matches,
+            reranker_model=reranker.model if reranker is not None else None,
         )
 
 
@@ -305,6 +325,9 @@ def _hybrid_trace_results(
             rrf_score=match.rrf_score,
             vector_rank=match.vector_rank,
             keyword_rank=match.keyword_rank,
+            candidate_rank=match.candidate_rank,
+            rerank_rank=match.rerank_rank,
+            rerank_score=match.rerank_score,
         )
         for rank, match in enumerate(matches, start=1)
     )

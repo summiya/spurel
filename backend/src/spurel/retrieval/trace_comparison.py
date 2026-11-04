@@ -37,6 +37,7 @@ class RetrievalTraceComparisonSide:
     embedding_dimensions: int | None
     result_count: int
     metadata_filters: RetrievalMetadataFilters | None = None
+    reranker_model: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -58,6 +59,10 @@ class RetrievalTraceComparisonResult:
     second_keyword_score: float | None
     first_rrf_score: float | None
     second_rrf_score: float | None
+    first_candidate_rank: int | None = None
+    second_candidate_rank: int | None = None
+    first_rerank_score: float | None = None
+    second_rerank_score: float | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -200,6 +205,10 @@ def _compare_result(
         second_keyword_score=(second_result.keyword_score if second_result is not None else None),
         first_rrf_score=(first_result.rrf_score if first_result is not None else None),
         second_rrf_score=(second_result.rrf_score if second_result is not None else None),
+        first_candidate_rank=(first_result.candidate_rank if first_result is not None else None),
+        second_candidate_rank=(second_result.candidate_rank if second_result is not None else None),
+        first_rerank_score=(first_result.rerank_score if first_result is not None else None),
+        second_rerank_score=(second_result.rerank_score if second_result is not None else None),
     )
 
 
@@ -217,4 +226,5 @@ def _side(trace: RetrievalTrace) -> RetrievalTraceComparisonSide:
         embedding_dimensions=trace.embedding_dimensions,
         result_count=len(trace.results),
         metadata_filters=trace.metadata_filters,
+        reranker_model=trace.reranker_model,
     )

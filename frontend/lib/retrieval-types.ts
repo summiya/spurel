@@ -10,6 +10,7 @@ export interface RetrievalParameters {
   top_k: number;
   candidate_k?: number;
   rrf_k?: number;
+  rerank?: boolean;
   filters?: RetrievalMetadataFilters;
 }
 
@@ -29,6 +30,9 @@ export interface RetrievalMatch {
   rrf_score?: number | null;
   vector_rank?: number | null;
   keyword_rank?: number | null;
+  candidate_rank?: number | null;
+  rerank_rank?: number | null;
+  rerank_score?: number | null;
 }
 
 export interface RetrievalResult extends RetrievalParameters {
@@ -36,6 +40,7 @@ export interface RetrievalResult extends RetrievalParameters {
   trace_id: string;
   duration_ms: number;
   matches: RetrievalMatch[];
+  reranker_model?: string | null;
 }
 
 export interface RetrievalTraceDetail {
@@ -51,6 +56,7 @@ export interface RetrievalTraceDetail {
   embedding_model: string | null;
   embedding_dimensions: number | null;
   created_at: string;
+  reranker_model?: string | null;
   results: RetrievalMatch[];
   filters?: RetrievalMetadataFilters | null;
 }
@@ -78,7 +84,12 @@ export function parseRetrievalRequest(
   if (!isRecord(value)) return null;
   const required =
     mode === "hybrid" ? ["query", "top_k", "candidate_k", "rrf_k"] : ["query", "top_k"];
-  if (Object.keys(value).some((key) => ![...required, "filters"].includes(key))) return null;
+  if (
+    Object.keys(value).some(
+      (key) => ![...required, "filters", ...(mode === "hybrid" ? ["rerank"] : [])].includes(key),
+    )
+  )
+    return null;
   const filters = "filters" in value ? parseRetrievalMetadataFilters(value.filters) : null;
   if ("filters" in value && filters === null) return null;
   if (typeof value.query !== "string") return null;
@@ -95,11 +106,13 @@ export function parseRetrievalRequest(
   )
     return null;
 
+  if ("rerank" in value && typeof value.rerank !== "boolean") return null;
   return {
     query,
     top_k: value.top_k,
     candidate_k: value.candidate_k,
     rrf_k: value.rrf_k,
+    ...(value.rerank ? { rerank: true } : {}),
     ...(filters ? { filters } : {}),
   };
 }
@@ -123,6 +136,14 @@ export function isRetrievalResult(value: unknown): value is RetrievalResult {
   )
     return false;
 
+  if ("rerank" in value && typeof value.rerank !== "boolean") return false;
+  if (
+    value.rerank === true &&
+    (value.mode !== "hybrid" ||
+      typeof value.reranker_model !== "string" ||
+      !value.reranker_model.trim())
+  )
+    return false;
   if (
     "filters" in value &&
     value.filters !== null &&
@@ -152,6 +173,19 @@ export function isRetrievalResult(value: unknown): value is RetrievalResult {
     ))
       return false;
 
+    if (
+      value.rerank === true &&
+      (!boundedInteger(item.candidate_rank, 1, value.candidate_k as number) ||
+        item.rerank_rank !== item.rank ||
+        typeof item.rerank_score !== "number" ||
+        !Number.isFinite(item.rerank_score))
+    )
+      return false;
+    if (
+      value.rerank !== true &&
+      (item.candidate_rank != null || item.rerank_rank != null || item.rerank_score != null)
+    )
+      return false;
     const primary =
       value.mode === "vector"
         ? item.cosine_similarity
@@ -185,6 +219,8 @@ export function mainScore(
           ? "—"
           : match.keyword_score.toFixed(5),
     };
+  if (match.rerank_score !== null && match.rerank_score !== undefined)
+    return { label: "Cross-encoder score", value: match.rerank_score.toFixed(5) };
   return {
     label: "RRF score",
     value:

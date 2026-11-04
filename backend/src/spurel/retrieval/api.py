@@ -27,6 +27,7 @@ from spurel.retrieval.hybrid import (
 from spurel.retrieval.keyword_domain import KeywordRetrievalQueryError
 from spurel.retrieval.keyword_ports import KeywordRetrievalRepositoryError
 from spurel.retrieval.ports import VectorRetrievalRepositoryError
+from spurel.retrieval.reranking import RerankerUnavailableError
 from spurel.retrieval.schemas import (
     HybridRetrievalMatchResponse,
     HybridRetrievalRequest,
@@ -227,6 +228,7 @@ async def hybrid_retrieval(
             candidate_limit=payload.candidate_k,
             rrf_k=payload.rrf_k,
             **({"filters": payload.filters.to_domain()} if payload.filters else {}),
+            **({"rerank": True} if payload.rerank else {}),
         )
     except HybridRetrievalQueryError as exc:
         raise HTTPException(
@@ -239,6 +241,7 @@ async def hybrid_retrieval(
         VectorRetrievalRepositoryError,
         KeywordRetrievalRepositoryError,
         HybridRetrievalResultError,
+        RerankerUnavailableError,
         RetrievalTracePersistenceError,
         RetrievalTraceValidationError,
     ) as exc:
@@ -254,6 +257,8 @@ async def hybrid_retrieval(
         top_k=payload.top_k,
         candidate_k=payload.candidate_k,
         rrf_k=payload.rrf_k,
+        rerank=payload.rerank,
+        reranker_model=execution.reranker_model,
         matches=[
             HybridRetrievalMatchResponse(
                 rank=rank,
@@ -271,6 +276,9 @@ async def hybrid_retrieval(
                 keyword_rank=match.keyword_rank,
                 cosine_similarity=match.cosine_similarity,
                 keyword_score=match.keyword_score,
+                candidate_rank=match.candidate_rank,
+                rerank_rank=match.rerank_rank,
+                rerank_score=match.rerank_score,
             )
             for rank, match in enumerate(execution.matches, start=1)
         ],
@@ -312,6 +320,7 @@ async def list_retrieval_traces(
                 embedding_model=trace.embedding_model,
                 embedding_dimensions=trace.embedding_dimensions,
                 result_count=trace.result_count,
+                reranker_model=trace.reranker_model,
                 created_at=trace.created_at,
                 filters=trace.metadata_filters.to_snapshot() if trace.metadata_filters else None,
             )
@@ -362,6 +371,7 @@ async def get_retrieval_trace(
         embedding_dimensions=trace.embedding_dimensions,
         created_at=trace.created_at,
         filters=trace.metadata_filters.to_snapshot() if trace.metadata_filters else None,
+        reranker_model=trace.reranker_model,
         results=[
             RetrievalTraceResultResponse(
                 rank=result.rank,
@@ -376,6 +386,9 @@ async def get_retrieval_trace(
                 rrf_score=result.rrf_score,
                 vector_rank=result.vector_rank,
                 keyword_rank=result.keyword_rank,
+                candidate_rank=result.candidate_rank,
+                rerank_rank=result.rerank_rank,
+                rerank_score=result.rerank_score,
             )
             for result in trace.results
         ],
@@ -430,6 +443,7 @@ async def compare_retrieval_traces(
             embedding_model=comparison.first.embedding_model,
             embedding_dimensions=comparison.first.embedding_dimensions,
             result_count=comparison.first.result_count,
+            reranker_model=comparison.first.reranker_model,
             filters=(
                 comparison.first.metadata_filters.to_snapshot()
                 if comparison.first.metadata_filters
@@ -448,6 +462,7 @@ async def compare_retrieval_traces(
             embedding_model=comparison.second.embedding_model,
             embedding_dimensions=comparison.second.embedding_dimensions,
             result_count=comparison.second.result_count,
+            reranker_model=comparison.second.reranker_model,
             filters=(
                 comparison.second.metadata_filters.to_snapshot()
                 if comparison.second.metadata_filters
@@ -478,6 +493,10 @@ async def compare_retrieval_traces(
                 second_keyword_score=result.second_keyword_score,
                 first_rrf_score=result.first_rrf_score,
                 second_rrf_score=result.second_rrf_score,
+                first_candidate_rank=result.first_candidate_rank,
+                second_candidate_rank=result.second_candidate_rank,
+                first_rerank_score=result.first_rerank_score,
+                second_rerank_score=result.second_rerank_score,
             )
             for result in comparison.results
         ],

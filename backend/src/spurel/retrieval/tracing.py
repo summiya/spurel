@@ -42,6 +42,9 @@ class RetrievalTraceResult:
     rrf_score: float | None = None
     vector_rank: int | None = None
     keyword_rank: int | None = None
+    candidate_rank: int | None = None
+    rerank_rank: int | None = None
+    rerank_score: float | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -62,6 +65,7 @@ class RetrievalTraceSummary:
     result_count: int
     created_at: datetime
     metadata_filters: RetrievalMetadataFilters | None = None
+    reranker_model: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -82,6 +86,7 @@ class RetrievalTrace:
     results: tuple[RetrievalTraceResult, ...]
     created_at: datetime
     metadata_filters: RetrievalMetadataFilters | None = None
+    reranker_model: str | None = None
 
     @classmethod
     def create(
@@ -99,6 +104,7 @@ class RetrievalTrace:
         embedding_model: str | None = None,
         embedding_dimensions: int | None = None,
         metadata_filters: RetrievalMetadataFilters | None = None,
+        reranker_model: str | None = None,
     ) -> "RetrievalTrace":
         """Create and validate one completed retrieval trace."""
         normalized_query = query.strip()
@@ -114,6 +120,13 @@ class RetrievalTrace:
         if len(results) > top_k:
             raise RetrievalTraceValidationError("trace results exceed configured top_k")
 
+        if reranker_model is not None and (
+            mode is not RetrievalTraceMode.HYBRID
+            or not reranker_model.strip()
+            or len(reranker_model) > 255
+        ):
+            raise RetrievalTraceValidationError("trace reranker metadata is invalid")
+
         seen_chunk_ids: set[UUID] = set()
         for expected_rank, result in enumerate(results, start=1):
             if result.rank != expected_rank:
@@ -123,6 +136,21 @@ class RetrievalTrace:
             if result.chunk_id in seen_chunk_ids:
                 raise RetrievalTraceValidationError("trace results cannot contain duplicate chunks")
             seen_chunk_ids.add(result.chunk_id)
+
+            rerank_values = (result.candidate_rank, result.rerank_rank, result.rerank_score)
+            if reranker_model is None and any(value is not None for value in rerank_values):
+                raise RetrievalTraceValidationError(
+                    "unreranked traces cannot include rerank scores"
+                )
+            if reranker_model is not None and (
+                result.candidate_rank is None
+                or isinstance(result.candidate_rank, bool)
+                or not 1 <= result.candidate_rank <= (candidate_k or 0)
+                or result.rerank_rank != result.rank
+                or result.rerank_score is None
+                or not isfinite(result.rerank_score)
+            ):
+                raise RetrievalTraceValidationError("reranked trace result provenance is invalid")
 
             if result.chunk_index < 0:
                 raise RetrievalTraceValidationError("trace result chunk index is invalid")
@@ -281,4 +309,5 @@ class RetrievalTrace:
             results=results,
             created_at=datetime.now(UTC),
             metadata_filters=metadata_filters,
+            reranker_model=reranker_model,
         )

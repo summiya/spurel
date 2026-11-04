@@ -53,11 +53,11 @@ replaces illustrative Overview values with bounded, real data.
 | SP-17 | High | ✅ Merged | Optional recursive, Markdown-heading and sentence-aware strategies with safe boundaries and UI controls. [PR #79](https://github.com/summiya/spurel/pull/79) |
 | SP-18 | High | ✅ Merged | PDF page provenance and opt-in local OCR/layout extraction, existing indexing and views preserved. [PR #80](https://github.com/summiya/spurel/pull/80) |
 | SP-19 | High | ✅ Merged | Opt-in pre-ranking metadata filters for Keyword/Vector/Hybrid, persisted trace scope and Retrieval Lab controls. [PR #83](https://github.com/summiya/spurel/pull/83) (the original [PR #81](https://github.com/summiya/spurel/pull/81) merged into the SP-18 feature branch). |
-| SP-20 | High | ◐ In review | Explicit dimension-specific concurrent HNSW index builder and real measured recall/latency CLI against exact scoped retrieval; preserves existing live exact retrieval by default. Branch `feat/sp20-hnsw-benchmark` awaiting review/CI. |
-| SP-21 | High | ☐ Planned | Pluggable cross-encoder reranking with candidate/rerank/final ranks |
+| SP-20 | High | ✅ Merged | Explicit dimension-specific HNSW index builder and real exact-vs-ANN recall/latency benchmarks; live exact retrieval unchanged. [PR #84](https://github.com/summiya/spurel/pull/84) |
+| SP-21 | High | ◐ In review | Opt-in cross-encoder candidate reranking with original/final rank and raw score provenance, additive trace migration and frontend controls. Branch `feat/sp21-cross-encoder-reranking`, review required. |
 | SP-22 | Medium | ☐ Planned | Per-stage timing and retrieval observability in API traces and workbench |
 
-**Current `main` baseline:** opt-in chunking strategies, PDF page provenance and optional local OCR, metadata-filtered retrieval, exact pgvector cosine ranking, PostgreSQL **full-text `ts_rank_cd`** keyword ranking, and RRF. There is **no BM25 implementation** even though PostgreSQL keyword search already exists.
+**Current `main` baseline:** opt-in chunking, PDF page provenance/optional OCR, metadata-filtered retrieval, exact pgvector cosine ranking, optional operator-managed HNSW benchmarking, PostgreSQL **full-text `ts_rank_cd`** keyword ranking, and RRF. There is **no BM25 implementation** even though PostgreSQL keyword search already exists.
 
 ## Phase 4 — Quality, extensibility and release
 
