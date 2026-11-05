@@ -22,6 +22,7 @@ class OpenAIEmbeddingProvider:
         client: AsyncOpenAI,
         model: str,
         dimensions: int,
+        include_dimensions: bool = True,
     ) -> None:
         normalized_model = model.strip()
         if not normalized_model:
@@ -34,6 +35,7 @@ class OpenAIEmbeddingProvider:
         self._client = client
         self._model = normalized_model
         self._dimensions = dimensions
+        self._include_dimensions = include_dimensions
 
     @property
     def provider(self) -> str:
@@ -55,12 +57,16 @@ class OpenAIEmbeddingProvider:
         normalized_texts = validate_embedding_inputs(texts)
 
         try:
-            response = await self._client.embeddings.create(
-                model=self._model,
-                input=list(normalized_texts),
-                dimensions=self._dimensions,
-                encoding_format="float",
-            )
+            payload = {
+                "model": self._model,
+                "input": list(normalized_texts),
+                "encoding_format": "float",
+            }
+            # Many compatible providers use fixed dimensions and reject this
+            # OpenAI-specific optional request parameter.
+            if self._include_dimensions:
+                payload["dimensions"] = self._dimensions
+            response = await self._client.embeddings.create(**payload)
         except Exception as exc:
             raise EmbeddingProviderError(
                 "OpenAI embedding request failed"
