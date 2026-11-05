@@ -57,8 +57,10 @@ class OllamaEmbeddingProvider:
         vectors = payload["embeddings"]
         if not all(
             isinstance(vector, list)
-            and all(isinstance(number, (int, float)) and not isinstance(number, bool)
-                    for number in vector)
+            and all(
+                isinstance(number, (int, float)) and not isinstance(number, bool)
+                for number in vector
+            )
             for vector in vectors
         ):
             raise EmbeddingResultError("Ollama embeddings contain invalid values")

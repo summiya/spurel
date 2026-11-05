@@ -26,28 +26,20 @@ class OpenAIEmbeddingConfig:
         dimensions_raw = os.getenv("SPUREL_EMBEDDING_DIMENSIONS", "").strip()
 
         if not api_key:
-            raise EmbeddingConfigurationError(
-                "OpenAI embedding API key is not configured"
-            )
+            raise EmbeddingConfigurationError("OpenAI embedding API key is not configured")
 
         if not model:
-            raise EmbeddingConfigurationError(
-                "embedding model is not configured"
-            )
+            raise EmbeddingConfigurationError("embedding model is not configured")
 
         try:
             dimensions = int(dimensions_raw)
         except ValueError as exc:
-            raise EmbeddingConfigurationError(
-                "embedding dimensions are invalid"
-            ) from exc
+            raise EmbeddingConfigurationError("embedding dimensions are invalid") from exc
 
         try:
             validate_embedding_dimensions(dimensions)
         except EmbeddingDimensionError as exc:
-            raise EmbeddingConfigurationError(
-                "embedding dimensions are invalid"
-            ) from exc
+            raise EmbeddingConfigurationError("embedding dimensions are invalid") from exc
 
         return cls(
             api_key=api_key,

@@ -34,8 +34,11 @@ def trusted_endpoint(value: str, *, local: bool = False) -> str:
     except ValueError as exc:
         raise ProviderSelectionError("provider endpoint is invalid") from exc
     if (
-        (not local and parsed.scheme == "http" and parsed.hostname not in
-         {"localhost", "127.0.0.1", "::1", "host.docker.internal"})
+        (
+            not local
+            and parsed.scheme == "http"
+            and parsed.hostname not in {"localhost", "127.0.0.1", "::1", "host.docker.internal"}
+        )
         or parsed.scheme not in {"http", "https"}
         or not parsed.hostname
         or not valid_port

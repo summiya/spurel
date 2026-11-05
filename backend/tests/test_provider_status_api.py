@@ -27,12 +27,16 @@ def test_provider_status_exposes_only_validated_model_metadata(monkeypatch) -> N
     assert response.status_code == 200
     assert response.json() == {
         "embedding": {
-            "provider": "ollama", "model": "nomic-embed-text",
-            "configured": True, "dimensions": 768,
+            "provider": "ollama",
+            "model": "nomic-embed-text",
+            "configured": True,
+            "dimensions": 768,
         },
         "generation": {
-            "provider": "openai_compatible", "model": "hosted-chat",
-            "configured": True, "dimensions": None,
+            "provider": "openai_compatible",
+            "model": "hosted-chat",
+            "configured": True,
+            "dimensions": None,
         },
     }
     assert "test-secret" not in response.text

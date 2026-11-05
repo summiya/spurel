@@ -38,10 +38,15 @@ def test_unmodified_env_preserves_original_openai_provider() -> None:
     embed = EmbeddingProviderConfig.from_env()
     generation = GenerationProviderConfig.from_env()
     assert (embed.provider, embed.api_key, embed.base_url, embed.dimensions) == (
-        "openai", "old-openai-key", None, 1536
+        "openai",
+        "old-openai-key",
+        None,
+        1536,
     )
     assert (generation.provider, generation.api_key, generation.base_url) == (
-        "openai", "old-openai-key", None
+        "openai",
+        "old-openai-key",
+        None,
     )
 
 

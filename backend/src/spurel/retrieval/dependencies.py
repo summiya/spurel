@@ -70,9 +70,7 @@ async def get_hybrid_retrieval_service() -> AsyncIterator[HybridRetrievalService
     async with embedding_provider_context(config) as provider:
         vector_service = VectorRetrievalService(
             provider=provider,
-            repository=SqlAlchemyVectorRetrievalRepository(
-                async_session_factory
-            ),
+            repository=SqlAlchemyVectorRetrievalRepository(async_session_factory),
         )
         keyword_service = KeywordRetrievalService(
             SqlAlchemyKeywordRetrievalRepository(async_session_factory)
@@ -86,9 +84,7 @@ async def get_hybrid_retrieval_service() -> AsyncIterator[HybridRetrievalService
 
 def get_retrieval_trace_service() -> RetrievalTraceService:
     """Build durable retrieval trace persistence."""
-    return RetrievalTraceService(
-        SqlAlchemyRetrievalTraceRepository(async_session_factory)
-    )
+    return RetrievalTraceService(SqlAlchemyRetrievalTraceRepository(async_session_factory))
 
 
 def get_traced_keyword_retrieval_service() -> TracedKeywordRetrievalService:
@@ -99,9 +95,7 @@ def get_traced_keyword_retrieval_service() -> TracedKeywordRetrievalService:
     )
 
 
-async def get_traced_vector_retrieval_service() -> AsyncIterator[
-    TracedVectorRetrievalService
-]:
+async def get_traced_vector_retrieval_service() -> AsyncIterator[TracedVectorRetrievalService]:
     """Build vector retrieval with mandatory durable tracing."""
     try:
         config = EmbeddingProviderConfig.from_env()
@@ -114,9 +108,7 @@ async def get_traced_vector_retrieval_service() -> AsyncIterator[
     async with embedding_provider_context(config) as provider:
         retriever = VectorRetrievalService(
             provider=provider,
-            repository=SqlAlchemyVectorRetrievalRepository(
-                async_session_factory
-            ),
+            repository=SqlAlchemyVectorRetrievalRepository(async_session_factory),
         )
 
         yield TracedVectorRetrievalService(
@@ -128,9 +120,7 @@ async def get_traced_vector_retrieval_service() -> AsyncIterator[
         )
 
 
-async def get_traced_hybrid_retrieval_service() -> AsyncIterator[
-    TracedHybridRetrievalService
-]:
+async def get_traced_hybrid_retrieval_service() -> AsyncIterator[TracedHybridRetrievalService]:
     """Build hybrid retrieval with mandatory durable tracing."""
     try:
         config = EmbeddingProviderConfig.from_env()
@@ -143,9 +133,7 @@ async def get_traced_hybrid_retrieval_service() -> AsyncIterator[
     async with embedding_provider_context(config) as provider:
         vector_service = VectorRetrievalService(
             provider=provider,
-            repository=SqlAlchemyVectorRetrievalRepository(
-                async_session_factory
-            ),
+            repository=SqlAlchemyVectorRetrievalRepository(async_session_factory),
         )
         keyword_service = KeywordRetrievalService(
             SqlAlchemyKeywordRetrievalRepository(async_session_factory)

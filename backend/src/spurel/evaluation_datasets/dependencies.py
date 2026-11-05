@@ -49,16 +49,12 @@ from spurel.retrieval.sqlalchemy_repository import (
 
 def get_evaluation_dataset_service() -> EvaluationDatasetService:
     """Build reusable evaluation dataset services."""
-    return EvaluationDatasetService(
-        SqlAlchemyEvaluationDatasetRepository(async_session_factory)
-    )
+    return EvaluationDatasetService(SqlAlchemyEvaluationDatasetRepository(async_session_factory))
 
 
 def get_evaluation_run_service() -> EvaluationRunService:
     """Build durable benchmark run history."""
-    return EvaluationRunService(
-        SqlAlchemyEvaluationRunRepository(async_session_factory)
-    )
+    return EvaluationRunService(SqlAlchemyEvaluationRunRepository(async_session_factory))
 
 
 def get_keyword_dataset_evaluation_service() -> PersistedDatasetEvaluationService:
@@ -87,15 +83,11 @@ async def get_vector_dataset_evaluation_service() -> AsyncIterator[
     async with embedding_provider_context(config) as provider:
         vector_retriever = VectorRetrievalService(
             provider=provider,
-            repository=SqlAlchemyVectorRetrievalRepository(
-                async_session_factory
-            ),
+            repository=SqlAlchemyVectorRetrievalRepository(async_session_factory),
         )
 
         executor = DatasetEvaluationExecutionService(
-            repository=SqlAlchemyEvaluationDatasetRepository(
-                async_session_factory
-            ),
+            repository=SqlAlchemyEvaluationDatasetRepository(async_session_factory),
             retriever=VectorDatasetRetriever(vector_retriever),
             mode=DatasetEvaluationMode.VECTOR,
             embedding_provider=provider.provider,
@@ -116,9 +108,7 @@ async def get_hybrid_dataset_evaluation_service() -> AsyncIterator[
     async with embedding_provider_context(config) as provider:
         vector_retriever = VectorRetrievalService(
             provider=provider,
-            repository=SqlAlchemyVectorRetrievalRepository(
-                async_session_factory
-            ),
+            repository=SqlAlchemyVectorRetrievalRepository(async_session_factory),
         )
         keyword_retriever = KeywordRetrievalService(
             SqlAlchemyKeywordRetrievalRepository(async_session_factory)
@@ -129,9 +119,7 @@ async def get_hybrid_dataset_evaluation_service() -> AsyncIterator[
         )
 
         executor = DatasetEvaluationExecutionService(
-            repository=SqlAlchemyEvaluationDatasetRepository(
-                async_session_factory
-            ),
+            repository=SqlAlchemyEvaluationDatasetRepository(async_session_factory),
             retriever=HybridDatasetRetriever(hybrid_retriever),
             mode=DatasetEvaluationMode.HYBRID,
             embedding_provider=provider.provider,
@@ -161,10 +149,7 @@ def get_evaluation_run_comparison_service() -> EvaluationRunComparisonService:
 
 def get_evaluation_quality_gate_service() -> EvaluationQualityGateService:
     """Build explicit threshold-based benchmark quality gates."""
-    return EvaluationQualityGateService(
-        get_evaluation_run_comparison_service()
-    )
-
+    return EvaluationQualityGateService(get_evaluation_run_comparison_service())
 
 
 def get_evaluation_baseline_service() -> EvaluationBaselineService:

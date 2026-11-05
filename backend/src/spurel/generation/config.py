@@ -30,20 +30,14 @@ class OpenAIGenerationConfig:
         ).strip()
 
         if not api_key:
-            raise GenerationConfigurationError(
-                "OpenAI generation API key is not configured"
-            )
+            raise GenerationConfigurationError("OpenAI generation API key is not configured")
         if not model:
-            raise GenerationConfigurationError(
-                "generation model is not configured"
-            )
+            raise GenerationConfigurationError("generation model is not configured")
 
         try:
             max_output_tokens = int(max_output_tokens_raw)
         except ValueError as exc:
-            raise GenerationConfigurationError(
-                "generation max output tokens are invalid"
-            ) from exc
+            raise GenerationConfigurationError("generation max output tokens are invalid") from exc
 
         if (
             max_output_tokens < MIN_GENERATION_OUTPUT_TOKENS

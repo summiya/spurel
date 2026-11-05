@@ -52,7 +52,9 @@ def test_ollama_embeddings_use_native_batch_contract_and_validate_dimensions() -
     asyncio.run(check())
     assert received[0][0] == "http://localhost:11434/api/embed"
     assert received[0][1] == {
-        "model": "embed-local", "input": ["first", "second"], "truncate": False
+        "model": "embed-local",
+        "input": ["first", "second"],
+        "truncate": False,
     }
 
 
@@ -113,7 +115,9 @@ def test_ollama_chat_is_nonstreaming_and_uses_configured_output_bound() -> None:
             )
             answer = await provider.generate(_generation_request())
             assert (answer.provider, answer.model, answer.text) == (
-                "ollama", "chat-local", "A grounded answer."
+                "ollama",
+                "chat-local",
+                "A grounded answer.",
             )
 
     asyncio.run(check())
@@ -152,10 +156,7 @@ class CompatibleEmbeddingResource:
     async def create(self, **kwargs):
         self.last_kwargs = kwargs
         return SimpleNamespace(
-            data=[
-                SimpleNamespace(index=index, embedding=v)
-                for index, v in enumerate(self.vectors)
-            ]
+            data=[SimpleNamespace(index=index, embedding=v) for index, v in enumerate(self.vectors)]
         )
 
 
@@ -180,7 +181,9 @@ def test_compatible_embedding_omits_optional_dimensions_request_but_checks_respo
     assert batch.vectors[0].values == (0.2, 0.4)
     assert provider.provider == "openai_compatible"
     assert resource.last_kwargs == {
-        "model": "hosted-embed", "input": ["sample"], "encoding_format": "float"
+        "model": "hosted-embed",
+        "input": ["sample"],
+        "encoding_format": "float",
     }
 
     resource.vectors = [[0.2]]

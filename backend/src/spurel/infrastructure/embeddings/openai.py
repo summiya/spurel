@@ -26,9 +26,7 @@ class OpenAIEmbeddingProvider:
     ) -> None:
         normalized_model = model.strip()
         if not normalized_model:
-            raise EmbeddingResultError(
-                "embedding model identifier must not be empty"
-            )
+            raise EmbeddingResultError("embedding model identifier must not be empty")
 
         validate_embedding_dimensions(dimensions)
 
@@ -68,23 +66,17 @@ class OpenAIEmbeddingProvider:
                 payload["dimensions"] = self._dimensions
             response = await self._client.embeddings.create(**payload)
         except Exception as exc:
-            raise EmbeddingProviderError(
-                "OpenAI embedding request failed"
-            ) from exc
+            raise EmbeddingProviderError("OpenAI embedding request failed") from exc
 
         if len(response.data) != len(normalized_texts):
-            raise EmbeddingResultError(
-                "OpenAI returned an unexpected embedding count"
-            )
+            raise EmbeddingResultError("OpenAI returned an unexpected embedding count")
 
         ordered = sorted(response.data, key=lambda item: item.index)
         expected_indexes = list(range(len(normalized_texts)))
         actual_indexes = [item.index for item in ordered]
 
         if actual_indexes != expected_indexes:
-            raise EmbeddingResultError(
-                "OpenAI returned invalid embedding indexes"
-            )
+            raise EmbeddingResultError("OpenAI returned invalid embedding indexes")
 
         return EmbeddingBatch.create(
             vectors=[item.embedding for item in ordered],
