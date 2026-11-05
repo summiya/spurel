@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRef, useState, type FormEvent } from "react";
 
 import { Icon } from "@/components/icons";
+import { ProviderStatusPanel } from "@/components/live/provider-status";
 import { StageTimingBreakdown } from "@/components/live/stage-timings";
 import { EmptyState, ErrorState, LoadingState, PageHeading, Panel } from "@/components/ui";
 import { useDemoToast } from "@/components/workbench-shell";
@@ -318,6 +319,7 @@ export function LiveRetrievalLabPage({ initialKnowledgeBaseId }: Props) {
           </Link>
         }
       />
+      <ProviderStatusPanel purpose="embedding" />
       <div className="inline-notice">
         <Icon name="shield" size={17} />
         All results, scores and timings are returned by your own Spurel backend. Keyword mode uses
@@ -606,7 +608,7 @@ export function LiveRetrievalLabPage({ initialKnowledgeBaseId }: Props) {
               <div className="text-hint">
                 {mode === "keyword"
                   ? "PostgreSQL FTS · no query-time embedding provider call"
-                  : "Vector embeddings may incur API usage; configure OPENAI_API_KEY server-side"}
+                  : "Vector embeddings may incur API usage; configure the selected provider server-side"}
               </div>
               <button
                 type="submit"
