@@ -28,12 +28,12 @@ describe("SP-25 credentials-free provider status", () => {
     expect(isProviderStatus({ ...good, embedding: { ...good.embedding, dimensions: 0 } })).toBe(
       false,
     );
-    expect(isProviderStatus({ ...good, generation: { ...good.generation, provider: "admin" } })).toBe(
+    expect(
+      isProviderStatus({ ...good, generation: { ...good.generation, provider: "admin" } }),
+    ).toBe(false);
+    expect(isProviderStatus({ ...good, embedding: { ...good.embedding, configured: "yes" } })).toBe(
       false,
     );
-    expect(
-      isProviderStatus({ ...good, embedding: { ...good.embedding, configured: "yes" } }),
-    ).toBe(false);
     expect(isProviderStatus(null)).toBe(false);
   });
 });

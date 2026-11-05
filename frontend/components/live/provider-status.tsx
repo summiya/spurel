@@ -53,8 +53,8 @@ export function ProviderStatusPanel({ purpose }: { purpose: "embedding" | "gener
           )}
           <p className="text-hint">
             Server-only configuration, not a connectivity test. Set providers in the backend
-            environment and restart it. Switching embedding spaces requires explicitly
-            reprocessing documents; previous indexed versions remain intact.
+            environment and restart it. Switching embedding spaces requires explicitly reprocessing
+            documents; previous indexed versions remain intact.
           </p>
         </div>
       ) : (

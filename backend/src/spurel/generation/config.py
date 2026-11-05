@@ -105,4 +105,6 @@ class GenerationProviderConfig:
                 raise GenerationConfigurationError("compatible generation API key is missing")
             return cls("openai_compatible", model, max_tokens, key, base_url)
         except ProviderSelectionError as exc:
-            raise GenerationConfigurationError("generation provider configuration is invalid") from exc
+            raise GenerationConfigurationError(
+                "generation provider configuration is invalid"
+            ) from exc

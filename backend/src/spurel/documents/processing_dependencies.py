@@ -27,9 +27,9 @@ from spurel.embeddings.sqlalchemy_repository import (
 )
 from spurel.infrastructure.chunking.factory import build_document_chunker
 from spurel.infrastructure.chunking.fixed import FixedSizeDocumentChunker
-from spurel.infrastructure.providers import embedding_provider_context
 from spurel.infrastructure.parsing.pdf import PdfDocumentParser
 from spurel.infrastructure.parsing.text import TextDocumentParser
+from spurel.infrastructure.providers import embedding_provider_context
 from spurel.infrastructure.storage import LocalDocumentBlobStorage
 
 LOCAL_STORAGE_ROOT_ENV = "SPUREL_LOCAL_STORAGE_ROOT"

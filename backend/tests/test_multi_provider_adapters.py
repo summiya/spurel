@@ -61,7 +61,7 @@ def test_ollama_embeddings_use_native_batch_contract_and_validate_dimensions() -
     [
         ({"embeddings": [[0.1, 0.2]]}, EmbeddingResultError),
         ({"embeddings": [[0.1, 0.2, 0.3], [0.1, 0.2]]}, EmbeddingDimensionError),
-        ({"embeddings": [[float("nan"), 0.2], [0.1, 0.2]]}, EmbeddingResultError),
+        ({"embeddings": [["NaN", 0.2], [0.1, 0.2]]}, EmbeddingResultError),
         ({"data": []}, EmbeddingResultError),
     ],
 )

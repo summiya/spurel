@@ -100,4 +100,6 @@ class EmbeddingProviderConfig:
                 raise EmbeddingConfigurationError("compatible embedding API key is missing")
             return cls("openai_compatible", model, dimensions, key, base_url)
         except ProviderSelectionError as exc:
-            raise EmbeddingConfigurationError("embedding provider configuration is invalid") from exc
+            raise EmbeddingConfigurationError(
+                "embedding provider configuration is invalid"
+            ) from exc

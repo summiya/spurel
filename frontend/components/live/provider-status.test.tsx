@@ -53,9 +53,14 @@ describe("read-only provider configuration in workbench", () => {
   });
 
   it("does not invent provider information after an upstream failure", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => new Response("{}", { status: 503 })));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response("{}", { status: 503 })),
+    );
     render(<ProviderStatusPanel purpose="generation" />);
-    expect(await screen.findByText(/Provider configuration details are unavailable/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/Provider configuration details are unavailable/),
+    ).toBeInTheDocument();
     expect(screen.queryByText(/hosted-chat/)).not.toBeInTheDocument();
   });
 });

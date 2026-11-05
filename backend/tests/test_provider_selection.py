@@ -87,6 +87,7 @@ def test_ollama_is_explicit_and_does_not_require_cloud_credentials(
     "value",
     [
         "ftp://remote",
+        "http://api.some-public-host.example/v1",
         "http://user:pass@example.test",
         "http://example.test?token=x",
         "http://example.test/#secret",

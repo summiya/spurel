@@ -195,8 +195,8 @@ export function LiveRagAnswersPage({ initialKnowledgeBaseId }: Props) {
       <ProviderStatusPanel purpose="both" />
       <div className="inline-notice">
         <Icon name="shield" size={16} />
-        Generation is explicit and may use paid embedding and text-generation calls. No model
-        is called when loading the page or editing the form. Source labels are not independently
+        Generation is explicit and may use paid embedding and text-generation calls. No model is
+        called when loading the page or editing the form. Source labels are not independently
         verified claim citations by default. Optional model review is fallible and not proof.
       </div>
 

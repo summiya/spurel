@@ -54,8 +54,16 @@ class OllamaEmbeddingProvider:
 
         if not isinstance(payload, dict) or not isinstance(payload.get("embeddings"), list):
             raise EmbeddingResultError("Ollama embeddings response is invalid")
+        vectors = payload["embeddings"]
+        if not all(
+            isinstance(vector, list)
+            and all(isinstance(number, (int, float)) and not isinstance(number, bool)
+                    for number in vector)
+            for vector in vectors
+        ):
+            raise EmbeddingResultError("Ollama embeddings contain invalid values")
         return EmbeddingBatch.create(
-            vectors=payload["embeddings"],
+            vectors=vectors,
             input_count=len(normalized),
             model=self._model,
             dimensions=self._dimensions,

@@ -240,8 +240,7 @@ export function LiveKnowledgeBasesPage() {
       notify(`Indexed ${result.chunk_count} chunks in version ${result.chunk_version}.`);
     } catch (cause) {
       setActionError(
-        liveError(cause) +
-          " Processing requires a configured embedding provider and model.",
+        liveError(cause) + " Processing requires a configured embedding provider and model.",
       );
     } finally {
       setProcessingId(null);
