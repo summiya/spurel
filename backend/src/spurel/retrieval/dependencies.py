@@ -3,14 +3,13 @@
 from collections.abc import AsyncIterator
 
 from fastapi import HTTPException, status
-from openai import AsyncOpenAI
 
 from spurel.db import async_session_factory
 from spurel.embeddings.config import (
     EmbeddingConfigurationError,
-    OpenAIEmbeddingConfig,
+    EmbeddingProviderConfig,
 )
-from spurel.infrastructure.embeddings import OpenAIEmbeddingProvider
+from spurel.infrastructure.providers import embedding_provider_context
 from spurel.retrieval.evaluation import RetrievalEvaluationService
 from spurel.retrieval.hybrid import HybridRetrievalService
 from spurel.retrieval.keyword_service import KeywordRetrievalService
@@ -42,49 +41,33 @@ def get_keyword_retrieval_service() -> KeywordRetrievalService:
 async def get_vector_retrieval_service() -> AsyncIterator[VectorRetrievalService]:
     """Build and safely dispose the configured vector retrieval service."""
     try:
-        config = OpenAIEmbeddingConfig.from_env()
+        config = EmbeddingProviderConfig.from_env()
     except EmbeddingConfigurationError as exc:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="retrieval service temporarily unavailable",
         ) from exc
 
-    client = AsyncOpenAI(api_key=config.api_key)
-
-    try:
-        provider = OpenAIEmbeddingProvider(
-            client=client,
-            model=config.model,
-            dimensions=config.dimensions,
-        )
+    async with embedding_provider_context(config) as provider:
         repository = SqlAlchemyVectorRetrievalRepository(async_session_factory)
 
         yield VectorRetrievalService(
             provider=provider,
             repository=repository,
         )
-    finally:
-        await client.close()
 
 
 async def get_hybrid_retrieval_service() -> AsyncIterator[HybridRetrievalService]:
     """Build and safely dispose vector + keyword hybrid retrieval."""
     try:
-        config = OpenAIEmbeddingConfig.from_env()
+        config = EmbeddingProviderConfig.from_env()
     except EmbeddingConfigurationError as exc:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="retrieval service temporarily unavailable",
         ) from exc
 
-    client = AsyncOpenAI(api_key=config.api_key)
-
-    try:
-        provider = OpenAIEmbeddingProvider(
-            client=client,
-            model=config.model,
-            dimensions=config.dimensions,
-        )
+    async with embedding_provider_context(config) as provider:
         vector_service = VectorRetrievalService(
             provider=provider,
             repository=SqlAlchemyVectorRetrievalRepository(
@@ -99,8 +82,6 @@ async def get_hybrid_retrieval_service() -> AsyncIterator[HybridRetrievalService
             vector_retriever=vector_service,
             keyword_retriever=keyword_service,
         )
-    finally:
-        await client.close()
 
 
 def get_retrieval_trace_service() -> RetrievalTraceService:
@@ -123,21 +104,14 @@ async def get_traced_vector_retrieval_service() -> AsyncIterator[
 ]:
     """Build vector retrieval with mandatory durable tracing."""
     try:
-        config = OpenAIEmbeddingConfig.from_env()
+        config = EmbeddingProviderConfig.from_env()
     except EmbeddingConfigurationError as exc:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="retrieval service temporarily unavailable",
         ) from exc
 
-    client = AsyncOpenAI(api_key=config.api_key)
-
-    try:
-        provider = OpenAIEmbeddingProvider(
-            client=client,
-            model=config.model,
-            dimensions=config.dimensions,
-        )
+    async with embedding_provider_context(config) as provider:
         retriever = VectorRetrievalService(
             provider=provider,
             repository=SqlAlchemyVectorRetrievalRepository(
@@ -152,8 +126,6 @@ async def get_traced_vector_retrieval_service() -> AsyncIterator[
             embedding_model=provider.model,
             embedding_dimensions=provider.dimensions,
         )
-    finally:
-        await client.close()
 
 
 async def get_traced_hybrid_retrieval_service() -> AsyncIterator[
@@ -161,21 +133,14 @@ async def get_traced_hybrid_retrieval_service() -> AsyncIterator[
 ]:
     """Build hybrid retrieval with mandatory durable tracing."""
     try:
-        config = OpenAIEmbeddingConfig.from_env()
+        config = EmbeddingProviderConfig.from_env()
     except EmbeddingConfigurationError as exc:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="retrieval service temporarily unavailable",
         ) from exc
 
-    client = AsyncOpenAI(api_key=config.api_key)
-
-    try:
-        provider = OpenAIEmbeddingProvider(
-            client=client,
-            model=config.model,
-            dimensions=config.dimensions,
-        )
+    async with embedding_provider_context(config) as provider:
         vector_service = VectorRetrievalService(
             provider=provider,
             repository=SqlAlchemyVectorRetrievalRepository(
@@ -197,8 +162,6 @@ async def get_traced_hybrid_retrieval_service() -> AsyncIterator[
             embedding_model=provider.model,
             embedding_dimensions=provider.dimensions,
         )
-    finally:
-        await client.close()
 
 
 def get_retrieval_trace_comparison_service() -> RetrievalTraceComparisonService:

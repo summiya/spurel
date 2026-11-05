@@ -3,12 +3,11 @@
 from collections.abc import AsyncIterator
 
 from fastapi import HTTPException, status
-from openai import AsyncOpenAI
 
 from spurel.db import async_session_factory
 from spurel.embeddings.config import (
     EmbeddingConfigurationError,
-    OpenAIEmbeddingConfig,
+    EmbeddingProviderConfig,
 )
 from spurel.evaluation_datasets.baseline_service import EvaluationBaselineService
 from spurel.evaluation_datasets.execution import (
@@ -36,7 +35,7 @@ from spurel.evaluation_datasets.sqlalchemy_repository import (
 from spurel.evaluation_datasets.sqlalchemy_run_repository import (
     SqlAlchemyEvaluationRunRepository,
 )
-from spurel.infrastructure.embeddings import OpenAIEmbeddingProvider
+from spurel.infrastructure.providers import embedding_provider_context
 from spurel.retrieval.hybrid import HybridRetrievalService
 from spurel.retrieval.keyword_service import KeywordRetrievalService
 from spurel.retrieval.service import VectorRetrievalService
@@ -85,14 +84,7 @@ async def get_vector_dataset_evaluation_service() -> AsyncIterator[
 ]:
     """Build vector dataset evaluation with safe provider lifecycle."""
     config = _load_embedding_config()
-    client = AsyncOpenAI(api_key=config.api_key)
-
-    try:
-        provider = OpenAIEmbeddingProvider(
-            client=client,
-            model=config.model,
-            dimensions=config.dimensions,
-        )
+    async with embedding_provider_context(config) as provider:
         vector_retriever = VectorRetrievalService(
             provider=provider,
             repository=SqlAlchemyVectorRetrievalRepository(
@@ -114,8 +106,6 @@ async def get_vector_dataset_evaluation_service() -> AsyncIterator[
             executor=executor,
             runs=get_evaluation_run_service(),
         )
-    finally:
-        await client.close()
 
 
 async def get_hybrid_dataset_evaluation_service() -> AsyncIterator[
@@ -123,14 +113,7 @@ async def get_hybrid_dataset_evaluation_service() -> AsyncIterator[
 ]:
     """Build hybrid dataset evaluation with safe provider lifecycle."""
     config = _load_embedding_config()
-    client = AsyncOpenAI(api_key=config.api_key)
-
-    try:
-        provider = OpenAIEmbeddingProvider(
-            client=client,
-            model=config.model,
-            dimensions=config.dimensions,
-        )
+    async with embedding_provider_context(config) as provider:
         vector_retriever = VectorRetrievalService(
             provider=provider,
             repository=SqlAlchemyVectorRetrievalRepository(
@@ -159,13 +142,11 @@ async def get_hybrid_dataset_evaluation_service() -> AsyncIterator[
             executor=executor,
             runs=get_evaluation_run_service(),
         )
-    finally:
-        await client.close()
 
 
-def _load_embedding_config() -> OpenAIEmbeddingConfig:
+def _load_embedding_config() -> EmbeddingProviderConfig:
     try:
-        return OpenAIEmbeddingConfig.from_env()
+        return EmbeddingProviderConfig.from_env()
     except EmbeddingConfigurationError as exc:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,

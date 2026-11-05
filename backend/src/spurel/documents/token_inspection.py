@@ -22,6 +22,9 @@ def _encoding_name(model: str) -> str | None:
 
 def measured_tokens(text: str) -> tuple[int | None, str | None]:
     """Return an exact tokenizer-specific count, or unavailable without guessing."""
+    # Only the original OpenAI model family has a validated local tokenizer.
+    if os.getenv("SPUREL_EMBEDDING_PROVIDER", "openai").strip().lower() != "openai":
+        return (None, None)
     model = os.getenv("SPUREL_EMBEDDING_MODEL", "").strip()
     if not model:
         return (None, None)
