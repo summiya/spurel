@@ -65,7 +65,7 @@ replaces illustrative Overview values with bounded, real data.
 | --- | --- | --- | --- |
 | SP-23 | High | ◐ In review | Opt-in model-assisted answer claim support review against exact cited source excerpts, deterministic missing/unknown labels, honest unavailable states and frontend evidence inspection. Branch `feat/sp23-rag-claim-citation-verification`. |
 | SP-24 | Medium | ☐ Planned | Additional evaluation methods/metrics and calibrated quality reporting |
-| SP-25 | High | ☐ Planned | Additional hosted and local embedding/generation adapters, tested at provider boundaries |
+| SP-25 | High | ◐ In review | Opt-in hosted OpenAI-compatible and native Ollama embedding/generation adapters, server-only configuration, all-pipeline wiring, secure provider-status frontend, contract tests and docs. Branch `feat/sp25-hosted-local-provider-adapters`. |
 | SP-26 | Medium | ☐ Planned | Export experiment configurations, traces, runs and metrics in machine-readable formats |
 | SP-27 | High | ☐ Planned | Operational logging, monitoring and trace/error correlation in production-like environments |
 | SP-28 | Medium | ☐ Planned | Open-source release checklist, contributor docs, examples and tagged releases |

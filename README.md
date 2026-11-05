@@ -127,6 +127,77 @@ traces remain retrieval-only. No new database migrations, additional
 services or automatic provider calls are introduced. With empty retrieval
 there is no generation or verification call.
 
+## SP-25: explicit hosted and local embedding/generation providers (in review)
+
+The original **OpenAI** embedding and generation configuration stays the
+default. Spurel also supports two *explicit*, operator-selected options
+for both embedding and generation:
+
+- **`openai_compatible` hosted service**: call a trusted custom
+  OpenAI-compatible `/v1/embeddings` endpoint (without sending optional
+  dimension overrides) and an OpenAI-compatible **Chat Completions**
+  endpoint for RAG generation. Set separate base URLs and API keys.
+- **`ollama` local service**: call the native Ollama `/api/embed`
+  (ordered batch input, no truncation) and `/api/chat` (non-streaming)
+  endpoints. You must **run the Ollama service and download your models
+  yourself**. Spurel does not start or pull models, nor issue automatic
+  inference requests.
+
+Configure these **server-only** variables in your local `.env`:
+
+```dotenv
+# Choose independently: openai, openai_compatible, or ollama.
+SPUREL_EMBEDDING_PROVIDER=ollama
+SPUREL_EMBEDDING_MODEL=nomic-embed-text
+SPUREL_EMBEDDING_DIMENSIONS=768
+
+SPUREL_GENERATION_PROVIDER=ollama
+SPUREL_GENERATION_MODEL=llama3
+SPUREL_GENERATION_MAX_OUTPUT_TOKENS=1200
+SPUREL_OLLAMA_BASE_URL=http://host.docker.internal:11434
+```
+
+For an operator-controlled *hosted* compatible service, use
+`SPUREL_EMBEDDING_PROVIDER=openai_compatible` with
+`SPUREL_EMBEDDING_BASE_URL`, `SPUREL_EMBEDDING_API_KEY`, and
+`SPUREL_GENERATION_PROVIDER=openai_compatible` with
+`SPUREL_GENERATION_BASE_URL`, `SPUREL_GENERATION_API_KEY`.
+They are **separate** so ingestion/retrieval and RAG generation can
+use different trusted services. A hosted endpoint may receive your
+source excerpts or queries and incur charges—only point these
+variables at endpoints you explicitly trust. URLs and tokens are
+never transmitted to the browser.
+
+Compose supports `host.docker.internal` inside its backend on supported
+Docker engines; ensure your local Ollama process is reachable from
+the backend container. On a host Python process you can instead set
+`SPUREL_OLLAMA_BASE_URL=http://127.0.0.1:11434`. Never publish
+Ollama unauthenticated to untrusted networks. All custom endpoints
+reject credential-bearing URLs and do not follow HTTP redirects.
+Only explicit document Process/Reprocess, Vector/Hybrid Retrieval,
+evaluation runs, and RAG calls invoke providers.
+
+**Important:** The configured embedding provider, model and dimensions
+are part of each stored embedding's identity. Changing any of these
+parameters does **not** convert existing vectors: you must
+**explicitly reprocess documents** for the new embedding space before
+retrieval will find those chunks. Previous document versions remain
+intact. The configured dimension must match the actual model output;
+mismatches fail instead of silently truncating or padding embeddings.
+Token-aware chunking and token counts are available only for known
+OpenAI tokenizers; use Characters, Recursive, Markdown or Sentences
+with non-OpenAI embedding models.
+
+The Knowledge Bases, Retrieval Lab and RAG Answers pages show
+**which providers/models are configured** via the existing
+operator-authenticated session. This is a **configuration report**,
+not a model availability/health test. You configure providers in the
+backend environment and restart, not by entering secrets in browser
+controls. Existing retrieval scoring, RAG citations, security,
+database migrations, saved history and the Overview quality chart
+are unchanged. There is no new database migration or new provider
+dependency.
+
 ## Live Overview dashboard (frontend follow-up)
 
 Open [Overview](http://localhost:3000/) and sign in as the local operator to load

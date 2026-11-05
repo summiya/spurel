@@ -487,6 +487,68 @@ the ephemeral answer and are not saved as trace judgments. Historical
 retrieval traces, original source offsets, PDFs, evaluation data,
 backend auth and the Overview quality graph remain unchanged.
 
+## SP-25: explicit hosted and local model adapters
+
+The default stays `SPUREL_EMBEDDING_PROVIDER=openai` and
+`SPUREL_GENERATION_PROVIDER=openai` using the existing
+`OPENAI_API_KEY`, embedding model/dimensions, OpenAI Embeddings API,
+and OpenAI Responses API. The operator can independently select
+`openai_compatible` or `ollama` for either provider:
+
+| Backend-only env | Meaning |
+| --- | --- |
+| `SPUREL_EMBEDDING_PROVIDER` / `SPUREL_GENERATION_PROVIDER` | `openai` (default), `openai_compatible` or `ollama` |
+| `SPUREL_EMBEDDING_MODEL` / `SPUREL_EMBEDDING_DIMENSIONS` | Exact configured embedding-space identity; dimensions are strictly checked against every returned vector |
+| `SPUREL_GENERATION_MODEL` / `SPUREL_GENERATION_MAX_OUTPUT_TOKENS` | Explicit text generator/model and output bound |
+| `SPUREL_EMBEDDING_BASE_URL` / `SPUREL_EMBEDDING_API_KEY` | Authenticated hosted OpenAI-compatible embedding endpoint |
+| `SPUREL_GENERATION_BASE_URL` / `SPUREL_GENERATION_API_KEY` | Authenticated hosted OpenAI-compatible Chat Completions endpoint |
+| `SPUREL_OLLAMA_BASE_URL` | Trusted local Ollama server origin for native `/api/embed` and `/api/chat` |
+
+The hosted compatible embedding adapter omits OpenAI's optional
+`dimensions` **request** parameter for fixed-dimension services but
+enforces the configured dimension on all returned vectors. The
+compatible generation adapter uses **Chat Completions**, not OpenAI
+Responses. Ollama's native embedding request uses a list of inputs
+and `truncate=false`; generation uses `stream=false` and bounded
+`num_predict`. Model servers are **not** launched by Compose, nor
+are models pulled or benchmarked implicitly.
+
+For Ollama in the local Compose environment, launch/prepare an
+operator-managed Ollama instance first. Use
+`SPUREL_OLLAMA_BASE_URL=http://host.docker.internal:11434` when the
+instance is reachable through the host gateway mapping (supported by
+the added backend `extra_hosts`). When running the backend directly
+on the host use `http://127.0.0.1:11434`. Your service must be
+reachable from the backend; adjust host binding/network permissions
+privately and **do not expose unauthenticated Ollama publicly**.
+Only explicitly trusted URLs are supported; custom HTTP clients
+disable environment proxies, redirects and SDK retries. Remote calls
+may send actual document chunks and RAG source excerpts to the
+configured service and incur charges.
+
+All processing, live vector/hybrid retrieval, dataset evaluations,
+and RAG now use the same selected, version-scoped embedding space
+and independent generation provider. The new authenticated
+`GET /providers/status` endpoint and
+`/api/workspace/providers/status` proxy return only selected
+provider, model, configured flag and embedding dimensions—**never
+keys or host URLs**. The endpoint is config-only, and does not
+probe availability or call any model. Frontend provider displays
+in Knowledge Bases, Retrieval Lab and RAG are read-only.
+Secrets are set in `.env` or your server's secret manager,
+not NEXT_PUBLIC variables or browser storage.
+
+**Switching embedding space:** prior indexed chunks and historical
+versions are not rewritten, re-embedded or deleted. New query
+retrieval scopes to the selected provider/model/dimensions; you
+must explicitly Process/Reprocess documents to index them in the
+new space. Default character/structured chunking remains available;
+the existing token-aware chunking and displayed token count require
+a recognized OpenAI tokenizer and intentionally fail closed or
+show unavailable with non-OpenAI models. All existing HTTP routes,
+reranking, evaluation snapshots, source provenance and Overview
+chart remain intact. No database migration is added by SP-25.
+
 ## Environment and secrets
 
 `make init` copies `.env.example` to the ignored `.env` on first use, generates a strong random `SPUREL_API_TOKEN`, and restricts its permissions to the file owner on POSIX systems. It **does not replace** an existing valid token or provider key. Do not print, commit, or share your `.env`.
