@@ -3,12 +3,11 @@
 from collections.abc import AsyncIterator
 
 from fastapi import HTTPException, status
-from openai import AsyncOpenAI
 
 from spurel.db import async_session_factory
 from spurel.embeddings.config import (
     EmbeddingConfigurationError,
-    OpenAIEmbeddingConfig,
+    EmbeddingProviderConfig,
 )
 from spurel.evaluation_datasets.baseline_service import EvaluationBaselineService
 from spurel.evaluation_datasets.execution import (
@@ -36,7 +35,7 @@ from spurel.evaluation_datasets.sqlalchemy_repository import (
 from spurel.evaluation_datasets.sqlalchemy_run_repository import (
     SqlAlchemyEvaluationRunRepository,
 )
-from spurel.infrastructure.embeddings import OpenAIEmbeddingProvider
+from spurel.infrastructure.providers import embedding_provider_context
 from spurel.retrieval.hybrid import HybridRetrievalService
 from spurel.retrieval.keyword_service import KeywordRetrievalService
 from spurel.retrieval.service import VectorRetrievalService
@@ -50,16 +49,12 @@ from spurel.retrieval.sqlalchemy_repository import (
 
 def get_evaluation_dataset_service() -> EvaluationDatasetService:
     """Build reusable evaluation dataset services."""
-    return EvaluationDatasetService(
-        SqlAlchemyEvaluationDatasetRepository(async_session_factory)
-    )
+    return EvaluationDatasetService(SqlAlchemyEvaluationDatasetRepository(async_session_factory))
 
 
 def get_evaluation_run_service() -> EvaluationRunService:
     """Build durable benchmark run history."""
-    return EvaluationRunService(
-        SqlAlchemyEvaluationRunRepository(async_session_factory)
-    )
+    return EvaluationRunService(SqlAlchemyEvaluationRunRepository(async_session_factory))
 
 
 def get_keyword_dataset_evaluation_service() -> PersistedDatasetEvaluationService:
@@ -85,25 +80,14 @@ async def get_vector_dataset_evaluation_service() -> AsyncIterator[
 ]:
     """Build vector dataset evaluation with safe provider lifecycle."""
     config = _load_embedding_config()
-    client = AsyncOpenAI(api_key=config.api_key)
-
-    try:
-        provider = OpenAIEmbeddingProvider(
-            client=client,
-            model=config.model,
-            dimensions=config.dimensions,
-        )
+    async with embedding_provider_context(config) as provider:
         vector_retriever = VectorRetrievalService(
             provider=provider,
-            repository=SqlAlchemyVectorRetrievalRepository(
-                async_session_factory
-            ),
+            repository=SqlAlchemyVectorRetrievalRepository(async_session_factory),
         )
 
         executor = DatasetEvaluationExecutionService(
-            repository=SqlAlchemyEvaluationDatasetRepository(
-                async_session_factory
-            ),
+            repository=SqlAlchemyEvaluationDatasetRepository(async_session_factory),
             retriever=VectorDatasetRetriever(vector_retriever),
             mode=DatasetEvaluationMode.VECTOR,
             embedding_provider=provider.provider,
@@ -114,8 +98,6 @@ async def get_vector_dataset_evaluation_service() -> AsyncIterator[
             executor=executor,
             runs=get_evaluation_run_service(),
         )
-    finally:
-        await client.close()
 
 
 async def get_hybrid_dataset_evaluation_service() -> AsyncIterator[
@@ -123,19 +105,10 @@ async def get_hybrid_dataset_evaluation_service() -> AsyncIterator[
 ]:
     """Build hybrid dataset evaluation with safe provider lifecycle."""
     config = _load_embedding_config()
-    client = AsyncOpenAI(api_key=config.api_key)
-
-    try:
-        provider = OpenAIEmbeddingProvider(
-            client=client,
-            model=config.model,
-            dimensions=config.dimensions,
-        )
+    async with embedding_provider_context(config) as provider:
         vector_retriever = VectorRetrievalService(
             provider=provider,
-            repository=SqlAlchemyVectorRetrievalRepository(
-                async_session_factory
-            ),
+            repository=SqlAlchemyVectorRetrievalRepository(async_session_factory),
         )
         keyword_retriever = KeywordRetrievalService(
             SqlAlchemyKeywordRetrievalRepository(async_session_factory)
@@ -146,9 +119,7 @@ async def get_hybrid_dataset_evaluation_service() -> AsyncIterator[
         )
 
         executor = DatasetEvaluationExecutionService(
-            repository=SqlAlchemyEvaluationDatasetRepository(
-                async_session_factory
-            ),
+            repository=SqlAlchemyEvaluationDatasetRepository(async_session_factory),
             retriever=HybridDatasetRetriever(hybrid_retriever),
             mode=DatasetEvaluationMode.HYBRID,
             embedding_provider=provider.provider,
@@ -159,13 +130,11 @@ async def get_hybrid_dataset_evaluation_service() -> AsyncIterator[
             executor=executor,
             runs=get_evaluation_run_service(),
         )
-    finally:
-        await client.close()
 
 
-def _load_embedding_config() -> OpenAIEmbeddingConfig:
+def _load_embedding_config() -> EmbeddingProviderConfig:
     try:
-        return OpenAIEmbeddingConfig.from_env()
+        return EmbeddingProviderConfig.from_env()
     except EmbeddingConfigurationError as exc:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -180,10 +149,7 @@ def get_evaluation_run_comparison_service() -> EvaluationRunComparisonService:
 
 def get_evaluation_quality_gate_service() -> EvaluationQualityGateService:
     """Build explicit threshold-based benchmark quality gates."""
-    return EvaluationQualityGateService(
-        get_evaluation_run_comparison_service()
-    )
-
+    return EvaluationQualityGateService(get_evaluation_run_comparison_service())
 
 
 def get_evaluation_baseline_service() -> EvaluationBaselineService:

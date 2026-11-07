@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } fro
 import { useRouter } from "next/navigation";
 
 import { Icon } from "@/components/icons";
+import { ProviderStatusPanel } from "@/components/live/provider-status";
 import {
   DEFAULT_CHUNKING,
   TOKEN_CHUNKING,
@@ -214,7 +215,7 @@ export function LiveKnowledgeBasesPage() {
     if (
       !legacy &&
       !window.confirm(
-        `Process ${document.filename} with ${chunkStrategy} chunking (${options.chunk_size} ${chunkStrategy === "tokens" ? "tokens" : "characters"} per chunk, ${options.overlap} overlap)? Embeddings may incur OpenAI charges. Existing active versions remain available until processing succeeds.`,
+        `Process ${document.filename} with ${chunkStrategy} chunking (${options.chunk_size} ${chunkStrategy === "tokens" ? "tokens" : "characters"} per chunk, ${options.overlap} overlap)? Embeddings may incur provider charges. Existing active versions remain available until processing succeeds.`,
       )
     )
       return;
@@ -239,8 +240,7 @@ export function LiveKnowledgeBasesPage() {
       notify(`Indexed ${result.chunk_count} chunks in version ${result.chunk_version}.`);
     } catch (cause) {
       setActionError(
-        liveError(cause) +
-          " Processing requires a valid OpenAI embedding key and configured model.",
+        liveError(cause) + " Processing requires a configured embedding provider and model.",
       );
     } finally {
       setProcessingId(null);
@@ -286,6 +286,7 @@ export function LiveKnowledgeBasesPage() {
         }
       />
 
+      <ProviderStatusPanel purpose="embedding" />
       <div className="inline-notice">
         <Icon name="check" size={17} />
         This screen shows actual FastAPI and PostgreSQL data. Retrieval, trace history, evaluations

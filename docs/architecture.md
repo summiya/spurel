@@ -264,6 +264,22 @@ model assessment, **not independent fact verification**. No extra work
 occurs without opt-in, no new database columns or persisted full answers
 are added, and legacy retrieval/reranking semantics remain unchanged.
 
+### SP-25 provider adapters (in review)
+
+An environment-only selection layer chooses the legacy OpenAI adapters,
+hosted OpenAI-compatible embedding/Chat Completion endpoints, or native
+Ollama `/api/embed` and `/api/chat` adapters. Factory scopes construct
+and dispose one selected client per active document processing,
+retrieval, evaluation or RAG request. Provider output is checked
+against the domain's fixed provider/model/dimension contract, so a
+provider switch does not silently search embeddings from another
+model space. Provider keys and endpoints are never passed to frontend
+controls or included in the read-only provider status API. The
+Overview and historical trace/evaluation data are not affected.
+A custom model server is operator-managed; no automatic model pull
+or background inference runs when navigating. New providers have
+no new database migrations and no local service is bundled.
+
 ## What is planned, not implemented
 
 The frontend has live source, chunk, retrieval, trace-comparison, evaluation and provider-backed RAG answer inspection. A frontend follow-up summarizes real Overview data, including a 7/30-day retrieval-quality chart plotting persisted evaluation runs without inferred measurements or new backend APIs. The following are **not built on main**: opt-in scanned-PDF OCR (SP-18 in review), semantic/LLM-based chunking, BM25, pgvector ANN/HNSW, metadata filters, rerankers, independent citation/claim verification, non-OpenAI providers, data-source connectors, Redis-backed background jobs, experiment export and production auth/monitoring.

@@ -50,6 +50,8 @@ services:
       SPUREL_ENABLE_DOCS: ${SPUREL_ENABLE_DOCS:-0}
     ports:
       - "127.0.0.1:${SPUREL_API_PORT:-8000}:8000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - ./backend:/app
       - spurel_document_storage:/app/.spurel/storage

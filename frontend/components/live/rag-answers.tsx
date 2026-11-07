@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRef, useState, type FormEvent, type ReactNode } from "react";
 
 import { Icon } from "@/components/icons";
+import { ProviderStatusPanel } from "@/components/live/provider-status";
 import { EmptyState, ErrorState, LoadingState, PageHeading, Panel } from "@/components/ui";
 import { useDemoToast } from "@/components/workbench-shell";
 import { liveError, workspaceFetch } from "@/lib/live-client";
@@ -125,8 +126,8 @@ export function LiveRagAnswersPage({ initialKnowledgeBaseId }: Props) {
     if (
       !window.confirm(
         request.verify_citations
-          ? "This request calls OpenAI for retrieval and answer generation, plus an EXTRA model review of cited claims against source excerpts. The review may be wrong, incurs additional charges, and is not proof of factual truth. Continue?"
-          : "This request runs hybrid retrieval and may call OpenAI for query embeddings and answer generation. Provider charges may apply. Generate this live answer?",
+          ? "This request calls the configured providers for retrieval and answer generation, plus an EXTRA model review of cited claims against source excerpts. The review may be wrong, incurs additional charges, and is not proof of factual truth. Continue?"
+          : "This request runs hybrid retrieval and may call the configured providers for embeddings and answer generation. Provider charges may apply. Generate this live answer?",
       )
     )
       return;
@@ -191,10 +192,11 @@ export function LiveRagAnswersPage({ initialKnowledgeBaseId }: Props) {
           </Link>
         }
       />
+      <ProviderStatusPanel purpose="both" />
       <div className="inline-notice">
         <Icon name="shield" size={16} />
-        Generation is explicit and may use paid OpenAI embedding and text-generation calls. No model
-        is called when loading the page or editing the form. Source labels are not independently
+        Generation is explicit and may use paid embedding and text-generation calls. No model is
+        called when loading the page or editing the form. Source labels are not independently
         verified claim citations by default. Optional model review is fallible and not proof.
       </div>
 
@@ -331,7 +333,7 @@ export function LiveRagAnswersPage({ initialKnowledgeBaseId }: Props) {
             </div>
             <div className="rag-actions">
               <span className="text-hint">
-                Requires configured OpenAI embeddings and generation. Only previously indexed
+                Requires configured embedding and generation providers. Only previously indexed
                 documents can be used as context.
               </span>
               <button type="submit" className="button primary" disabled={!request || running}>

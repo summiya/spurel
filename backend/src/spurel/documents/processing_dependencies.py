@@ -5,7 +5,6 @@ from collections.abc import AsyncIterator
 from pathlib import Path
 
 from fastapi import HTTPException, status
-from openai import AsyncOpenAI
 
 from spurel.db import async_session_factory
 from spurel.documents.chunk_pipeline import DocumentChunkPipeline
@@ -19,7 +18,7 @@ from spurel.documents.sqlalchemy_chunk_repository import (
 from spurel.documents.sqlalchemy_repository import SqlAlchemyDocumentRepository
 from spurel.embeddings.config import (
     EmbeddingConfigurationError,
-    OpenAIEmbeddingConfig,
+    EmbeddingProviderConfig,
 )
 from spurel.embeddings.pipeline import DocumentEmbeddingPipeline
 from spurel.embeddings.service import ChunkEmbeddingService
@@ -28,9 +27,9 @@ from spurel.embeddings.sqlalchemy_repository import (
 )
 from spurel.infrastructure.chunking.factory import build_document_chunker
 from spurel.infrastructure.chunking.fixed import FixedSizeDocumentChunker
-from spurel.infrastructure.embeddings import OpenAIEmbeddingProvider
 from spurel.infrastructure.parsing.pdf import PdfDocumentParser
 from spurel.infrastructure.parsing.text import TextDocumentParser
+from spurel.infrastructure.providers import embedding_provider_context
 from spurel.infrastructure.storage import LocalDocumentBlobStorage
 
 LOCAL_STORAGE_ROOT_ENV = "SPUREL_LOCAL_STORAGE_ROOT"
@@ -40,16 +39,14 @@ DEFAULT_LOCAL_STORAGE_ROOT = ".spurel/storage"
 async def get_document_processing_service() -> AsyncIterator[DocumentProcessingService]:
     """Build and safely dispose the complete document processing service."""
     try:
-        config = OpenAIEmbeddingConfig.from_env()
+        config = EmbeddingProviderConfig.from_env()
     except EmbeddingConfigurationError as exc:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="document processing service temporarily unavailable",
         ) from exc
 
-    client = AsyncOpenAI(api_key=config.api_key)
-
-    try:
+    async with embedding_provider_context(config) as provider:
         document_repository = SqlAlchemyDocumentRepository(async_session_factory)
         chunk_repository = SqlAlchemyDocumentChunkRepository(async_session_factory)
         embedding_repository = SqlAlchemyChunkEmbeddingRepository(async_session_factory)
@@ -74,11 +71,6 @@ async def get_document_processing_service() -> AsyncIterator[DocumentProcessingS
             chunk_service=DocumentChunkService(chunk_repository),
         )
 
-        provider = OpenAIEmbeddingProvider(
-            client=client,
-            model=config.model,
-            dimensions=config.dimensions,
-        )
         embedding_pipeline = DocumentEmbeddingPipeline(
             chunk_reader=chunk_repository,
             provider=provider,
@@ -89,8 +81,7 @@ async def get_document_processing_service() -> AsyncIterator[DocumentProcessingS
             chunk_pipeline=chunk_pipeline,
             embedding_pipeline=embedding_pipeline,
             chunker_factory=lambda options: build_document_chunker(
-                options=options, model=config.model
+                options=options,
+                model=config.model if config.provider == "openai" else "",
             ),
         )
-    finally:
-        await client.close()
