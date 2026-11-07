@@ -400,6 +400,29 @@ export function LiveTraceHistoryPage({ initialKnowledgeBaseId, initialTraceId }:
             {first ? (
               <>
                 <h3 className="trace-query-title">{first.query}</h3>
+                {traceRoot ? (
+                  <div className="rag-live-answer-actions">
+                    <a
+                      className="button ghost compact"
+                      href={`/api/workspace/knowledge-bases/${base.id}/retrieval/traces/${first.id}/export?format=json`}
+                      download={`spurel-trace-${first.id}.json`}
+                    >
+                      <Icon name="download" size={15} /> Export trace JSON
+                    </a>
+                    <a
+                      className="button ghost compact"
+                      href={`/api/workspace/knowledge-bases/${base.id}/retrieval/traces/${first.id}/export?format=csv`}
+                      download={`spurel-trace-${first.id}.csv`}
+                    >
+                      <Icon name="download" size={15} /> Export trace CSV
+                    </a>
+                  </div>
+                ) : null}
+                <p className="text-hint">
+                  Exports contain the saved query, configuration, exact retrieved excerpts,
+                  rankings and timings. They may include confidential document text. Downloads
+                  do not rerun retrieval or invoke a provider.
+                </p>
                 <div className="trace-stat-grid">
                   <span>
                     <strong>{first.result_count}</strong>
