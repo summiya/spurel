@@ -1,11 +1,12 @@
 """FastAPI boundary for the Retrieval Playground."""
 
-from typing import Annotated
+from typing import Annotated, Literal
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from spurel.embeddings.domain import EmbeddingError
+from spurel.exports import ArtifactExportResponse, ExportSizeError, export_snapshot
 from spurel.retrieval.dependencies import (
     get_retrieval_evaluation_service,
     get_retrieval_trace_comparison_service,
@@ -398,6 +399,34 @@ async def get_retrieval_trace(
             for result in trace.results
         ],
     )
+
+
+@router.get(
+    "/traces/{trace_id}/export",
+    response_model=ArtifactExportResponse,
+)
+async def export_retrieval_trace(
+    knowledge_base_id: UUID,
+    trace_id: UUID,
+    service: RetrievalTraceServiceDependency,
+    format: Annotated[Literal["json", "csv"], Query()] = "json",
+) -> ArtifactExportResponse:
+    """Export saved trace configuration, timings, scores and exact ranked text."""
+    detail = await get_retrieval_trace(knowledge_base_id, trace_id, service)
+    if detail.id != trace_id or detail.knowledge_base_id != knowledge_base_id:
+        raise HTTPException(status_code=404, detail="retrieval trace was not found")
+    try:
+        return export_snapshot(
+            kind="retrieval_trace",
+            snapshot=detail,
+            record_id=trace_id,
+            format=format,
+        )
+    except ExportSizeError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail="saved trace exceeds export size limit",
+        ) from exc
 
 
 @router.post(

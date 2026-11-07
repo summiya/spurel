@@ -1,11 +1,12 @@
 """FastAPI endpoints for reusable evaluation datasets."""
 
-from typing import Annotated
+from typing import Annotated, Literal
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from spurel.embeddings.domain import EmbeddingError
+from spurel.exports import ArtifactExportResponse, ExportSizeError, export_snapshot
 from spurel.evaluation_datasets.baseline_domain import (
     EvaluationBaseline,
     EvaluationBaselineConfiguration,
@@ -705,6 +706,39 @@ async def get_evaluation_run(
         ) from exc
 
     return _dataset_evaluation_response(run)
+
+
+@router.get(
+    "/{dataset_id}/runs/{run_id}/export",
+    response_model=ArtifactExportResponse,
+)
+async def export_evaluation_run(
+    knowledge_base_id: UUID,
+    dataset_id: UUID,
+    run_id: UUID,
+    service: EvaluationRunServiceDependency,
+    format: Annotated[Literal["json", "csv"], Query()] = "json",
+) -> ArtifactExportResponse:
+    """Export the saved evaluation configuration, aggregate and per-case metrics."""
+    detail = await get_evaluation_run(knowledge_base_id, dataset_id, run_id, service)
+    if (
+        detail.run_id != run_id
+        or detail.knowledge_base_id != knowledge_base_id
+        or detail.dataset_id != dataset_id
+    ):
+        raise HTTPException(status_code=404, detail="evaluation run was not found")
+    try:
+        return export_snapshot(
+            kind="evaluation_run",
+            snapshot=detail,
+            record_id=run_id,
+            format=format,
+        )
+    except ExportSizeError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail="saved evaluation run exceeds export size limit",
+        ) from exc
 
 
 def _run_summary_response(
