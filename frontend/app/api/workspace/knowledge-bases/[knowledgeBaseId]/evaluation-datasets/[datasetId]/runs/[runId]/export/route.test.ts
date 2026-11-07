@@ -7,7 +7,7 @@ const mocks = vi.hoisted(() => ({ authFailure: vi.fn(), backendRequest: vi.fn() 
 
 vi.mock("@/lib/server/backend-client", () => ({
   validUUID: (value: string) =>
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[89ab][0-9a-f]{12}$/i.test(value),
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value),
   backendRequest: mocks.backendRequest,
   safeBackendError: () => ({ status: 503, error: "Backend temporarily unavailable." }),
 }));

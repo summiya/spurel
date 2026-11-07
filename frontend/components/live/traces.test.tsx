@@ -215,7 +215,7 @@ describe("live persisted trace history", () => {
     expect(csv).toHaveAttribute("href", expected + "?format=csv");
     expect(csv).toHaveAttribute("download", `spurel-trace-${first}.csv`);
     expect(screen.getByText(/may include confidential document text/)).toBeInTheDocument();
-    const selector = screen.getByRole("combobox", { name: "Trace A · details" });
+    const selector = screen.getByRole("combobox", { name: "Trace A · baseline" });
     fireEvent.change(selector, { target: { value: second } });
     expect(screen.getByRole("link", { name: "Export trace JSON" })).toHaveAttribute(
       "href",

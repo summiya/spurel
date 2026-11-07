@@ -280,6 +280,20 @@ A custom model server is operator-managed; no automatic model pull
 or background inference runs when navigating. New providers have
 no new database migrations and no local service is bundled.
 
+### SP-26 saved experiment export (in review)
+
+Only existing immutable saved trace and benchmark detail services are
+used to produce versioned, schema-stable JSON or flattened CSV
+artifacts. Exports contain the original query/configuration,
+scope/provenance, elapsed times, ranked matches or per-case metrics.
+The authenticated FastAPI routes return bounded payload descriptors;
+the operator-protected Next.js routes validate scope/filename and
+emit the file as a private, no-cache download. CSV source text is
+neutralized for spreadsheet formula execution. No export starts
+retrieval, calls an LLM or modifies persisted records.
+No new migration, database table, or automatic background process
+is introduced. The original Overview graph remains unchanged.
+
 ## What is planned, not implemented
 
 The frontend has live source, chunk, retrieval, trace-comparison, evaluation and provider-backed RAG answer inspection. A frontend follow-up summarizes real Overview data, including a 7/30-day retrieval-quality chart plotting persisted evaluation runs without inferred measurements or new backend APIs. The following are **not built on main**: opt-in scanned-PDF OCR (SP-18 in review), semantic/LLM-based chunking, BM25, pgvector ANN/HNSW, metadata filters, rerankers, independent citation/claim verification, non-OpenAI providers, data-source connectors, Redis-backed background jobs, experiment export and production auth/monitoring.
