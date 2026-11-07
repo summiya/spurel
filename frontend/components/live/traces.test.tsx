@@ -205,6 +205,27 @@ describe("live persisted trace history", () => {
     ).toHaveLength(0);
   });
 
+  it("offers explicit JSON/CSV exports for the selected saved trace without model calls", async () => {
+    render(<LiveTraceHistoryPage />);
+    const json = await screen.findByRole("link", { name: "Export trace JSON" });
+    const csv = screen.getByRole("link", { name: "Export trace CSV" });
+    const expected = `${prefix}/traces/${first}/export`;
+    expect(json).toHaveAttribute("href", expected + "?format=json");
+    expect(json).toHaveAttribute("download", `spurel-trace-${first}.json`);
+    expect(csv).toHaveAttribute("href", expected + "?format=csv");
+    expect(csv).toHaveAttribute("download", `spurel-trace-${first}.csv`);
+    expect(screen.getByText(/may include confidential document text/)).toBeInTheDocument();
+    const selector = screen.getByRole("combobox", { name: "Trace A · details" });
+    fireEvent.change(selector, { target: { value: second } });
+    expect(screen.getByRole("link", { name: "Export trace JSON" })).toHaveAttribute(
+      "href",
+      `${prefix}/traces/${second}/export?format=json`,
+    );
+    expect(
+      vi.mocked(fetch).mock.calls.every(([, opts]) => !opts?.method || opts.method === "GET"),
+    ).toBe(true);
+  });
+
   it("compares a selected pair with true backend overlap, ranks and timing", async () => {
     render(<LiveTraceHistoryPage />);
     const select = await screen.findByRole("combobox", { name: "Trace B · comparison" });
