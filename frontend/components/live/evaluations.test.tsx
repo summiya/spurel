@@ -268,6 +268,20 @@ describe("SP-14 live evaluation workbench", () => {
     expect(JSON.parse(String(benchmarkCall?.[1]?.body))).toEqual({ top_k: 10 });
   });
 
+  it("exports a selected saved evaluation run without triggering any benchmark", async () => {
+    priorRuns = true;
+    render(<LiveEvaluationsPage />);
+    const json = await screen.findByRole("link", { name: "Export run JSON" });
+    const csv = screen.getByRole("link", { name: "Export run CSV" });
+    expect(json).toHaveAttribute("href", `${evalRoot}/runs/${run1}/export?format=json`);
+    expect(json).toHaveAttribute("download", `spurel-evaluation-run-${run1}.json`);
+    expect(csv).toHaveAttribute("href", `${evalRoot}/runs/${run1}/export?format=csv`);
+    expect(screen.getByText(/No evaluation is rerun by downloading/)).toBeInTheDocument();
+    expect(
+      vi.mocked(fetch).mock.calls.every(([, opts]) => !opts?.method || opts.method === "GET"),
+    ).toBe(true);
+  });
+
   it("compares persisted runs, checks gates explicitly and never invokes an embedding model", async () => {
     casesPresent = true;
     priorRuns = true;

@@ -176,3 +176,70 @@ def test_trace_history_hides_persistence_errors() -> None:
     assert response.status_code == 503
     assert response.json() == {"detail": "retrieval trace history temporarily unavailable"}
     assert "database secret detail" not in response.text
+
+
+def test_trace_export_json_and_csv_have_exact_scope_and_no_rerun() -> None:
+    import csv
+    import json
+    from io import StringIO
+
+    knowledge_base_id = uuid4()
+    service = FakeRetrievalTraceService()
+    service.trace = RetrievalTrace(
+        id=uuid4(),
+        knowledge_base_id=knowledge_base_id,
+        mode=RetrievalTraceMode.KEYWORD,
+        query="  =SUM(3,4)",
+        top_k=5,
+        candidate_k=None,
+        rrf_k=None,
+        duration_ms=12.0,
+        embedding_provider=None,
+        embedding_model=None,
+        embedding_dimensions=None,
+        results=(
+            RetrievalTraceResult(
+                rank=1,
+                chunk_id=uuid4(),
+                document_id=uuid4(),
+                chunk_index=0,
+                text="-HYPERLINK('bad')",
+                start_offset=0,
+                end_offset=17,
+                keyword_score=0.4,
+            ),
+        ),
+        created_at=datetime.now(UTC),
+    )
+    root = f"/knowledge-bases/{knowledge_base_id}/retrieval/traces/{service.trace.id}/export"
+    client = _client(service)
+    exported = client.get(root, params={"format": "json"})
+    assert exported.status_code == 200
+    data = json.loads(exported.json()["content"])
+    assert data["source"]["id"] == str(service.trace.id)
+    assert data["configuration"]["mode"] == "keyword"
+    assert data["metrics"]["duration_ms"] == 12.0
+    assert data["results"][0]["keyword_score"] == 0.4
+
+    csv_result = client.get(root, params={"format": "csv"})
+    assert csv_result.status_code == 200
+    row = list(csv.DictReader(StringIO(csv_result.json()["content"])))[0]
+    assert row["config_query"].startswith("'  =SUM")
+    assert row["result_text"].startswith("'-HYPERLINK")
+    assert row["result_keyword_score"] == "0.4"
+
+    assert client.get(root, params={"format": "xml"}).status_code == 422
+    assert client.get(root.replace(str(knowledge_base_id), str(uuid4()))).status_code == 404
+    assert client.get(root.replace(str(service.trace.id), str(uuid4()))).status_code == 404
+
+
+def test_trace_export_preserves_not_found_and_generic_database_errors() -> None:
+    service = FakeRetrievalTraceService()
+    client = _client(service)
+    url = f"/knowledge-bases/{uuid4()}/retrieval/traces/{uuid4()}/export"
+    missing = client.get(url)
+    assert missing.status_code == 404
+    service.get_error = RetrievalTracePersistenceError("secret db endpoint")
+    failed = client.get(url)
+    assert failed.status_code == 503
+    assert "secret db endpoint" not in failed.text

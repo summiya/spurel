@@ -218,14 +218,10 @@ def test_run_history_hides_database_errors() -> None:
     service.error = EvaluationRunPersistenceError("database secret detail")
     client = _client(service)
 
-    response = client.get(
-        f"/knowledge-bases/{uuid4()}/evaluation-datasets/{uuid4()}/runs"
-    )
+    response = client.get(f"/knowledge-bases/{uuid4()}/evaluation-datasets/{uuid4()}/runs")
 
     assert response.status_code == 503
-    assert response.json() == {
-        "detail": "evaluation run history temporarily unavailable"
-    }
+    assert response.json() == {"detail": "evaluation run history temporarily unavailable"}
     assert "database secret detail" not in response.text
 
 
@@ -238,3 +234,53 @@ def test_run_history_bounds_page_size() -> None:
     )
 
     assert response.status_code == 422
+
+
+def test_run_export_json_and_csv_keep_saved_metrics_and_configuration() -> None:
+    import csv
+    import json
+    from io import StringIO
+
+    knowledge_base_id = uuid4()
+    dataset_id = uuid4()
+    run = _run(knowledge_base_id=knowledge_base_id, dataset_id=dataset_id)
+    service = FakeEvaluationRunService()
+    service.run = run
+    client = _client(service)
+    root = (
+        f"/knowledge-bases/{knowledge_base_id}/evaluation-datasets/{dataset_id}"
+        f"/runs/{run.id}/export"
+    )
+    result = client.get(root, params={"format": "json"})
+    assert result.status_code == 200
+    data = json.loads(result.json()["content"])
+    assert result.json()["filename"] == f"spurel-evaluation-run-{run.id}.json"
+    assert data["artifact_type"] == "evaluation_run"
+    assert data["source"]["run_id"] == str(run.id)
+    assert data["source"]["dataset_id"] == str(dataset_id)
+    assert data["configuration"]["top_k"] == 10
+    assert data["metrics"]["mean_recall_at_k"] == 1.0
+    assert data["metrics"]["judgment_coverage_case_count"] == 1
+    assert data["cases"][0]["reciprocal_rank_at_k"] == 0.5
+    csv_result = client.get(root, params={"format": "csv"})
+    assert csv_result.status_code == 200
+    rows = list(csv.DictReader(StringIO(csv_result.json()["content"])))
+    assert len(rows) == 1
+    assert rows[0]["config_mode"] == "keyword"
+    assert rows[0]["metric_mean_ndcg_at_k"] == "0.8"
+    assert rows[0]["case_query"] == "authentication"
+    assert rows[0]["case_ndcg_at_k"] == "0.8"
+    assert client.get(root, params={"format": "pdf"}).status_code == 422
+    assert client.get(root.replace(str(dataset_id), str(uuid4()))).status_code == 404
+    assert client.get(root.replace(str(knowledge_base_id), str(uuid4()))).status_code == 404
+    assert client.get(root.replace(str(run.id), str(uuid4()))).status_code == 404
+
+
+def test_run_export_keeps_not_found_and_database_errors_private() -> None:
+    service = FakeEvaluationRunService()
+    service.error = EvaluationRunPersistenceError("secret database password")
+    client = _client(service)
+    url = f"/knowledge-bases/{uuid4()}/evaluation-datasets/{uuid4()}/runs/{uuid4()}/export"
+    response = client.get(url)
+    assert response.status_code == 503
+    assert "secret database password" not in response.text

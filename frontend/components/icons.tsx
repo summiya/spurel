@@ -25,6 +25,7 @@ export type IconName =
   | "filter"
   | "terminal"
   | "upload"
+  | "download"
   | "copy"
   | "refresh"
   | "alert"
@@ -96,6 +97,7 @@ const drawings: Record<IconName, ReactNode> = {
   filter: <path d="M4 6h16M7 12h10M10 18h4" />,
   terminal: <path d="m4 6 6 6-6 6M13 18h7" />,
   upload: <path d="M12 16V3m-5 5 5-5 5 5M4 16v4h16v-4" />,
+  download: <path d="M12 3v13m-5-5 5 5 5-5M4 17v4h16v-4" />,
   copy: (
     <>
       <rect x="8" y="8" width="12" height="12" rx="2" />

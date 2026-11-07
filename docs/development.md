@@ -549,6 +549,44 @@ show unavailable with non-OpenAI models. All existing HTTP routes,
 reranking, evaluation snapshots, source provenance and Overview
 chart remain intact. No database migration is added by SP-25.
 
+## SP-26: reproducible JSON and CSV exports of saved experiments
+
+The protected read-only FastAPI endpoints are:
+
+```text
+GET /knowledge-bases/{kb}/retrieval/traces/{trace_id}/export?format=json|csv
+GET /knowledge-bases/{kb}/evaluation-datasets/{dataset_id}/runs/{run_id}/export?format=json|csv
+```
+
+Both endpoints reuse existing knowledge-base-scoped retrieval/run
+repositories; a nonmatching trace/run/knowledge-base/dataset identifier
+returns the generic `404` response, never another collection's data.
+They return a bounded JSON envelope
+`{filename,media_type,content}`; `content` contains the actual
+machine-readable JSON or CSV file text. An authenticated Next.js
+same-origin route validates the payload, filename, source identity and
+maximum byte count before emitting a `Content-Disposition: attachment`
+download. Browser links fire only on explicit clicks.
+
+JSON schema version `1` separates `source`, `configuration`,
+`metrics` and `results` (trace) or `cases` (benchmark). CSV
+repeats configuration/aggregate metrics per ranked result/case
+and includes `record_count`; zero-result traces have one metadata
+row and no invented results. Text fields are protected against
+spreadsheet CSV formula interpretation and nested maps are encoded
+as JSON strings. The data represents **only the saved experiment**
+at its original timestamp; it is not an execution recipe verified
+against today's index and may include sensitive excerpts/queries.
+There is **no rerun**, no provider call, no data backfill, and no
+database migration. The 5 MiB limit is applied before returning
+the export. Backend authorization and frontend single-operator
+session checks remain mandatory.
+
+Historical SP-24 metrics, when later merged and present in the
+run-detail API schema, are included automatically through the
+API snapshot. No missing metric is imputed from other runs.
+Overview charts and live retrieved result presentation are unchanged.
+
 ## Environment and secrets
 
 `make init` copies `.env.example` to the ignored `.env` on first use, generates a strong random `SPUREL_API_TOKEN`, and restricts its permissions to the file owner on POSIX systems. It **does not replace** an existing valid token or provider key. Do not print, commit, or share your `.env`.

@@ -127,7 +127,7 @@ traces remain retrieval-only. No new database migrations, additional
 services or automatic provider calls are introduced. With empty retrieval
 there is no generation or verification call.
 
-## SP-25: explicit hosted and local embedding/generation providers (in review)
+## SP-25: explicit hosted and local embedding/generation providers (merged)
 
 The original **OpenAI** embedding and generation configuration stays the
 default. Spurel also supports two *explicit*, operator-selected options
@@ -197,6 +197,49 @@ controls. Existing retrieval scoring, RAG citations, security,
 database migrations, saved history and the Overview quality chart
 are unchanged. There is no new database migration or new provider
 dependency.
+
+## SP-26: machine-readable experiment exports (in review)
+
+Signed-in operators can download a **saved retrieval trace** in **Trace
+History**, or a **saved benchmark** in **Evaluations**, as **JSON or CSV**.
+The download links are tied to the selected knowledge base and trace/run
+IDs, and are never prefetched. Exports do **not** repeat retrieval,
+reranking, embedding, evaluation or answer generation. No export writes
+to the database.
+
+Each versioned JSON document contains `schema_version: 1`,
+`artifact_type`, original source IDs/timestamp, the persisted
+**experiment configuration**, recorded aggregate metrics and **full
+ranked trace results** or **per-case evaluation metrics**. It preserves
+nulls and number types; missing timing or model fields are not guessed.
+JSON includes exact stored retrieval excerpts, result scores/ranks,
+filters, reranking and elapsed-stage measurements when available.
+
+CSV uses one row per recorded result or benchmark case with
+**configuration and summary metrics repeated** on each row. A
+zero-result trace still exports one metadata row with
+`record_count=0`. Nested metadata (e.g. filter settings or timing
+breakdowns) is encoded in JSON-shaped CSV cells. Potential spreadsheet
+formula characters in **text columns** are prefixed safely; numeric
+metric cells remain numeric.
+
+The protected FastAPI routes and same-origin Next.js download proxies
+require existing bearer/operator authorization. Only the two fixed
+formats are allowed. Individual exports have a **5 MiB UTF-8 content
+limit**; oversized exports fail visibly rather than truncating results.
+The backend supplies fixed, ID-derived filenames and the web proxy
+verifies record identity, attachment type and size before sending a
+private `no-store` download with `nosniff`. Read-only exports do not
+expose credentials or arbitrary server files. They **may contain
+confidential queries, retrieved document excerpts and labeled benchmark
+case text**—store/share them accordingly.
+
+The release adds **no migration**, provider integration, new dashboard
+measurements or historical data edits. The Overview retrieval-quality
+graph, trace comparison, existing workbench screens and API response
+contracts remain intact. It currently exports **one selected saved
+record** per download rather than all pages of historical records or
+raw document blobs.
 
 ## Live Overview dashboard (frontend follow-up)
 

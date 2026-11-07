@@ -845,6 +845,31 @@ export function LiveEvaluationsPage() {
             title="Persisted benchmark history"
             hint="Actual PostgreSQL runs; select any run to inspect per-query metrics."
           >
+            {currentRun && path ? (
+              <>
+                <div className="rag-live-answer-actions">
+                  <a
+                    className="button ghost compact"
+                    href={`${path}/runs/${currentRun.run_id}/export?format=json`}
+                    download={`spurel-evaluation-run-${currentRun.run_id}.json`}
+                  >
+                    <Icon name="download" size={15} /> Export run JSON
+                  </a>
+                  <a
+                    className="button ghost compact"
+                    href={`${path}/runs/${currentRun.run_id}/export?format=csv`}
+                    download={`spurel-evaluation-run-${currentRun.run_id}.csv`}
+                  >
+                    <Icon name="download" size={15} /> Export run CSV
+                  </a>
+                </div>
+                <p className="text-hint">
+                  Exports include saved benchmark configuration, original case queries, aggregate
+                  scores and per-case metrics. Handle exported data securely. No evaluation is rerun
+                  by downloading.
+                </p>
+              </>
+            ) : null}
             {runs.loading ? <LoadingState label="Loading benchmark history" /> : null}
             {runs.error ? <ErrorState description={runs.error} onRetry={runs.refresh} /> : null}
             {!runs.loading && !runs.items.length && !runs.error ? (
