@@ -218,14 +218,10 @@ def test_run_history_hides_database_errors() -> None:
     service.error = EvaluationRunPersistenceError("database secret detail")
     client = _client(service)
 
-    response = client.get(
-        f"/knowledge-bases/{uuid4()}/evaluation-datasets/{uuid4()}/runs"
-    )
+    response = client.get(f"/knowledge-bases/{uuid4()}/evaluation-datasets/{uuid4()}/runs")
 
     assert response.status_code == 503
-    assert response.json() == {
-        "detail": "evaluation run history temporarily unavailable"
-    }
+    assert response.json() == {"detail": "evaluation run history temporarily unavailable"}
     assert "database secret detail" not in response.text
 
 
@@ -238,7 +234,6 @@ def test_run_history_bounds_page_size() -> None:
     )
 
     assert response.status_code == 422
-
 
 
 def test_run_export_json_and_csv_keep_saved_metrics_and_configuration() -> None:

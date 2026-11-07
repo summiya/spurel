@@ -31,7 +31,9 @@ def _trace(*, query: str, text: str, empty: bool = False) -> RetrievalTraceDetai
         created_at="2026-11-03T18:00:00Z",
         filters=None,
         reranker_model=None,
-        results=[] if empty else [
+        results=[]
+        if empty
+        else [
             RetrievalTraceResultResponse(
                 rank=1,
                 chunk_id=uuid4(),
@@ -73,7 +75,7 @@ def test_json_export_keeps_exact_saved_configuration_and_numeric_scores() -> Non
 
 
 def test_csv_quotes_multiline_evidence_and_neutralizes_spreadsheet_formulas() -> None:
-    trace = _trace(query=" \t=HYPERLINK(\"evil\")", text="+SUM(1,2)\nprivate ✓")
+    trace = _trace(query=' \t=HYPERLINK("evil")', text="+SUM(1,2)\nprivate ✓")
     csv_file = export_snapshot(
         kind="retrieval_trace", snapshot=trace, record_id=trace.id, format="csv"
     )
@@ -109,11 +111,7 @@ def test_empty_traces_export_configuration_without_inventing_results() -> None:
 def test_export_identity_and_payload_size_fail_closed(monkeypatch) -> None:
     trace = _trace(query="bounded", text="persisted evidence")
     with pytest.raises(ValueError, match="identity"):
-        export_snapshot(
-            kind="retrieval_trace", snapshot=trace, record_id=uuid4(), format="json"
-        )
+        export_snapshot(kind="retrieval_trace", snapshot=trace, record_id=uuid4(), format="json")
     monkeypatch.setattr("spurel.exports.MAX_EXPORT_BYTES", 80)
     with pytest.raises(ExportSizeError):
-        export_snapshot(
-            kind="retrieval_trace", snapshot=trace, record_id=trace.id, format="json"
-        )
+        export_snapshot(kind="retrieval_trace", snapshot=trace, record_id=trace.id, format="json")

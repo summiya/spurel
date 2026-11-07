@@ -178,7 +178,6 @@ def test_trace_history_hides_persistence_errors() -> None:
     assert "database secret detail" not in response.text
 
 
-
 def test_trace_export_json_and_csv_have_exact_scope_and_no_rerun() -> None:
     import csv
     import json
