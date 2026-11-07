@@ -864,9 +864,9 @@ export function LiveEvaluationsPage() {
                   </a>
                 </div>
                 <p className="text-hint">
-                  Exports include saved benchmark configuration, original case queries,
-                  aggregate scores and per-case metrics. Handle exported data securely.
-                  No evaluation is rerun by downloading.
+                  Exports include saved benchmark configuration, original case queries, aggregate
+                  scores and per-case metrics. Handle exported data securely. No evaluation is rerun
+                  by downloading.
                 </p>
               </>
             ) : null}

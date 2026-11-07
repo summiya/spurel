@@ -24,7 +24,9 @@ const trace = "d73b06d7-a20e-4ddf-9859-242d69d4372f";
 const filename = `spurel-trace-${trace}`;
 
 function request(query = "format=json") {
-  return new NextRequest(`http://localhost:3000/api/workspace/knowledge-bases/${kb}/retrieval/traces/${trace}/export?${query}`);
+  return new NextRequest(
+    `http://localhost:3000/api/workspace/knowledge-bases/${kb}/retrieval/traces/${trace}/export?${query}`,
+  );
 }
 function context(knowledgeBaseId = kb, traceId = trace) {
   return { params: Promise.resolve({ knowledgeBaseId, traceId }) };
@@ -33,16 +35,17 @@ function descriptor(format: "json" | "csv" = "json") {
   return {
     filename: `${filename}.${format}`,
     media_type: format === "json" ? "application/json" : "text/csv",
-    content: format === "json"
-      ? JSON.stringify({
-          schema_version: 1,
-          artifact_type: "retrieval_trace",
-          source: { id: trace, knowledge_base_id: kb },
-          configuration: { top_k: 5 },
-          metrics: { duration_ms: 2.1 },
-          results: [],
-        })
-      : "schema_version,artifact_type,record_count\r\n1,retrieval_trace,0\r\n",
+    content:
+      format === "json"
+        ? JSON.stringify({
+            schema_version: 1,
+            artifact_type: "retrieval_trace",
+            source: { id: trace, knowledge_base_id: kb },
+            configuration: { top_k: 5 },
+            metrics: { duration_ms: 2.1 },
+            results: [],
+          })
+        : "schema_version,artifact_type,record_count\r\n1,retrieval_trace,0\r\n",
   };
 }
 
@@ -87,7 +90,9 @@ describe("SP-26 scoped trace downloads", () => {
     expect((await GET(request(), context(kb, "bad-id"))).status).toBe(400);
     expect((await GET(request("format=zip"), context())).status).toBe(422);
     expect((await GET(request("format=json&format=csv"), context())).status).toBe(422);
-    expect((await GET(request("format=json&url=https://evil.example"), context())).status).toBe(422);
+    expect((await GET(request("format=json&url=https://evil.example"), context())).status).toBe(
+      422,
+    );
     expect(mocks.backendRequest).not.toHaveBeenCalled();
   });
 
@@ -100,7 +105,13 @@ describe("SP-26 scoped trace downloads", () => {
 
     mocks.backendRequest.mockResolvedValueOnce({
       status: 200,
-      payload: { ...descriptor(), content: JSON.stringify({ ...JSON.parse(descriptor().content), source: { id: trace, knowledge_base_id: "other" } }) },
+      payload: {
+        ...descriptor(),
+        content: JSON.stringify({
+          ...JSON.parse(descriptor().content),
+          source: { id: trace, knowledge_base_id: "other" },
+        }),
+      },
     });
     expect((await GET(request(), context())).status).toBe(502);
   });

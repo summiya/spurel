@@ -24,7 +24,9 @@ const dataset = "d73b06d7-a20e-4ddf-9859-242d69d4372f";
 const run = "c89b74bb-ad22-44c5-a4bc-3d1493635a70";
 
 const url = `http://localhost:3000/api/workspace/knowledge-bases/${kb}/evaluation-datasets/${dataset}/runs/${run}/export?format=json`;
-function request(value = url) { return new NextRequest(value); }
+function request(value = url) {
+  return new NextRequest(value);
+}
 function context(knowledgeBaseId = kb, datasetId = dataset, runId = run) {
   return { params: Promise.resolve({ knowledgeBaseId, datasetId, runId }) };
 }
@@ -53,7 +55,9 @@ describe("SP-26 saved evaluation export proxy", () => {
   it("keeps scoped, measured run metrics in a secure download", async () => {
     const response = await GET(request(), context());
     expect(response.status).toBe(200);
-    expect(response.headers.get("Content-Disposition")).toContain(`spurel-evaluation-run-${run}.json`);
+    expect(response.headers.get("Content-Disposition")).toContain(
+      `spurel-evaluation-run-${run}.json`,
+    );
     expect(response.headers.get("Cache-Control")).toContain("no-store");
     expect((await response.json()).metrics.mean_recall_at_k).toBe(0.5);
     expect(mocks.backendRequest).toHaveBeenCalledWith(
@@ -61,12 +65,16 @@ describe("SP-26 saved evaluation export proxy", () => {
     );
   });
   it("does not request upstream for unauthenticated, malformed or cross-scope URLs", async () => {
-    mocks.authFailure.mockReturnValueOnce(NextResponse.json({ error: "No session" }, { status: 401 }));
+    mocks.authFailure.mockReturnValueOnce(
+      NextResponse.json({ error: "No session" }, { status: 401 }),
+    );
     expect((await GET(request(), context())).status).toBe(401);
     expect((await GET(request(), context(kb, "bad-dataset"))).status).toBe(400);
     expect((await GET(request(), context("bad-kb"))).status).toBe(400);
     expect((await GET(request(), context(kb, dataset, "bad-run"))).status).toBe(400);
-    expect((await GET(request(url.replace("format=json", "format=xml")), context())).status).toBe(422);
+    expect((await GET(request(url.replace("format=json", "format=xml")), context())).status).toBe(
+      422,
+    );
     expect(mocks.backendRequest).not.toHaveBeenCalled();
   });
   it("rejects a response from another dataset and masks provider errors", async () => {

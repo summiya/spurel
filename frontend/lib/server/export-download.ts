@@ -6,10 +6,7 @@ export type ExportFormat = "json" | "csv";
 const MAX_EXPORT_BYTES = 5 * 1024 * 1024;
 
 export function parseExportFormat(searchParams: URLSearchParams): ExportFormat | null {
-  if (
-    searchParams.size !== 1 ||
-    searchParams.getAll("format").length !== 1
-  ) return null;
+  if (searchParams.size !== 1 || searchParams.getAll("format").length !== 1) return null;
   const value = searchParams.get("format");
   return value === "json" || value === "csv" ? value : null;
 }
@@ -41,7 +38,8 @@ export function exportDownloadResponse(
     typeof data.content !== "string" ||
     data.content.length < 1 ||
     new TextEncoder().encode(data.content).byteLength > MAX_EXPORT_BYTES
-  ) return null;
+  )
+    return null;
 
   if (format === "json") {
     try {
@@ -54,13 +52,15 @@ export function exportDownloadResponse(
         !document.source ||
         typeof document.source !== "object" ||
         Array.isArray(document.source)
-      ) return null;
+      )
+        return null;
       const source = document.source as Record<string, unknown>;
       if (
         source.knowledge_base_id !== knowledgeBaseId.toLowerCase() ||
         source[kind === "retrieval_trace" ? "id" : "run_id"] !== safeRecordId ||
         (kind === "evaluation_run" && source.dataset_id !== datasetId?.toLowerCase())
-      ) return null;
+      )
+        return null;
     } catch {
       return null;
     }

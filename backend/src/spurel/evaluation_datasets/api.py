@@ -6,7 +6,6 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from spurel.embeddings.domain import EmbeddingError
-from spurel.exports import ArtifactExportResponse, ExportSizeError, export_snapshot
 from spurel.evaluation_datasets.baseline_domain import (
     EvaluationBaseline,
     EvaluationBaselineConfiguration,
@@ -97,6 +96,7 @@ from spurel.evaluation_datasets.service import (
     EvaluationDatasetNotFoundError,
     EvaluationDatasetService,
 )
+from spurel.exports import ArtifactExportResponse, ExportSizeError, export_snapshot
 from spurel.retrieval.domain import VectorRetrievalQueryError
 from spurel.retrieval.evaluation import (
     RelevanceJudgment,

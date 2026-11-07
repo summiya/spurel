@@ -13,7 +13,9 @@ export async function GET(request: NextRequest, context: Context) {
 
   const { knowledgeBaseId, traceId } = await context.params;
   if (!validUUID(knowledgeBaseId) || !validUUID(traceId)) {
-    return noStore(NextResponse.json({ error: "Invalid retrieval trace reference." }, { status: 400 }));
+    return noStore(
+      NextResponse.json({ error: "Invalid retrieval trace reference." }, { status: 400 }),
+    );
   }
   const format = parseExportFormat(request.nextUrl.searchParams);
   if (!format) {
@@ -25,9 +27,15 @@ export async function GET(request: NextRequest, context: Context) {
       `/knowledge-bases/${knowledgeBaseId}/retrieval/traces/${traceId}/export?format=${format}`,
     );
     const download = exportDownloadResponse(
-      response.payload, "retrieval_trace", traceId, format, knowledgeBaseId,
+      response.payload,
+      "retrieval_trace",
+      traceId,
+      format,
+      knowledgeBaseId,
     );
-    return download ?? noStore(NextResponse.json({ error: "Invalid export response." }, { status: 502 }));
+    return (
+      download ?? noStore(NextResponse.json({ error: "Invalid export response." }, { status: 502 }))
+    );
   } catch (cause) {
     const safe = safeBackendError(cause);
     return noStore(NextResponse.json({ error: safe.error }, { status: safe.status }));

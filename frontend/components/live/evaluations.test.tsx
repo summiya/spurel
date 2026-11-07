@@ -273,15 +273,9 @@ describe("SP-14 live evaluation workbench", () => {
     render(<LiveEvaluationsPage />);
     const json = await screen.findByRole("link", { name: "Export run JSON" });
     const csv = screen.getByRole("link", { name: "Export run CSV" });
-    expect(json).toHaveAttribute(
-      "href",
-      `${evalRoot}/runs/${run1}/export?format=json`,
-    );
+    expect(json).toHaveAttribute("href", `${evalRoot}/runs/${run1}/export?format=json`);
     expect(json).toHaveAttribute("download", `spurel-evaluation-run-${run1}.json`);
-    expect(csv).toHaveAttribute(
-      "href",
-      `${evalRoot}/runs/${run1}/export?format=csv`,
-    );
+    expect(csv).toHaveAttribute("href", `${evalRoot}/runs/${run1}/export?format=csv`);
     expect(screen.getByText(/No evaluation is rerun by downloading/)).toBeInTheDocument();
     expect(
       vi.mocked(fetch).mock.calls.every(([, opts]) => !opts?.method || opts.method === "GET"),

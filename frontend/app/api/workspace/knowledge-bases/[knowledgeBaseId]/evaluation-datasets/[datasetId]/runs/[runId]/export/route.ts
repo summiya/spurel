@@ -15,7 +15,9 @@ export async function GET(request: NextRequest, context: Context) {
 
   const { knowledgeBaseId, datasetId, runId } = await context.params;
   if (![knowledgeBaseId, datasetId, runId].every(validUUID)) {
-    return noStore(NextResponse.json({ error: "Invalid evaluation run reference." }, { status: 400 }));
+    return noStore(
+      NextResponse.json({ error: "Invalid evaluation run reference." }, { status: 400 }),
+    );
   }
   const format = parseExportFormat(request.nextUrl.searchParams);
   if (!format) {
@@ -27,9 +29,16 @@ export async function GET(request: NextRequest, context: Context) {
       `/knowledge-bases/${knowledgeBaseId}/evaluation-datasets/${datasetId}/runs/${runId}/export?format=${format}`,
     );
     const download = exportDownloadResponse(
-      response.payload, "evaluation_run", runId, format, knowledgeBaseId, datasetId,
+      response.payload,
+      "evaluation_run",
+      runId,
+      format,
+      knowledgeBaseId,
+      datasetId,
     );
-    return download ?? noStore(NextResponse.json({ error: "Invalid export response." }, { status: 502 }));
+    return (
+      download ?? noStore(NextResponse.json({ error: "Invalid export response." }, { status: 502 }))
+    );
   } catch (cause) {
     const safe = safeBackendError(cause);
     return noStore(NextResponse.json({ error: safe.error }, { status: safe.status }));

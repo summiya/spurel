@@ -419,9 +419,9 @@ export function LiveTraceHistoryPage({ initialKnowledgeBaseId, initialTraceId }:
                   </div>
                 ) : null}
                 <p className="text-hint">
-                  Exports contain the saved query, configuration, exact retrieved excerpts,
-                  rankings and timings. They may include confidential document text. Downloads
-                  do not rerun retrieval or invoke a provider.
+                  Exports contain the saved query, configuration, exact retrieved excerpts, rankings
+                  and timings. They may include confidential document text. Downloads do not rerun
+                  retrieval or invoke a provider.
                 </p>
                 <div className="trace-stat-grid">
                   <span>
